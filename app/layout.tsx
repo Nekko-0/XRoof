@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 
 export const metadata: Metadata = {
-  title: 'RoofConnect - Find Trusted Roofing Contractors',
+  title: 'XRoof - Find Trusted Roofing Contractors',
   description: 'Post your roofing job and get connected with qualified contractors in your area. Fast, easy, and reliable.',
 }
 

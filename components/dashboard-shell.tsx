@@ -69,7 +69,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
               <Home className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold text-sidebar-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-              RoofConnect
+              XRoof
             </span>
           </Link>
           <button
