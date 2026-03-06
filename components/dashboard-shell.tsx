@@ -7,6 +7,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/notification-bell"
 
 interface NavItem {
   label: string
@@ -132,11 +133,12 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
             <Menu className="h-4 w-4" />
           </button>
           <h1
-            className="text-lg font-semibold text-foreground"
+            className="flex-1 text-lg font-semibold text-foreground"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {navItems.find((item) => item.href === pathname)?.label || "Dashboard"}
           </h1>
+          <NotificationBell />
         </header>
         <main className="flex-1 p-4 lg:p-8">{children}</main>
       </div>

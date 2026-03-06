@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
-import { MapPin, DollarSign, FileText, Wrench } from "lucide-react";
+import { MapPin, DollarSign, FileText, Wrench, ImagePlus, X } from "lucide-react";
 
 export default function PostJobPage() {
   const supabase = createBrowserClient(
@@ -11,14 +11,34 @@ export default function PostJobPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [address, setAddress] = useState("");
   const [zip, setZip] = useState("");
   const [jobType, setJobType] = useState("");
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (photos.length + files.length > 5) {
+      setStatus("Maximum 5 photos allowed");
+      return;
+    }
+    setPhotos((prev) => [...prev, ...files]);
+    const newPreviews = files.map((f) => URL.createObjectURL(f));
+    setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removePhoto = (index: number) => {
+    URL.revokeObjectURL(previews[index]);
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +60,25 @@ export default function PostJobPage() {
 
     setLoading(true);
 
+    // Upload photos to Supabase Storage
+    const photoUrls: string[] = [];
+    for (const file of photos) {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("job-photos")
+        .upload(path, file);
+      if (uploadError) {
+        setStatus("Error uploading photo: " + uploadError.message);
+        setLoading(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage
+        .from("job-photos")
+        .getPublicUrl(path);
+      photoUrls.push(urlData.publicUrl);
+    }
+
     const { error } = await supabase.from("jobs").insert([
       {
         homeowner_id: user.id,
@@ -48,6 +87,7 @@ export default function PostJobPage() {
         job_type: jobType,
         description,
         budget: budget ? Number(budget) : null,
+        photo_urls: photoUrls,
         status: "Negotiating",
       },
     ]);
@@ -144,6 +184,45 @@ export default function PostJobPage() {
               rows={4}
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
             />
+          </div>
+
+          {/* Photos */}
+          <div className="flex flex-col gap-1.5">
+            <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
+              Photos (optional, max 5)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotos}
+              className="hidden"
+            />
+            <div className="flex flex-wrap gap-3">
+              {previews.map((src, i) => (
+                <div key={i} className="relative h-20 w-20 rounded-lg overflow-hidden border border-border">
+                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/70 text-background hover:bg-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {photos.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Budget */}

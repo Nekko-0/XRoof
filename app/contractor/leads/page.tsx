@@ -15,6 +15,7 @@ type Lead = {
   budget: number | null
   status: string
   created_at: string
+  photo_urls?: string[]
   homeowner: { username: string } | null
 }
 
@@ -36,7 +37,7 @@ export default function LeadsPage() {
 
       const { data: jobsRaw, error } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id, photo_urls")
         .is("contractor_id", null)
         .order("created_at", { ascending: false })
 
@@ -132,7 +133,16 @@ export default function LeadsPage() {
                 )}
                 <span className="text-xs text-muted-foreground">Posted {timeAgo(lead.created_at)}</span>
               </div>
-              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
+              <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
+              {lead.photo_urls && lead.photo_urls.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {lead.photo_urls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Job photo ${i + 1}`} className="h-14 w-14 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleAccept(lead.id)}

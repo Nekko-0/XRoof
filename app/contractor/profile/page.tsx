@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X } from "lucide-react"
+import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera } from "lucide-react"
 
 type Profile = {
   company_name: string
@@ -11,6 +11,9 @@ type Profile = {
   email: string
   years_experience: number | null
   about: string
+  license_number: string
+  insurance_info: string
+  profile_photo_url: string
 }
 
 export default function ContractorProfilePage() {
@@ -23,6 +26,8 @@ export default function ContractorProfilePage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isNew, setIsNew] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,12 +37,11 @@ export default function ContractorProfilePage() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, service_zips, phone, email, years_experience, about")
+        .select("company_name, service_zips, phone, email, years_experience, about, license_number, insurance_info, profile_photo_url")
         .eq("id", user.id)
         .single()
 
       if (error || !data) {
-        // Profile doesn't exist or has no data — start in edit mode
         setProfile({
           company_name: "",
           service_zips: [],
@@ -45,6 +49,9 @@ export default function ContractorProfilePage() {
           email: user.email || "",
           years_experience: null,
           about: "",
+          license_number: "",
+          insurance_info: "",
+          profile_photo_url: "",
         })
         setEditing(true)
         setIsNew(true)
@@ -56,6 +63,9 @@ export default function ContractorProfilePage() {
           email: data.email || "",
           years_experience: data.years_experience ?? null,
           about: data.about || "",
+          license_number: data.license_number || "",
+          insurance_info: data.insurance_info || "",
+          profile_photo_url: data.profile_photo_url || "",
         })
       }
       setLoading(false)
@@ -63,6 +73,46 @@ export default function ContractorProfilePage() {
 
     fetchProfile()
   }, [])
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setUploading(true)
+    const ext = file.name.split(".").pop()
+    const path = `${user.id}/profile.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from("profile-photos")
+      .upload(path, file, { upsert: true })
+
+    if (uploadError) {
+      alert("Error uploading photo: " + uploadError.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("profile-photos")
+      .getPublicUrl(path)
+
+    const photoUrl = urlData.publicUrl + "?t=" + Date.now()
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ profile_photo_url: photoUrl })
+      .eq("id", user.id)
+
+    if (updateError) {
+      alert("Error saving photo: " + updateError.message)
+    } else {
+      setProfile({ ...profile, profile_photo_url: photoUrl })
+    }
+    setUploading(false)
+  }
 
   const handleSave = async () => {
     if (!profile) return
@@ -78,6 +128,8 @@ export default function ContractorProfilePage() {
         email: profile.email,
         years_experience: profile.years_experience,
         about: profile.about,
+        license_number: profile.license_number,
+        insurance_info: profile.insurance_info,
       })
       .eq("id", user.id)
 
@@ -137,8 +189,23 @@ export default function ContractorProfilePage() {
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-            {initials}
+          <div className="relative">
+            {profile.profile_photo_url ? (
+              <img src={profile.profile_photo_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                {initials}
+              </div>
+            )}
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div>
             <h3 className="text-xl font-semibold text-foreground">
@@ -177,6 +244,22 @@ export default function ContractorProfilePage() {
             value={profile.email}
             editing={editing}
             onChange={(v) => setProfile({ ...profile, email: v })}
+          />
+          <ProfileField
+            icon={<Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
+            label="License Number"
+            value={profile.license_number}
+            editing={editing}
+            onChange={(v) => setProfile({ ...profile, license_number: v })}
+            placeholder="e.g. ROO-12345"
+          />
+          <ProfileField
+            icon={<ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
+            label="Insurance Info"
+            value={profile.insurance_info}
+            editing={editing}
+            onChange={(v) => setProfile({ ...profile, insurance_info: v })}
+            placeholder="e.g. State Farm Policy #ABC123"
           />
           <ProfileField
             icon={<Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}

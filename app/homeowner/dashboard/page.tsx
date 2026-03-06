@@ -14,9 +14,11 @@ type Job = {
   description: string;
   status: "Negotiating" | "Accepted" | "Completed";
   contractor_id: string | null;
+  photo_urls?: string[];
   contractor?: {
     username: string;
     company_name?: string;
+    profile_photo_url?: string;
   } | null;
 };
 
@@ -47,7 +49,7 @@ export default function HomeownerDashboard() {
       // Fetch jobs
       const { data: jobsRaw, error: jobsError } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, status, contractor_id, created_at")
+        .select("id, address, zip_code, job_type, description, status, contractor_id, created_at, photo_urls")
         .eq("homeowner_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -61,7 +63,7 @@ export default function HomeownerDashboard() {
         if (contractorIds.length > 0) {
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, username, company_name")
+            .select("id, username, company_name, profile_photo_url")
             .in("id", contractorIds)
           profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
         }
@@ -154,14 +156,33 @@ export default function HomeownerDashboard() {
                 {job.description}
               </div>
 
+              {/* Photos */}
+              {job.photo_urls && job.photo_urls.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {job.photo_urls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={url}
+                        alt={`Job photo ${i + 1}`}
+                        className="h-16 w-16 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
+
               {/* Contractor Info */}
               {job.contractor ? (
                 <div className="mt-4 rounded-lg border border-border p-3 flex flex-col gap-2">
                   <p className="text-sm font-semibold text-muted-foreground">Assigned Contractor</p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-                      {job.contractor.username.slice(0, 2).toUpperCase()}
-                    </div>
+                    {job.contractor.profile_photo_url ? (
+                      <img src={job.contractor.profile_photo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                        {job.contractor.username.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-semibold text-foreground">{job.contractor.username}</p>
                       {job.contractor.company_name && (
