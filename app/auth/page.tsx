@@ -53,11 +53,16 @@ function AuthForm() {
       return
     }
 
-    if (data.user) {
-      // Profile is auto-created by database trigger
+    if (data.session) {
+      // Auto-confirmed — redirect immediately
       router.push(dashboardPath)
+    } else if (data.user) {
+      // Email confirmation required
+      setMessage("Check your email for a confirmation link, then log in!")
+      setLoading(false)
+      setIsSignUp(false)
     } else {
-      setMessage("Check your email for a confirmation link!")
+      setMessage("Something went wrong. Please try again.")
       setLoading(false)
     }
   }

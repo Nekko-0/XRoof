@@ -2,13 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, User, Pencil, Save, X } from "lucide-react"
+import { Mail, Phone, MapPin, User, Pencil, Save, X, Wrench } from "lucide-react"
 
 type Profile = {
   name: string
   address: string
   phone: string
   email: string
+}
+
+type PairedContractor = {
+  username: string
+  company_name: string
+  job_type: string
+  status: string
+  profile_photo_url: string
 }
 
 export default function HomeownerProfilePage() {
@@ -26,6 +34,7 @@ export default function HomeownerProfilePage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isNew, setIsNew] = useState(false)
+  const [contractors, setContractors] = useState<PairedContractor[]>([])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -40,7 +49,6 @@ export default function HomeownerProfilePage() {
         .single()
 
       if (error || !data) {
-        // Profile doesn't exist yet — start in edit mode
         setProfile({ name: "", address: "", phone: "", email: user.email || "" })
         setEditing(true)
         setIsNew(true)
@@ -52,6 +60,32 @@ export default function HomeownerProfilePage() {
           email: data.email || "",
         })
       }
+
+      // Fetch paired contractors
+      const { data: jobs } = await supabase
+        .from("jobs")
+        .select("contractor_id, job_type, status")
+        .eq("homeowner_id", user.id)
+        .not("contractor_id", "is", null)
+
+      if (jobs && jobs.length > 0) {
+        const contractorIds = [...new Set(jobs.map((j: any) => j.contractor_id).filter(Boolean))]
+        if (contractorIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, username, company_name, profile_photo_url")
+            .in("id", contractorIds)
+          const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+          setContractors(jobs.map((j: any) => ({
+            username: profileMap[j.contractor_id]?.username || "Contractor",
+            company_name: profileMap[j.contractor_id]?.company_name || "",
+            profile_photo_url: profileMap[j.contractor_id]?.profile_photo_url || "",
+            job_type: j.job_type,
+            status: j.status,
+          })))
+        }
+      }
+
       setLoading(false)
     }
 
@@ -130,6 +164,36 @@ export default function HomeownerProfilePage() {
           </button>
         )}
       </div>
+
+      {/* Paired Contractors */}
+      {contractors.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <Wrench className="h-4 w-4" />
+            Your Contractors
+          </h3>
+          <div className="flex flex-col gap-2">
+            {contractors.map((c, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-lg bg-secondary/30 px-4 py-2.5">
+                {c.profile_photo_url ? (
+                  <img src={c.profile_photo_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    {c.username.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{c.username}</p>
+                  <p className="text-xs text-muted-foreground">{c.company_name || c.job_type}</p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-center gap-4">

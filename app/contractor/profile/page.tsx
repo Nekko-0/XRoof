@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera } from "lucide-react"
+import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera, ImagePlus, Users } from "lucide-react"
 
 type Profile = {
   company_name: string
@@ -14,6 +14,13 @@ type Profile = {
   license_number: string
   insurance_info: string
   profile_photo_url: string
+  portfolio_urls: string[]
+}
+
+type PairedClient = {
+  username: string
+  job_type: string
+  status: string
 }
 
 export default function ContractorProfilePage() {
@@ -27,7 +34,10 @@ export default function ContractorProfilePage() {
   const [loading, setLoading] = useState(true)
   const [isNew, setIsNew] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [portfolioUploading, setPortfolioUploading] = useState(false)
+  const [clients, setClients] = useState<PairedClient[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const portfolioInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,7 +47,7 @@ export default function ContractorProfilePage() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, service_zips, phone, email, years_experience, about, license_number, insurance_info, profile_photo_url")
+        .select("company_name, service_zips, phone, email, years_experience, about, license_number, insurance_info, profile_photo_url, portfolio_urls")
         .eq("id", user.id)
         .single()
 
@@ -52,6 +62,7 @@ export default function ContractorProfilePage() {
           license_number: "",
           insurance_info: "",
           profile_photo_url: "",
+          portfolio_urls: [],
         })
         setEditing(true)
         setIsNew(true)
@@ -66,8 +77,32 @@ export default function ContractorProfilePage() {
           license_number: data.license_number || "",
           insurance_info: data.insurance_info || "",
           profile_photo_url: data.profile_photo_url || "",
+          portfolio_urls: data.portfolio_urls || [],
         })
       }
+
+      // Fetch paired clients
+      const { data: jobs } = await supabase
+        .from("jobs")
+        .select("homeowner_id, job_type, status")
+        .eq("contractor_id", user.id)
+
+      if (jobs && jobs.length > 0) {
+        const ownerIds = [...new Set(jobs.map((j: any) => j.homeowner_id).filter(Boolean))]
+        if (ownerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, username")
+            .in("id", ownerIds)
+          const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+          setClients(jobs.map((j: any) => ({
+            username: profileMap[j.homeowner_id]?.username || "Homeowner",
+            job_type: j.job_type,
+            status: j.status,
+          })))
+        }
+      }
+
       setLoading(false)
     }
 
@@ -112,6 +147,62 @@ export default function ContractorProfilePage() {
       setProfile({ ...profile, profile_photo_url: photoUrl })
     }
     setUploading(false)
+  }
+
+  const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!profile) return
+    if (profile.portfolio_urls.length + files.length > 10) {
+      alert("Maximum 10 portfolio photos allowed")
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setPortfolioUploading(true)
+    const newUrls: string[] = []
+
+    for (const file of files) {
+      const ext = file.name.split(".").pop()
+      const path = `${user.id}/portfolio-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage
+        .from("job-photos")
+        .upload(path, file)
+      if (error) {
+        alert("Error uploading: " + error.message)
+        continue
+      }
+      const { data: urlData } = supabase.storage.from("job-photos").getPublicUrl(path)
+      newUrls.push(urlData.publicUrl)
+    }
+
+    const updatedUrls = [...profile.portfolio_urls, ...newUrls]
+    const { error } = await supabase
+      .from("profiles")
+      .update({ portfolio_urls: updatedUrls })
+      .eq("id", user.id)
+
+    if (!error) {
+      setProfile({ ...profile, portfolio_urls: updatedUrls })
+    }
+    setPortfolioUploading(false)
+  }
+
+  const removePortfolioPhoto = async (index: number) => {
+    if (!profile) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const updatedUrls = profile.portfolio_urls.filter((_, i) => i !== index)
+    const { error } = await supabase
+      .from("profiles")
+      .update({ portfolio_urls: updatedUrls })
+      .eq("id", user.id)
+
+    if (!error) {
+      setProfile({ ...profile, portfolio_urls: updatedUrls })
+    }
   }
 
   const handleSave = async () => {
@@ -186,6 +277,29 @@ export default function ContractorProfilePage() {
           </button>
         )}
       </div>
+
+      {/* Paired Clients */}
+      {clients.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <Users className="h-4 w-4" />
+            Your Clients
+          </h3>
+          <div className="flex flex-col gap-2">
+            {clients.map((client, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/30 px-4 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{client.username}</p>
+                  <p className="text-xs text-muted-foreground">{client.job_type}</p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  {client.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-center gap-4">
@@ -288,6 +402,45 @@ export default function ContractorProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Work Portfolio */}
+      <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <ImagePlus className="h-4 w-4" />
+            Work Portfolio
+          </h3>
+          <span className="text-xs text-muted-foreground">{profile.portfolio_urls.length}/10 photos</span>
+        </div>
+        <input ref={portfolioInputRef} type="file" accept="image/*" multiple onChange={handlePortfolioUpload} className="hidden" />
+        <div className="flex flex-wrap gap-3">
+          {profile.portfolio_urls.map((url, i) => (
+            <div key={i} className="relative h-24 w-24 rounded-lg overflow-hidden border border-border">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <img src={url} alt={`Work ${i + 1}`} className="h-full w-full object-cover hover:opacity-80 transition-opacity" />
+              </a>
+              <button
+                type="button"
+                onClick={() => removePortfolioPhoto(i)}
+                className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/70 text-background hover:bg-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          {profile.portfolio_urls.length < 10 && (
+            <button
+              type="button"
+              onClick={() => portfolioInputRef.current?.click()}
+              disabled={portfolioUploading}
+              className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            >
+              <ImagePlus className="h-6 w-6" />
+            </button>
+          )}
+        </div>
+        {portfolioUploading && <p className="mt-2 text-xs text-muted-foreground">Uploading...</p>}
       </div>
     </div>
   )
