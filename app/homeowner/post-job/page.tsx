@@ -88,7 +88,7 @@ export default function PostJobPage() {
         description,
         budget: budget ? Number(budget) : null,
         photo_urls: photoUrls,
-        status: "Negotiating",
+        status: "Pending",
       },
     ]);
 

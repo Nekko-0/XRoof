@@ -84,6 +84,12 @@ function AuthForm() {
     }
 
     if (data.user) {
+      // Check if admin
+      if (data.user.email?.toLowerCase() === "contact@leons-roofing.com") {
+        router.push("/admin/dashboard")
+        return
+      }
+
       // Check existing role and redirect
       const { data: profile } = await supabase
         .from("profiles")

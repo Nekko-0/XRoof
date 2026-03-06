@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
@@ -17,7 +17,7 @@ interface NavItem {
 
 interface DashboardShellProps {
   children: React.ReactNode
-  role: "homeowner" | "contractor"
+  role: "homeowner" | "contractor" | "admin"
 }
 
 const homeownerNav: NavItem[] = [
@@ -29,8 +29,15 @@ const homeownerNav: NavItem[] = [
 
 const contractorNav: NavItem[] = [
   { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
-  { label: "View Leads", href: "/contractor/leads", icon: FileText },
+  { label: "My Jobs", href: "/contractor/leads", icon: FileText },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Profile", href: "/contractor/profile", icon: User },
+]
+
+const adminNav: NavItem[] = [
+  { label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
+  { label: "All Jobs", href: "/admin/jobs", icon: ClipboardList },
+  { label: "Contractors", href: "/admin/contractors", icon: Users },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
 
@@ -38,8 +45,8 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const navItems = role === "homeowner" ? homeownerNav : contractorNav
-  const roleLabel = role === "homeowner" ? "Homeowner" : "Contractor"
+  const navItems = role === "admin" ? adminNav : role === "homeowner" ? homeownerNav : contractorNav
+  const roleLabel = role === "admin" ? "Admin" : role === "homeowner" ? "Homeowner" : "Contractor"
 
   const handleLogout = async () => {
     const supabase = createBrowserClient(
