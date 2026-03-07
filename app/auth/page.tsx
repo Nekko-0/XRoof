@@ -18,6 +18,7 @@ function AuthForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [username, setUsername] = useState("")
+  const [serviceZips, setServiceZips] = useState("")
   const [isSignUp, setIsSignUp] = useState(true)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
@@ -27,6 +28,13 @@ function AuthForm() {
       setMessage("Please fill in all fields")
       return
     }
+
+    const parsedZips = serviceZips.split(",").map((s) => s.trim()).filter(Boolean)
+    if (parsedZips.length === 0) {
+      setMessage("Please enter at least one service area zip code")
+      return
+    }
+
     setLoading(true)
     setMessage("")
 
@@ -37,6 +45,7 @@ function AuthForm() {
         data: {
           username: username || email.split("@")[0],
           role: "Contractor",
+          service_zips: parsedZips,
         },
       },
     })
@@ -48,6 +57,7 @@ function AuthForm() {
     }
 
     if (data.session) {
+      await supabase.from("profiles").update({ service_zips: parsedZips }).eq("id", data.user!.id)
       router.push("/contractor/dashboard")
     } else if (data.user) {
       setMessage("Check your email for a confirmation link, then log in!")
@@ -111,16 +121,29 @@ function AuthForm() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4">
             {isSignUp && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Name</label>
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Name</label>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Service Area Zip Codes *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 62704, 62521, 61820"
+                    value={serviceZips}
+                    onChange={(e) => setServiceZips(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">Separate multiple zip codes with commas</p>
+                </div>
+              </>
             )}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
