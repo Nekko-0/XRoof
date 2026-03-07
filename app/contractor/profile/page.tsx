@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera, ImagePlus } from "lucide-react"
+import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera, ImagePlus, Briefcase, CheckCircle, LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 type Profile = {
   company_name: string
@@ -23,12 +24,16 @@ export default function ContractorProfilePage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isNew, setIsNew] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [portfolioUploading, setPortfolioUploading] = useState(false)
+  const [activeJobs, setActiveJobs] = useState(0)
+  const [completedJobs, setCompletedJobs] = useState(0)
+  const [userName, setUserName] = useState("")
   const photoInputRef = useRef<HTMLInputElement>(null)
   const portfolioInputRef = useRef<HTMLInputElement>(null)
 
@@ -43,6 +48,23 @@ export default function ContractorProfilePage() {
         .select("company_name, service_zips, phone, email, years_experience, about, license_number, insurance_info, profile_photo_url, portfolio_urls")
         .eq("id", user.id)
         .single()
+
+      setUserName(user.user_metadata?.username || user.email?.split("@")[0] || "Contractor")
+
+      // Fetch job counts
+      const { count: active } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("contractor_id", user.id)
+        .in("status", ["Assigned", "Accepted"])
+      setActiveJobs(active || 0)
+
+      const { count: completed } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("contractor_id", user.id)
+        .eq("status", "Completed")
+      setCompletedJobs(completed || 0)
 
       if (error || !data) {
         setProfile({
@@ -203,59 +225,35 @@ export default function ContractorProfilePage() {
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
+
   if (loading) return <p className="p-6">Loading profile...</p>
   if (!profile) return <p className="p-6">Profile not found. Please log in again.</p>
 
   const initials = profile.company_name
     ? profile.company_name.slice(0, 2).toUpperCase()
-    : "??"
+    : userName.slice(0, 2).toUpperCase()
+
+  const profileStats = [
+    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-green-50 text-green-700" },
+    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-50 text-blue-700" },
+    { label: "Photos", value: profile.portfolio_urls.length, icon: ImagePlus, color: "bg-yellow-50 text-yellow-700" },
+    { label: "Zip Codes", value: profile.service_zips.length, icon: MapPin, color: "bg-purple-50 text-purple-700" },
+  ]
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-            Company Profile
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your company information.
-          </p>
-        </div>
-        {editing ? (
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Save className="h-3.5 w-3.5" />
-              Save
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-            >
-              <X className="h-3.5 w-3.5" />
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            Edit Profile
-          </button>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        <div className="mb-6 flex items-center gap-4">
+      {/* Profile header with avatar */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <div className="relative">
             {profile.profile_photo_url ? (
-              <img src={profile.profile_photo_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+              <img src={profile.profile_photo_url} alt="" className="h-14 w-14 rounded-full object-cover" />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
                 {initials}
               </div>
             )}
@@ -264,18 +262,70 @@ export default function ContractorProfilePage() {
               type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={uploading}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
+              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
             >
-              <Camera className="h-3.5 w-3.5" />
+              <Camera className="h-3 w-3" />
             </button>
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-foreground">
-              {profile.company_name || "No company name set"}
-            </h3>
-            <p className="text-sm text-muted-foreground">Contractor</p>
+            <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+              {userName || profile.company_name || "Contractor"}
+            </h2>
+            <p className="text-xs text-muted-foreground">Contractor</p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Stats grid */}
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        {profileStats.map((stat) => (
+          <div key={stat.label} className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.color}`}>
+              <stat.icon className="h-4 w-4" />
+            </div>
+            <p className="text-xl font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit/Save buttons */}
+      <div className="mb-4 flex justify-end">
+        {editing ? (
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Save className="h-3.5 w-3.5" />
+              Save
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Profile
+          </button>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
 
         <div className="flex flex-col gap-4">
           <ProfileField

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, FileText } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, Home as HomeIcon } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -50,56 +50,72 @@ export default function MyJobsPage() {
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    if (days === 0) return "Today"
-    if (days === 1) return "1 day ago"
+    const mins = Math.floor(diff / (1000 * 60))
+    if (mins < 1) return "Just now"
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days === 1) return "Yesterday"
     if (days < 7) return `${days} days ago`
     return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? "s" : ""} ago`
   }
 
-  if (loading) return <p className="p-6">Loading your jobs...</p>
+  if (loading) return <p className="p-6">Loading your leads...</p>
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          My Jobs
+    <div className="flex flex-col gap-4">
+      {/* Header */}
+      <div className="text-center lg:text-left">
+        <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+          My Leads
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Jobs assigned to you by the admin.
-        </p>
       </div>
 
       {jobs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
-          No jobs assigned to you yet. Check back soon!
+          No leads assigned to you yet. Check back soon!
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           {jobs.map((job) => (
             <div
               key={job.id}
-              className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+              className="rounded-2xl border border-border border-l-4 border-l-primary bg-card p-4 shadow-sm"
             >
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <p className="text-sm font-semibold text-foreground">{job.customer_name || "Customer"}</p>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {job.address}, {job.zip_code}
-                </div>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                  {job.job_type}
-                </span>
+              {/* Name + Status */}
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground">{job.customer_name || "Customer"}</h3>
                 <StatusBadge status={job.status} />
-                {job.budget && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    ${job.budget.toLocaleString()}
+              </div>
+
+              {/* Timestamp */}
+              <p className="mb-3 text-xs text-muted-foreground">{timeAgo(job.created_at)}</p>
+
+              {/* Info rows */}
+              <div className="mb-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{job.address} &middot; {job.zip_code}</span>
+                </div>
+                {job.customer_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{job.customer_phone}</span>
                   </div>
                 )}
-                <span className="text-xs text-muted-foreground">{timeAgo(job.created_at)}</span>
+                <div className="flex items-center gap-2">
+                  <HomeIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{job.job_type}</span>
+                </div>
               </div>
-              <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
+
+              {/* Description */}
+              {job.description && (
+                <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
+              )}
+
+              {/* Photos */}
               {job.photo_urls && job.photo_urls.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {job.photo_urls.map((url, i) => (
@@ -109,13 +125,36 @@ export default function MyJobsPage() {
                   ))}
                 </div>
               )}
-              <Link
-                href="/contractor/report"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Submit Report
-              </Link>
+
+              {/* Bottom row: Budget + Actions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {job.budget && (
+                    <span className="flex items-center gap-1 text-sm font-semibold text-green-700">
+                      <DollarSign className="h-4 w-4" />
+                      ${job.budget.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {job.customer_phone && (
+                    <a
+                      href={`tel:${job.customer_phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                    >
+                      <Phone className="h-3 w-3" />
+                      Contact
+                    </a>
+                  )}
+                  <Link
+                    href="/contractor/report"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    <FileText className="h-3 w-3" />
+                    Report
+                  </Link>
+                </div>
+              </div>
             </div>
           ))}
         </div>

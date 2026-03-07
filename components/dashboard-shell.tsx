@@ -35,12 +35,20 @@ const adminNav: NavItem[] = [
   { label: "Reports", href: "/admin/reports", icon: FileText },
 ]
 
+// Bottom tab bar items for contractor mobile
+const contractorTabs: NavItem[] = [
+  { label: "Home", href: "/contractor/dashboard", icon: Home },
+  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Profile", href: "/contractor/profile", icon: User },
+]
+
 export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const navItems = role === "admin" ? adminNav : contractorNav
   const roleLabel = role === "admin" ? "Admin" : "Contractor"
+  const isContractor = role === "contractor"
 
   const handleLogout = async () => {
     const supabase = createBrowserClient(
@@ -53,16 +61,18 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile overlay */}
-      {mobileOpen && (
+      {/* Mobile overlay — admin only */}
+      {mobileOpen && !isContractor && (
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — hidden on mobile for contractor, hamburger for admin */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          isContractor
+            ? "-translate-x-full lg:translate-x-0"
+            : mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
@@ -126,23 +136,61 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-8">
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground lg:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-4 w-4" />
-          </button>
+        <header className={cn(
+          "flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:h-16 lg:px-8",
+          isContractor && "lg:flex"
+        )}>
+          {/* Hamburger — admin mobile only */}
+          {!isContractor && (
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          )}
           <h1
-            className="flex-1 text-lg font-semibold text-foreground"
+            className={cn(
+              "flex-1 text-lg font-semibold text-foreground",
+              isContractor && "text-center lg:text-left"
+            )}
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {navItems.find((item) => item.href === pathname)?.label || "Dashboard"}
           </h1>
           <NotificationBell />
         </header>
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className={cn(
+          "flex-1 p-4 lg:p-8",
+          isContractor && "pb-24 lg:pb-8"
+        )}>
+          {children}
+        </main>
       </div>
+
+      {/* Bottom tab bar — contractor mobile only */}
+      {isContractor && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom lg:hidden">
+          {contractorTabs.map((tab) => {
+            const isActive = pathname === tab.href || (tab.href === "/contractor/dashboard" && pathname.startsWith("/contractor/leads"))
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 px-4 py-1.5 text-xs font-medium transition-colors",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <tab.icon className={cn("h-5 w-5", isActive && "text-primary")} />
+                {tab.label}
+              </Link>
+            )
+          })}
+        </nav>
+      )}
     </div>
   )
 }

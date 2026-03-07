@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
 import Link from "next/link"
-import { Wrench, ArrowLeft } from "lucide-react"
+import { Home, ArrowLeft, Target, MessageSquare, BarChart3 } from "lucide-react"
 import { Suspense } from "react"
 
 function AuthForm() {
@@ -95,29 +95,33 @@ function AuthForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen flex-col items-center bg-background px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to home
-          </Link>
-          <div className="mt-4 flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-              <Wrench className="h-7 w-7 text-primary" />
+        {/* Branding */}
+        <div className="mb-6 text-center">
+          <div className="flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
+              <Home className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
           <h1
-            className="mt-4 text-2xl font-bold text-foreground"
+            className="mt-3 text-2xl font-bold text-primary"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {isSignUp ? "Join XRoof" : "Welcome back"}
+            XRoof
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isSignUp ? "Sign up as a contractor to receive leads" : "Log in to your contractor account"}
+          <h2
+            className="mt-1 text-lg font-bold text-foreground"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {isSignUp ? "Join XRoof" : "Welcome Back"}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {isSignUp ? "Sign up as a contractor to receive leads" : "Sign in to manage your leads"}
           </p>
         </div>
 
+        {/* Form */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4">
             {isSignUp && (
@@ -129,7 +133,7 @@ function AuthForm() {
                     placeholder="Your name"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
                 <div>
@@ -139,7 +143,7 @@ function AuthForm() {
                     placeholder="e.g. 62704, 62521, 61820"
                     value={serviceZips}
                     onChange={(e) => setServiceZips(e.target.value)}
-                    className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">Separate multiple zip codes with commas</p>
                 </div>
@@ -149,10 +153,10 @@ function AuthForm() {
               <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
               <input
                 type="email"
-                placeholder="you@example.com"
+                placeholder="contractor@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
@@ -162,16 +166,16 @@ function AuthForm() {
                 placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <button
               onClick={isSignUp ? handleSignUp : handleLogin}
               disabled={loading}
-              className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="mt-1 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Please wait..." : isSignUp ? "Sign Up" : "Log In"}
+              {loading ? "Please wait..." : isSignUp ? "Sign Up" : "Login"}
             </button>
 
             {message && (
@@ -181,13 +185,40 @@ function AuthForm() {
             )}
           </div>
 
-          <div className="mt-6 border-t border-border pt-4 text-center">
+          <div className="mt-5 border-t border-border pt-4 text-center">
             <button
               onClick={() => { setIsSignUp(!isSignUp); setMessage("") }}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm font-medium text-primary hover:text-primary/80"
             >
-              {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign up"}
+              {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign Up"}
             </button>
+          </div>
+        </div>
+
+        {/* Why Join XRoof */}
+        <div className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 text-base font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+            Why Join XRoof?
+          </h3>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">Quality leads delivered directly to your dashboard</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <MessageSquare className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">Manage jobs and communicate with the admin team</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">Track your completed work and grow your business</p>
+            </div>
           </div>
         </div>
       </div>

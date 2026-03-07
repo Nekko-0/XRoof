@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight } from "lucide-react"
+import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall, BarChart3 } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -83,36 +83,94 @@ export default function ContractorDashboard() {
   if (loading) return <p className="p-6">Loading dashboard...</p>
 
   const stats = [
-    { label: "Assigned Jobs", value: assignedCount.toString(), icon: ClipboardList, color: "bg-blue-50 text-blue-700" },
-    { label: "Active Jobs", value: activeCount.toString(), icon: Briefcase, color: "bg-yellow-50 text-yellow-700" },
-    { label: "Completed Jobs", value: completedCount.toString(), icon: CheckCircle, color: "bg-green-50 text-green-700" },
+    { label: "Assigned", value: assignedCount.toString(), icon: ClipboardList, color: "bg-blue-50 text-blue-700" },
+    { label: "Active", value: activeCount.toString(), icon: Briefcase, color: "bg-yellow-50 text-yellow-700" },
+    { label: "Completed", value: completedCount.toString(), icon: CheckCircle, color: "bg-green-50 text-green-700" },
+  ]
+
+  const steps = [
+    {
+      num: "1",
+      title: "We Acquire Leads",
+      desc: "XRoof generates roofing leads through ads, SEO, partnerships, and call centers",
+      icon: Target,
+    },
+    {
+      num: "2",
+      title: "Leads Assigned to You",
+      desc: "Quality leads are assigned to your account with full homeowner details",
+      icon: Users,
+    },
+    {
+      num: "3",
+      title: "You Manage & Close",
+      desc: "Contact homeowners, provide quotes, and update job status through your dashboard",
+      icon: PhoneCall,
+    },
   ]
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      {/* Hero section */}
+      <div className="text-center lg:text-left">
         <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          Contractor Dashboard
+          XRoof
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          View your assigned jobs and submit reports.
+          Your Contractor Lead Platform
         </p>
       </div>
 
+      {/* CTA Buttons */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link
+          href="/contractor/leads"
+          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <FileText className="h-4 w-4" />
+          View My Leads
+        </Link>
+        <a
+          href="#dashboard-stats"
+          className="flex items-center justify-center gap-2 rounded-xl border-2 border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+        >
+          <BarChart3 className="h-4 w-4" />
+          My Dashboard
+        </a>
+      </div>
+
+      {/* How XRoof Works */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <h3 className="mb-4 text-base font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+          How XRoof Works
+        </h3>
+        <div className="flex flex-col gap-4">
+          {steps.map((step) => (
+            <div key={step.num} className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                {step.num}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                <p className="text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div id="dashboard-stats" className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm"
           >
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.color}`}>
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
               <stat.icon className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-            </div>
+            <p className="text-xl font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -137,42 +195,46 @@ export default function ContractorDashboard() {
             No jobs assigned to you yet. Check back soon!
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {myJobs.map((job) => (
               <div
                 key={job.id}
-                className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+                className="rounded-2xl border border-border border-l-4 border-l-primary bg-card p-4 shadow-sm"
               >
-                <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <p className="text-sm font-semibold text-foreground">{job.customer_name || "Customer"}</p>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-bold text-foreground">{job.customer_name || "Customer"}</p>
+                  <StatusBadge status={job.status} />
+                </div>
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
                     {job.address}, {job.zip_code}
-                  </div>
-                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                  </span>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                     {job.job_type}
                   </span>
-                  <StatusBadge status={job.status} />
                   {job.budget && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <DollarSign className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
                       ${job.budget.toLocaleString()}
-                    </div>
+                    </span>
                   )}
                 </div>
-                <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
+                {job.description && (
+                  <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-2">{job.description}</p>
+                )}
                 {job.photo_urls && job.photo_urls.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-2">
+                  <div className="mb-2 flex flex-wrap gap-1.5">
                     {job.photo_urls.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt={`Job photo ${i + 1}`} className="h-14 w-14 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                        <img src={url} alt={`Job photo ${i + 1}`} className="h-12 w-12 rounded-lg object-cover border border-border" />
                       </a>
                     ))}
                   </div>
                 )}
                 <Link
                   href="/contractor/report"
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Submit Report
                 </Link>
