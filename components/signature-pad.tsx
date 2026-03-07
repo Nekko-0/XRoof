@@ -20,19 +20,120 @@ type SignaturePadModalProps = {
   jobDetails?: JobDetails
 }
 
+function drawCertificateImage(
+  sigDataUrl: string,
+  details: JobDetails,
+  finalPrice: number,
+  dateStr: string
+): Promise<string> {
+  return new Promise((resolve) => {
+    const W = 800
+    const H = 700
+    const canvas = document.createElement("canvas")
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext("2d")!
+
+    // White background
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, W, H)
+
+    // Border
+    ctx.strokeStyle = "#e5e5e5"
+    ctx.lineWidth = 2
+    ctx.strokeRect(10, 10, W - 20, H - 20)
+
+    // Header
+    ctx.fillStyle = "#9ca3af"
+    ctx.font = "bold 11px Arial, sans-serif"
+    ctx.textAlign = "center"
+    ctx.fillText("JOB COMPLETION CERTIFICATE", W / 2, 50)
+
+    ctx.fillStyle = "#111827"
+    ctx.font = "bold 24px Arial, sans-serif"
+    ctx.fillText("XRoof", W / 2, 80)
+
+    // Divider
+    ctx.strokeStyle = "#e5e5e5"
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(40, 100)
+    ctx.lineTo(W - 40, 100)
+    ctx.stroke()
+
+    // Details
+    ctx.textAlign = "left"
+    const rows = [
+      ["Job Type", details.jobType],
+      ["Address", details.address],
+      ["Customer", details.customerName],
+      ["Contractor", details.contractorName],
+      ["Final Price", `$${finalPrice.toLocaleString()}`],
+      ["Date", dateStr],
+    ]
+
+    let y = 135
+    for (const [label, value] of rows) {
+      ctx.fillStyle = "#6b7280"
+      ctx.font = "14px Arial, sans-serif"
+      ctx.fillText(label, 60, y)
+
+      ctx.fillStyle = "#111827"
+      ctx.font = "bold 14px Arial, sans-serif"
+      ctx.textAlign = "right"
+      ctx.fillText(value, W - 60, y)
+      ctx.textAlign = "left"
+      y += 30
+    }
+
+    // Confirmation text
+    y += 15
+    ctx.fillStyle = "#4b5563"
+    ctx.font = "13px Arial, sans-serif"
+    ctx.textAlign = "left"
+    ctx.fillText("I confirm the above work has been completed to my satisfaction", 60, y)
+    y += 20
+    ctx.fillText(`and the final price of $${finalPrice.toLocaleString()} is accurate.`, 60, y)
+
+    // Signature area
+    y += 35
+    const sigX = 60
+    const sigW = W - 120
+    const sigH = 180
+
+    // Dashed border for signature area
+    ctx.strokeStyle = "#d1d5db"
+    ctx.lineWidth = 1
+    ctx.setLineDash([6, 4])
+    ctx.strokeRect(sigX, y, sigW, sigH)
+    ctx.setLineDash([])
+
+    // Draw signature image
+    const sigImg = new Image()
+    sigImg.onload = () => {
+      ctx.drawImage(sigImg, sigX + 5, y + 5, sigW - 10, sigH - 10)
+
+      // Label under signature
+      ctx.fillStyle = "#9ca3af"
+      ctx.font = "11px Arial, sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText("Customer Signature", sigX, y + sigH + 18)
+
+      resolve(canvas.toDataURL("image/png"))
+    }
+    sigImg.src = sigDataUrl
+  })
+}
+
 export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }: SignaturePadModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePad | null>(null)
-  const certificateRef = useRef<HTMLDivElement>(null)
-  const sigImageRef = useRef<HTMLImageElement>(null)
   const [isEmpty, setIsEmpty] = useState(true)
   const [finalPrice, setFinalPrice] = useState("")
-  const [showSigImage, setShowSigImage] = useState(false)
 
   useEffect(() => {
     if (!open) return
     setFinalPrice(jobDetails?.budget?.toString() || "")
-    setShowSigImage(false)
   }, [open, jobDetails?.budget])
 
   useEffect(() => {
@@ -71,37 +172,19 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
 
   const handleSave = async () => {
     if (!padRef.current || padRef.current.isEmpty()) return
-    if (!certificateRef.current) return
+    if (!jobDetails) return
 
     const price = parseFloat(finalPrice) || 0
-
-    // Convert signature canvas to an image so html2canvas can capture it
     const sigDataUrl = padRef.current.toDataURL("image/png")
-    if (sigImageRef.current) {
-      sigImageRef.current.src = sigDataUrl
-    }
-    // Show the image, hide the canvas for capture
-    setShowSigImage(true)
 
-    // Wait a tick for React to render the image
-    await new Promise((r) => setTimeout(r, 100))
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
 
-    try {
-      const html2canvas = (await import("html2canvas")).default
-      const certCanvas = await html2canvas(certificateRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-      })
-      const dataUrl = certCanvas.toDataURL("image/png")
-      onSave(dataUrl, price)
-    } catch (err) {
-      alert("Error capturing certificate. Please try again.")
-      console.error("html2canvas error:", err)
-    } finally {
-      // Restore canvas view
-      setShowSigImage(false)
-    }
+    const certDataUrl = await drawCertificateImage(sigDataUrl, jobDetails, price, today)
+    onSave(certDataUrl, price)
   }
 
   if (!open) return null
@@ -123,13 +206,10 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
           </button>
         </div>
 
-        {/* Certificate content (captured as image) */}
+        {/* Certificate preview + signature */}
         <div className="p-4">
-          <div
-            ref={certificateRef}
-            className="rounded-xl border-2 border-border bg-white p-5"
-          >
-            {/* Certificate header */}
+          {/* Certificate details preview */}
+          <div className="rounded-xl border-2 border-border bg-white p-5 mb-3">
             <div className="mb-4 border-b-2 border-gray-200 pb-3 text-center">
               <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
                 Job Completion Certificate
@@ -137,7 +217,6 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
               <p className="text-lg font-bold text-gray-900">XRoof</p>
             </div>
 
-            {/* Job details */}
             <div className="mb-4 space-y-1.5 text-sm text-gray-700">
               <div className="flex justify-between">
                 <span className="font-medium text-gray-500">Job Type</span>
@@ -165,7 +244,6 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
               </div>
             </div>
 
-            {/* Confirmation text */}
             <p className="mb-4 text-xs leading-relaxed text-gray-600">
               I confirm the above work has been completed to my satisfaction
               and the final price of{" "}
@@ -175,28 +253,19 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
               is accurate.
             </p>
 
-            {/* Signature area */}
+            {/* Signature canvas */}
             <div>
-              {/* Live canvas for drawing (hidden during capture) */}
               <canvas
                 ref={canvasRef}
                 className="w-full rounded-lg border-2 border-dashed border-gray-300 bg-white"
-                style={{ height: 150, touchAction: "none", display: showSigImage ? "none" : "block" }}
-              />
-              {/* Static image for html2canvas capture */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={sigImageRef}
-                alt="Signature"
-                className="w-full rounded-lg border-2 border-dashed border-gray-300"
-                style={{ height: 150, objectFit: "contain", display: showSigImage ? "block" : "none" }}
+                style={{ height: 150, touchAction: "none" }}
               />
               <p className="mt-1 text-[10px] text-gray-400">Customer Signature</p>
             </div>
           </div>
 
           {/* Editable price field */}
-          <div className="mt-3">
+          <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Adjust final price before signing
             </label>
