@@ -102,7 +102,7 @@ export default function ContractorReportPage() {
           Submit Report
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Submit a job report with pricing and scope of work.
+          Submit a job report with your pricing and scope of the work and I will generate you a detailed report you can use to close jobs. Report will be sent to your email.
         </p>
       </div>
 
