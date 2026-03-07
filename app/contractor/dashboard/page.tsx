@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall, BarChart3 } from "lucide-react"
+import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -17,6 +17,8 @@ type Job = {
   created_at: string
   customer_name: string
   photo_urls?: string[]
+  signature_url?: string | null
+  signed_at?: string | null
 }
 
 export default function ContractorDashboard() {
@@ -35,7 +37,7 @@ export default function ContractorDashboard() {
       // Fetch recent jobs assigned to this contractor
       const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, photo_urls")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, photo_urls, signature_url, signed_at")
         .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5)
@@ -126,11 +128,11 @@ export default function ContractorDashboard() {
           View My Leads
         </Link>
         <a
-          href="#dashboard-stats"
+          href="#completed-jobs"
           className="flex items-center justify-center gap-2 rounded-xl border-2 border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
         >
-          <BarChart3 className="h-4 w-4" />
-          My Dashboard
+          <CheckCircle className="h-4 w-4" />
+          Completed Jobs
         </a>
       </div>
 
@@ -227,12 +229,74 @@ export default function ContractorDashboard() {
                     ))}
                   </div>
                 )}
+                {job.signature_url && (
+                  <div className="mb-2">
+                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
+                      Signed Certificate{job.signed_at && ` — ${new Date(job.signed_at).toLocaleDateString()}`}
+                    </p>
+                    <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
+                      <img src={job.signature_url} alt="Certificate" className="h-16 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
+                    </a>
+                  </div>
+                )}
                 <Link
                   href="/contractor/report"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Submit Report
                 </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Completed Jobs with Certificates */}
+      <div id="completed-jobs">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Completed Jobs
+        </h3>
+        {myJobs.filter((j) => j.status === "Completed").length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
+            No completed jobs yet.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {myJobs.filter((j) => j.status === "Completed").map((job) => (
+              <div
+                key={`completed-${job.id}`}
+                className="rounded-2xl border border-border border-l-4 border-l-emerald-600 bg-card p-4 shadow-sm"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-bold text-foreground">{job.customer_name || "Customer"}</p>
+                  <StatusBadge status={job.status} />
+                </div>
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {job.address}, {job.zip_code}
+                  </span>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                    {job.job_type}
+                  </span>
+                  {job.budget && (
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      ${job.budget.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {job.signature_url ? (
+                  <div>
+                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
+                      Signed Certificate{job.signed_at && ` — ${new Date(job.signed_at).toLocaleDateString()}`}
+                    </p>
+                    <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
+                      <img src={job.signature_url} alt="Certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No certificate signed</p>
+                )}
               </div>
             ))}
           </div>

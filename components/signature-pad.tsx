@@ -24,12 +24,15 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePad | null>(null)
   const certificateRef = useRef<HTMLDivElement>(null)
+  const sigImageRef = useRef<HTMLImageElement>(null)
   const [isEmpty, setIsEmpty] = useState(true)
   const [finalPrice, setFinalPrice] = useState("")
+  const [showSigImage, setShowSigImage] = useState(false)
 
   useEffect(() => {
     if (!open) return
     setFinalPrice(jobDetails?.budget?.toString() || "")
+    setShowSigImage(false)
   }, [open, jobDetails?.budget])
 
   useEffect(() => {
@@ -72,17 +75,33 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
 
     const price = parseFloat(finalPrice) || 0
 
-    // Dynamically import html2canvas
-    const html2canvas = (await import("html2canvas")).default
+    // Convert signature canvas to an image so html2canvas can capture it
+    const sigDataUrl = padRef.current.toDataURL("image/png")
+    if (sigImageRef.current) {
+      sigImageRef.current.src = sigDataUrl
+    }
+    // Show the image, hide the canvas for capture
+    setShowSigImage(true)
 
-    const certCanvas = await html2canvas(certificateRef.current, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-      useCORS: true,
-    })
+    // Wait a tick for React to render the image
+    await new Promise((r) => setTimeout(r, 100))
 
-    const dataUrl = certCanvas.toDataURL("image/png")
-    onSave(dataUrl, price)
+    try {
+      const html2canvas = (await import("html2canvas")).default
+      const certCanvas = await html2canvas(certificateRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+      })
+      const dataUrl = certCanvas.toDataURL("image/png")
+      onSave(dataUrl, price)
+    } catch (err) {
+      alert("Error capturing certificate. Please try again.")
+      console.error("html2canvas error:", err)
+    } finally {
+      // Restore canvas view
+      setShowSigImage(false)
+    }
   }
 
   if (!open) return null
@@ -156,18 +175,27 @@ export function SignaturePadModal({ open, onClose, onSave, saving, jobDetails }:
               is accurate.
             </p>
 
-            {/* Signature canvas */}
+            {/* Signature area */}
             <div>
+              {/* Live canvas for drawing (hidden during capture) */}
               <canvas
                 ref={canvasRef}
                 className="w-full rounded-lg border-2 border-dashed border-gray-300 bg-white"
-                style={{ height: 150, touchAction: "none" }}
+                style={{ height: 150, touchAction: "none", display: showSigImage ? "none" : "block" }}
+              />
+              {/* Static image for html2canvas capture */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={sigImageRef}
+                alt="Signature"
+                className="w-full rounded-lg border-2 border-dashed border-gray-300"
+                style={{ height: 150, objectFit: "contain", display: showSigImage ? "block" : "none" }}
               />
               <p className="mt-1 text-[10px] text-gray-400">Customer Signature</p>
             </div>
           </div>
 
-          {/* Editable price field (outside the certificate capture area visually, but price value syncs) */}
+          {/* Editable price field */}
           <div className="mt-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Adjust final price before signing

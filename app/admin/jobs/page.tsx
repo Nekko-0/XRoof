@@ -18,6 +18,8 @@ type Lead = {
   created_at: string
   contractor_name: string | null
   contractor_email: string | null
+  signature_url: string | null
+  signed_at: string | null
 }
 
 type Contractor = {
@@ -54,7 +56,7 @@ export default function AdminLeadsPage() {
 
     const { data: jobsRaw } = await supabase
       .from("jobs")
-      .select("id, address, zip_code, job_type, description, budget, status, created_at, contractor_id, customer_name, customer_phone")
+      .select("id, address, zip_code, job_type, description, budget, status, created_at, contractor_id, customer_name, customer_phone, signature_url, signed_at")
       .order("created_at", { ascending: false })
 
     const { data: profiles } = await supabase
@@ -87,6 +89,8 @@ export default function AdminLeadsPage() {
       created_at: j.created_at,
       contractor_name: j.contractor_id ? (profileMap[j.contractor_id]?.username || "Unknown") : null,
       contractor_email: j.contractor_id ? (profileMap[j.contractor_id]?.email || "") : null,
+      signature_url: j.signature_url || null,
+      signed_at: j.signed_at || null,
     })))
 
     setLoading(false)
@@ -381,6 +385,18 @@ export default function AdminLeadsPage() {
 
                 {lead.description && (
                   <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
+                )}
+
+                {lead.signature_url && (
+                  <div className="mb-3">
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Signed Certificate{lead.signed_at && ` — ${new Date(lead.signed_at).toLocaleDateString()}`}
+                      {lead.budget && ` — $${lead.budget.toLocaleString()}`}
+                    </p>
+                    <a href={lead.signature_url} target="_blank" rel="noopener noreferrer">
+                      <img src={lead.signature_url} alt="Completion certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
+                    </a>
+                  </div>
                 )}
 
                 {lead.contractor_name ? (
