@@ -11,15 +11,17 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
         router.push("/auth")
-      } else if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      } else if (session.user.email?.toLowerCase() !== ADMIN_EMAIL) {
         router.push("/contractor/dashboard")
       } else {
         setChecked(true)
       }
     })
+
+    return () => subscription.unsubscribe()
   }, [router])
 
   if (!checked) {

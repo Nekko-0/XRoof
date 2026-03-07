@@ -19,6 +19,25 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const knownIdsRef = useRef<Set<string>>(new Set())
+  const initialLoadRef = useRef(true)
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  const sendBrowserNotification = (title: string, body: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+      })
+    }
+  }
 
   const fetchNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -32,6 +51,19 @@ export function NotificationBell() {
       .limit(10)
 
     if (data) {
+      // Detect new notifications and send browser push
+      if (!initialLoadRef.current) {
+        for (const n of data) {
+          if (!n.read && !knownIdsRef.current.has(n.id)) {
+            sendBrowserNotification(n.title, n.body)
+          }
+        }
+      }
+
+      // Update known IDs
+      knownIdsRef.current = new Set(data.map((n) => n.id))
+      initialLoadRef.current = false
+
       setNotifications(data)
       setUnreadCount(data.filter((n) => !n.read).length)
     }
@@ -39,7 +71,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
+    const interval = setInterval(fetchNotifications, 15000) // Poll every 15s
     return () => clearInterval(interval)
   }, [])
 
