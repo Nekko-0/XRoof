@@ -23,7 +23,7 @@ type Contractor = {
   id: string
   username: string
   company_name: string
-  zip_code: string
+  service_zips: string[]
 }
 
 export default function AdminLeadsPage() {
@@ -62,7 +62,7 @@ export default function AdminLeadsPage() {
 
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, username, company_name, role, zip_code")
+      .select("id, username, company_name, role, service_zips")
 
     const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
 
@@ -72,7 +72,7 @@ export default function AdminLeadsPage() {
         id: p.id,
         username: p.username || "Unknown",
         company_name: p.company_name || "",
-        zip_code: p.zip_code || "",
+        service_zips: p.service_zips || [],
       }))
     setContractors(contractorList)
 
@@ -159,8 +159,8 @@ export default function AdminLeadsPage() {
   }
 
   const getMatchingContractors = (jobZip: string) => {
-    const matching = contractors.filter((c) => c.zip_code === jobZip)
-    const others = contractors.filter((c) => c.zip_code !== jobZip)
+    const matching = contractors.filter((c) => c.service_zips.includes(jobZip))
+    const others = contractors.filter((c) => !c.service_zips.includes(jobZip))
     return { matching, others }
   }
 
@@ -363,7 +363,7 @@ export default function AdminLeadsPage() {
                         <optgroup label={`Zip ${lead.zip_code} (matching)`}>
                           {matching.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.zip_code}
+                              {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.service_zips.join(", ")}
                             </option>
                           ))}
                         </optgroup>
@@ -371,7 +371,7 @@ export default function AdminLeadsPage() {
                       <optgroup label="All contractors">
                         {others.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.zip_code || "No zip"}
+                            {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.service_zips.join(", ") || "No zip"}
                           </option>
                         ))}
                       </optgroup>

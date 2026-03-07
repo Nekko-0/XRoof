@@ -10,7 +10,7 @@ type ContractorProfile = {
   company_name: string
   email: string
   phone: string
-  zip_code: string
+  service_zips: string[]
   license_number: string
   active_jobs: number
 }
@@ -32,7 +32,7 @@ export default function AdminContractorsPage() {
       // Fetch all contractor profiles
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, company_name, email, phone, zip_code, license_number, role")
+        .select("id, username, company_name, email, phone, service_zips, license_number, role")
         .eq("role", "Contractor")
         .order("username")
 
@@ -60,7 +60,7 @@ export default function AdminContractorsPage() {
         company_name: p.company_name || "",
         email: p.email || "",
         phone: p.phone || "",
-        zip_code: p.zip_code || "",
+        service_zips: p.service_zips || [],
         license_number: p.license_number || "",
         active_jobs: jobCounts[p.id] || 0,
       })))
@@ -72,7 +72,7 @@ export default function AdminContractorsPage() {
   }, [])
 
   const filtered = zipFilter
-    ? contractors.filter((c) => c.zip_code.includes(zipFilter))
+    ? contractors.filter((c) => c.service_zips.some((z) => z.includes(zipFilter)))
     : contractors
 
   if (loading) return <p className="p-6">Loading contractors...</p>
@@ -124,10 +124,10 @@ export default function AdminContractorsPage() {
               </div>
 
               <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-                {c.zip_code && (
+                {c.service_zips.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-3 w-3" />
-                    Zip: {c.zip_code}
+                    Zips: {c.service_zips.join(", ")}
                   </div>
                 )}
                 {c.email && (
