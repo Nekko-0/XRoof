@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, UserPlus, Check, Plus, Phone } from "lucide-react"
+import { MapPin, DollarSign, UserPlus, Check, Plus, Phone, UserMinus } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Lead = {
@@ -17,11 +17,13 @@ type Lead = {
   status: string
   created_at: string
   contractor_name: string | null
+  contractor_email: string | null
 }
 
 type Contractor = {
   id: string
   username: string
+  email: string
   company_name: string
   service_zips: string[]
 }
@@ -62,7 +64,7 @@ export default function AdminLeadsPage() {
 
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, username, company_name, role, service_zips")
+      .select("id, username, email, company_name, role, service_zips")
 
     const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
 
@@ -71,6 +73,7 @@ export default function AdminLeadsPage() {
       .map((p: any) => ({
         id: p.id,
         username: p.username || "Unknown",
+        email: p.email || "",
         company_name: p.company_name || "",
         service_zips: p.service_zips || [],
       }))
@@ -88,6 +91,7 @@ export default function AdminLeadsPage() {
       status: j.status,
       created_at: j.created_at,
       contractor_name: j.contractor_id ? (profileMap[j.contractor_id]?.username || "Unknown") : null,
+      contractor_email: j.contractor_id ? (profileMap[j.contractor_id]?.email || "") : null,
     })))
 
     setLoading(false)
@@ -142,7 +146,28 @@ export default function AdminLeadsPage() {
       const contractor = contractors.find((c) => c.id === contractorId)
       setLeads(leads.map((j) =>
         j.id === jobId
-          ? { ...j, status: "Assigned", contractor_name: contractor?.username || "Unknown" }
+          ? { ...j, status: "Assigned", contractor_name: contractor?.username || "Unknown", contractor_email: contractor?.email || "" }
+          : j
+      ))
+    }
+    setAssigning(null)
+  }
+
+  const handleUnassign = async (jobId: string) => {
+    if (!confirm("Remove this contractor and reassign the lead?")) return
+
+    setAssigning(jobId)
+    const { error } = await supabase
+      .from("jobs")
+      .update({ contractor_id: null, status: "Pending" })
+      .eq("id", jobId)
+
+    if (error) {
+      alert("Error removing contractor: " + error.message)
+    } else {
+      setLeads(leads.map((j) =>
+        j.id === jobId
+          ? { ...j, status: "Pending", contractor_name: null, contractor_email: null }
           : j
       ))
     }
@@ -345,11 +370,22 @@ export default function AdminLeadsPage() {
                 )}
 
                 {lead.contractor_name ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
-                    <Check className="h-4 w-4 text-blue-600" />
-                    <span className="text-blue-700">
-                      Assigned to <strong>{lead.contractor_name}</strong>
-                    </span>
+                  <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-blue-600" />
+                      <span className="text-blue-700">
+                        Assigned to <strong>{lead.contractor_name}</strong>
+                        {lead.contractor_email && <span className="ml-1 font-normal">({lead.contractor_email})</span>}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleUnassign(lead.id)}
+                      disabled={assigning === lead.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                    >
+                      <UserMinus className="h-3.5 w-3.5" />
+                      {assigning === lead.id ? "Removing..." : "Remove"}
+                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
@@ -363,7 +399,7 @@ export default function AdminLeadsPage() {
                         <optgroup label={`Zip ${lead.zip_code} (matching)`}>
                           {matching.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.service_zips.join(", ")}
+                              {c.username} — {c.email}
                             </option>
                           ))}
                         </optgroup>
@@ -371,7 +407,7 @@ export default function AdminLeadsPage() {
                       <optgroup label="All contractors">
                         {others.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.service_zips.join(", ") || "No zip"}
+                            {c.username} — {c.email}
                           </option>
                         ))}
                       </optgroup>
