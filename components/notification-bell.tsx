@@ -19,25 +19,49 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const knownIdsRef = useRef<Set<string>>(new Set())
-  const initialLoadRef = useRef(true)
 
-  // Request notification permission on mount
+  // Subscribe to Web Push on mount
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission()
-    }
-  }, [])
+    const subscribeToPush = async () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return
 
-  const sendBrowserNotification = (title: string, body: string) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(title, {
-        body,
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-      })
+      try {
+        // Request notification permission
+        const permission = await Notification.requestPermission()
+        if (permission !== "granted") return
+
+        const reg = await navigator.serviceWorker.ready
+        let sub = await reg.pushManager.getSubscription()
+
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          })
+        }
+
+        // Get auth token to send with API request
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        // Save subscription to server
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ subscription: sub.toJSON() }),
+        })
+      } catch (err) {
+        // Push subscription failed — not critical, in-app notifications still work
+        console.warn("Push subscription failed:", err)
+      }
     }
-  }
+
+    subscribeToPush()
+  }, [])
 
   const fetchNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -51,19 +75,6 @@ export function NotificationBell() {
       .limit(10)
 
     if (data) {
-      // Detect new notifications and send browser push
-      if (!initialLoadRef.current) {
-        for (const n of data) {
-          if (!n.read && !knownIdsRef.current.has(n.id)) {
-            sendBrowserNotification(n.title, n.body)
-          }
-        }
-      }
-
-      // Update known IDs
-      knownIdsRef.current = new Set(data.map((n) => n.id))
-      initialLoadRef.current = false
-
       setNotifications(data)
       setUnreadCount(data.filter((n) => !n.read).length)
     }
@@ -71,7 +82,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 15000) // Poll every 15s
+    const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [])
 

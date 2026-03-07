@@ -147,13 +147,22 @@ export default function AdminLeadsPage() {
       ))
 
       // Send in-app notification to contractor
+      const notifTitle = "New Lead Assigned"
+      const notifBody = `New lead: ${lead?.job_type} at ${lead?.address}`
       await supabase.from("notifications").insert({
         user_id: contractorId,
         type: "lead_assigned",
-        title: "New Lead Assigned",
-        body: `New lead: ${lead?.job_type} at ${lead?.address}`,
+        title: notifTitle,
+        body: notifBody,
         read: false,
       })
+
+      // Send real push notification to contractor's phone
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: contractorId, title: notifTitle, body: notifBody }),
+      }).catch(() => {})
     }
     setAssigning(null)
   }
