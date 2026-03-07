@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, FileText, Phone, Home as HomeIcon } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, Home as HomeIcon, CheckCircle } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -28,6 +28,7 @@ export default function MyJobsPage() {
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [completing, setCompleting] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -47,6 +48,23 @@ export default function MyJobsPage() {
 
     fetchJobs()
   }, [])
+
+  const handleComplete = async (jobId: string) => {
+    if (!confirm("Mark this job as completed?")) return
+
+    setCompleting(jobId)
+    const { error } = await supabase
+      .from("jobs")
+      .update({ status: "Completed" })
+      .eq("id", jobId)
+
+    if (error) {
+      alert("Error: " + error.message)
+    } else {
+      setJobs(jobs.map((j) => j.id === jobId ? { ...j, status: "Completed" } : j))
+    }
+    setCompleting(null)
+  }
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -153,6 +171,16 @@ export default function MyJobsPage() {
                     <FileText className="h-3 w-3" />
                     Report
                   </Link>
+                  {job.status !== "Completed" && (
+                    <button
+                      onClick={() => handleComplete(job.id)}
+                      disabled={completing === job.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      {completing === job.id ? "..." : "Complete"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
