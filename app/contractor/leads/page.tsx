@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, FileText, Phone, Home as HomeIcon, CheckCircle } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -161,7 +161,14 @@ export default function MyJobsPage() {
                       className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
                     >
                       <Phone className="h-3 w-3" />
-                      Contact
+                      Call
+                    </a>
+                    <a
+                      href={`sms:${job.customer_phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                      Text
                     </a>
                   )}
                   <Link
