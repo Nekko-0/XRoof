@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, MessageSquare } from "lucide-react"
+import { MapPin, DollarSign, FileText } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -15,8 +15,9 @@ type Job = {
   budget: number | null
   status: string
   created_at: string
+  customer_name: string
+  customer_phone: string
   photo_urls?: string[]
-  homeowner: { username: string } | null
 }
 
 export default function MyJobsPage() {
@@ -34,31 +35,13 @@ export default function MyJobsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Fetch jobs assigned to this contractor
-      const { data: jobsRaw, error } = await supabase
+      const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id, photo_urls")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls")
         .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
 
-      if (error) {
-        console.error("Error fetching jobs:", error.message)
-      } else {
-        // Fetch homeowner profiles separately
-        const ownerIds = [...new Set((jobsRaw || []).map((j: any) => j.homeowner_id).filter(Boolean))]
-        let profileMap: Record<string, any> = {}
-        if (ownerIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, username")
-            .in("id", ownerIds)
-          profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-        }
-        setJobs((jobsRaw || []).map((j: any) => ({
-          ...j,
-          homeowner: j.homeowner_id ? profileMap[j.homeowner_id] || null : null,
-        })))
-      }
+      setJobs(jobsRaw || [])
       setLoading(false)
     }
 
@@ -99,6 +82,7 @@ export default function MyJobsPage() {
               className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
             >
               <div className="mb-3 flex flex-wrap items-center gap-3">
+                <p className="text-sm font-semibold text-foreground">{job.customer_name || "Customer"}</p>
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5" />
                   {job.address}, {job.zip_code}
@@ -113,13 +97,8 @@ export default function MyJobsPage() {
                     ${job.budget.toLocaleString()}
                   </div>
                 )}
-                <span className="text-xs text-muted-foreground">Posted {timeAgo(job.created_at)}</span>
+                <span className="text-xs text-muted-foreground">{timeAgo(job.created_at)}</span>
               </div>
-              {job.homeowner && (
-                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Homeowner: {job.homeowner.username}
-                </p>
-              )}
               <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
               {job.photo_urls && job.photo_urls.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -130,15 +109,13 @@ export default function MyJobsPage() {
                   ))}
                 </div>
               )}
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/contractor/messages"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Message Homeowner
-                </Link>
-              </div>
+              <Link
+                href="/contractor/report"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Submit Report
+              </Link>
             </div>
           ))}
         </div>

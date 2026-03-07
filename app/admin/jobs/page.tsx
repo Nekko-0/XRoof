@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, UserPlus, Check } from "lucide-react"
+import { MapPin, DollarSign, UserPlus, Check, Plus, Phone } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
-type Job = {
+type Lead = {
   id: string
+  customer_name: string
+  customer_phone: string
   address: string
   zip_code: string
   job_type: string
@@ -14,8 +16,6 @@ type Job = {
   budget: number | null
   status: string
   created_at: string
-  photo_urls?: string[]
-  homeowner_name: string
   contractor_name: string | null
 }
 
@@ -26,67 +26,102 @@ type Contractor = {
   zip_code: string
 }
 
-export default function AdminJobsPage() {
+export default function AdminLeadsPage() {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const [jobs, setJobs] = useState<Job[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState<string | null>(null)
   const [selectedContractor, setSelectedContractor] = useState<Record<string, string>>({})
   const [statusFilter, setStatusFilter] = useState("all")
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
+  // New lead form
+  const [newLead, setNewLead] = useState({
+    customer_name: "",
+    customer_phone: "",
+    address: "",
+    zip_code: "",
+    job_type: "",
+    description: "",
+    budget: "",
+  })
 
-      // Fetch all jobs
-      const { data: jobsRaw } = await supabase
-        .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id, contractor_id, photo_urls")
-        .order("created_at", { ascending: false })
+  const fetchData = async () => {
+    setLoading(true)
 
-      // Fetch all user profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, username, company_name, role, zip_code")
+    const { data: jobsRaw } = await supabase
+      .from("jobs")
+      .select("id, address, zip_code, job_type, description, budget, status, created_at, contractor_id, customer_name, customer_phone")
+      .order("created_at", { ascending: false })
 
-      const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, username, company_name, role, zip_code")
 
-      // Set contractors list
-      const contractorList = (profiles || [])
-        .filter((p: any) => p.role === "Contractor")
-        .map((p: any) => ({
-          id: p.id,
-          username: p.username || "Unknown",
-          company_name: p.company_name || "",
-          zip_code: p.zip_code || "",
-        }))
-      setContractors(contractorList)
+    const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
 
-      // Map jobs with names
-      setJobs((jobsRaw || []).map((j: any) => ({
-        id: j.id,
-        address: j.address,
-        zip_code: j.zip_code,
-        job_type: j.job_type,
-        description: j.description,
-        budget: j.budget,
-        status: j.status,
-        created_at: j.created_at,
-        photo_urls: j.photo_urls,
-        homeowner_name: profileMap[j.homeowner_id]?.username || "Unknown",
-        contractor_name: j.contractor_id ? (profileMap[j.contractor_id]?.username || "Unknown") : null,
-      })))
+    const contractorList = (profiles || [])
+      .filter((p: any) => p.role === "Contractor")
+      .map((p: any) => ({
+        id: p.id,
+        username: p.username || "Unknown",
+        company_name: p.company_name || "",
+        zip_code: p.zip_code || "",
+      }))
+    setContractors(contractorList)
 
-      setLoading(false)
+    setLeads((jobsRaw || []).map((j: any) => ({
+      id: j.id,
+      customer_name: j.customer_name || "Unknown",
+      customer_phone: j.customer_phone || "",
+      address: j.address,
+      zip_code: j.zip_code,
+      job_type: j.job_type,
+      description: j.description,
+      budget: j.budget,
+      status: j.status,
+      created_at: j.created_at,
+      contractor_name: j.contractor_id ? (profileMap[j.contractor_id]?.username || "Unknown") : null,
+    })))
+
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const handleAddLead = async () => {
+    if (!newLead.customer_name || !newLead.address || !newLead.zip_code || !newLead.job_type) {
+      alert("Please fill in customer name, address, zip code, and job type")
+      return
     }
 
-    fetchData()
-  }, [])
+    setSaving(true)
+    const { error } = await supabase.from("jobs").insert({
+      customer_name: newLead.customer_name,
+      customer_phone: newLead.customer_phone,
+      address: newLead.address,
+      zip_code: newLead.zip_code,
+      job_type: newLead.job_type,
+      description: newLead.description,
+      budget: newLead.budget ? Number(newLead.budget) : null,
+      status: "Pending",
+    })
+
+    if (error) {
+      alert("Error adding lead: " + error.message)
+    } else {
+      setNewLead({ customer_name: "", customer_phone: "", address: "", zip_code: "", job_type: "", description: "", budget: "" })
+      setShowForm(false)
+      await fetchData()
+    }
+    setSaving(false)
+  }
 
   const handleAssign = async (jobId: string) => {
     const contractorId = selectedContractor[jobId]
@@ -102,10 +137,10 @@ export default function AdminJobsPage() {
       .eq("id", jobId)
 
     if (error) {
-      alert("Error assigning job: " + error.message)
+      alert("Error assigning lead: " + error.message)
     } else {
       const contractor = contractors.find((c) => c.id === contractorId)
-      setJobs(jobs.map((j) =>
+      setLeads(leads.map((j) =>
         j.id === jobId
           ? { ...j, status: "Assigned", contractor_name: contractor?.username || "Unknown" }
           : j
@@ -123,29 +158,135 @@ export default function AdminJobsPage() {
     return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? "s" : ""} ago`
   }
 
-  // Filter contractors by matching zip code for a job
   const getMatchingContractors = (jobZip: string) => {
     const matching = contractors.filter((c) => c.zip_code === jobZip)
     const others = contractors.filter((c) => c.zip_code !== jobZip)
     return { matching, others }
   }
 
-  const filteredJobs = statusFilter === "all"
-    ? jobs
-    : jobs.filter((j) => j.status === statusFilter)
+  const filteredLeads = statusFilter === "all"
+    ? leads
+    : leads.filter((j) => j.status === statusFilter)
 
-  if (loading) return <p className="p-6">Loading jobs...</p>
+  if (loading) return <p className="p-6">Loading leads...</p>
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          All Jobs
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          View all posted jobs and assign contractors.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+            Leads
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add leads and assign them to contractors.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" />
+          Add Lead
+        </button>
       </div>
+
+      {/* Add Lead Form */}
+      {showForm && (
+        <div className="rounded-2xl border border-primary/20 bg-card p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">New Lead</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Customer Name *</label>
+              <input
+                value={newLead.customer_name}
+                onChange={(e) => setNewLead({ ...newLead, customer_name: e.target.value })}
+                placeholder="John Smith"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Phone</label>
+              <input
+                value={newLead.customer_phone}
+                onChange={(e) => setNewLead({ ...newLead, customer_phone: e.target.value })}
+                placeholder="(555) 123-4567"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Address *</label>
+              <input
+                value={newLead.address}
+                onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
+                placeholder="123 Main St"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Zip Code *</label>
+              <input
+                value={newLead.zip_code}
+                onChange={(e) => setNewLead({ ...newLead, zip_code: e.target.value })}
+                placeholder="90210"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Job Type *</label>
+              <select
+                value={newLead.job_type}
+                onChange={(e) => setNewLead({ ...newLead, job_type: e.target.value })}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">Select...</option>
+                <option value="Roof Replacement">Roof Replacement</option>
+                <option value="Roof Repair">Roof Repair</option>
+                <option value="Roof Inspection">Roof Inspection</option>
+                <option value="Gutter Installation">Gutter Installation</option>
+                <option value="Gutter Repair">Gutter Repair</option>
+                <option value="New Construction">New Construction</option>
+                <option value="Storm Damage">Storm Damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Budget</label>
+              <input
+                type="number"
+                value={newLead.budget}
+                onChange={(e) => setNewLead({ ...newLead, budget: e.target.value })}
+                placeholder="5000"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-foreground">Description</label>
+              <textarea
+                value={newLead.description}
+                onChange={(e) => setNewLead({ ...newLead, description: e.target.value })}
+                placeholder="Describe the job..."
+                rows={2}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={handleAddLead}
+              disabled={saving}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Lead"}
+            </button>
+            <button
+              onClick={() => setShowForm(false)}
+              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter */}
       <div className="flex flex-wrap gap-2">
@@ -159,73 +300,67 @@ export default function AdminJobsPage() {
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
-            {f === "all" ? "All" : f} {f !== "all" && `(${jobs.filter((j) => j.status === f).length})`}
+            {f === "all" ? "All" : f} {f !== "all" && `(${leads.filter((j) => j.status === f).length})`}
           </button>
         ))}
       </div>
 
-      {filteredJobs.length === 0 ? (
+      {filteredLeads.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
-          No jobs found.
+          No leads found. Click &ldquo;Add Lead&rdquo; to create one.
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredJobs.map((job) => {
-            const { matching, others } = getMatchingContractors(job.zip_code)
+          {filteredLeads.map((lead) => {
+            const { matching, others } = getMatchingContractors(lead.zip_code)
             return (
-              <div
-                key={job.id}
-                className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-              >
+              <div key={lead.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <p className="text-sm font-semibold text-foreground">{job.homeowner_name}</p>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {job.address}, {job.zip_code}
-                  </div>
-                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                    {job.job_type}
-                  </span>
-                  <StatusBadge status={job.status} />
-                  {job.budget && (
+                  <p className="text-sm font-semibold text-foreground">{lead.customer_name}</p>
+                  {lead.customer_phone && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <DollarSign className="h-3.5 w-3.5" />
-                      ${job.budget.toLocaleString()}
+                      <Phone className="h-3.5 w-3.5" />
+                      {lead.customer_phone}
                     </div>
                   )}
-                  <span className="text-xs text-muted-foreground">{timeAgo(job.created_at)}</span>
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {lead.address}, {lead.zip_code}
+                  </div>
+                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                    {lead.job_type}
+                  </span>
+                  <StatusBadge status={lead.status} />
+                  {lead.budget && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <DollarSign className="h-3.5 w-3.5" />
+                      ${lead.budget.toLocaleString()}
+                    </div>
+                  )}
+                  <span className="text-xs text-muted-foreground">{timeAgo(lead.created_at)}</span>
                 </div>
 
-                <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
-
-                {job.photo_urls && job.photo_urls.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {job.photo_urls.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt={`Photo ${i + 1}`} className="h-14 w-14 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
-                      </a>
-                    ))}
-                  </div>
+                {lead.description && (
+                  <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
                 )}
 
-                {/* Assignment section */}
-                {job.contractor_name ? (
+                {lead.contractor_name ? (
                   <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
                     <Check className="h-4 w-4 text-blue-600" />
                     <span className="text-blue-700">
-                      Assigned to <strong>{job.contractor_name}</strong>
+                      Assigned to <strong>{lead.contractor_name}</strong>
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
                     <select
-                      value={selectedContractor[job.id] || ""}
-                      onChange={(e) => setSelectedContractor({ ...selectedContractor, [job.id]: e.target.value })}
+                      value={selectedContractor[lead.id] || ""}
+                      onChange={(e) => setSelectedContractor({ ...selectedContractor, [lead.id]: e.target.value })}
                       className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
                       <option value="">Select contractor...</option>
                       {matching.length > 0 && (
-                        <optgroup label={`Zip ${job.zip_code} (matching)`}>
+                        <optgroup label={`Zip ${lead.zip_code} (matching)`}>
                           {matching.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.username} {c.company_name ? `(${c.company_name})` : ""} — {c.zip_code}
@@ -242,12 +377,12 @@ export default function AdminJobsPage() {
                       </optgroup>
                     </select>
                     <button
-                      onClick={() => handleAssign(job.id)}
-                      disabled={assigning === job.id || !selectedContractor[job.id]}
+                      onClick={() => handleAssign(lead.id)}
+                      disabled={assigning === lead.id || !selectedContractor[lead.id]}
                       className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
-                      {assigning === job.id ? "Assigning..." : "Assign"}
+                      {assigning === lead.id ? "Assigning..." : "Assign"}
                     </button>
                   </div>
                 )}

@@ -17,36 +17,30 @@ interface NavItem {
 
 interface DashboardShellProps {
   children: React.ReactNode
-  role: "homeowner" | "contractor" | "admin"
+  role: "contractor" | "admin"
 }
-
-const homeownerNav: NavItem[] = [
-  { label: "Dashboard", href: "/homeowner/dashboard", icon: Home },
-  { label: "Post Job", href: "/homeowner/post-job", icon: FileText },
-  { label: "Messages", href: "/homeowner/messages", icon: MessageSquare },
-  { label: "Profile", href: "/homeowner/profile", icon: User },
-]
 
 const contractorNav: NavItem[] = [
   { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
   { label: "My Jobs", href: "/contractor/leads", icon: FileText },
+  { label: "Submit Report", href: "/contractor/report", icon: FileText },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
-  { label: "All Jobs", href: "/admin/jobs", icon: ClipboardList },
+  { label: "Leads", href: "/admin/jobs", icon: ClipboardList },
   { label: "Contractors", href: "/admin/contractors", icon: Users },
-  { label: "Profile", href: "/contractor/profile", icon: User },
+  { label: "Reports", href: "/admin/reports", icon: FileText },
 ]
 
 export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const navItems = role === "admin" ? adminNav : role === "homeowner" ? homeownerNav : contractorNav
-  const roleLabel = role === "admin" ? "Admin" : role === "homeowner" ? "Homeowner" : "Contractor"
+  const navItems = role === "admin" ? adminNav : contractorNav
+  const roleLabel = role === "admin" ? "Admin" : "Contractor"
 
   const handleLogout = async () => {
     const supabase = createBrowserClient(

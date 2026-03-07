@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera, ImagePlus, Users } from "lucide-react"
+import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X, Shield, ShieldCheck, Camera, ImagePlus } from "lucide-react"
 
 type Profile = {
   company_name: string
@@ -17,12 +17,6 @@ type Profile = {
   portfolio_urls: string[]
 }
 
-type PairedClient = {
-  username: string
-  job_type: string
-  status: string
-}
-
 export default function ContractorProfilePage() {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +29,6 @@ export default function ContractorProfilePage() {
   const [isNew, setIsNew] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [portfolioUploading, setPortfolioUploading] = useState(false)
-  const [clients, setClients] = useState<PairedClient[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const portfolioInputRef = useRef<HTMLInputElement>(null)
 
@@ -79,28 +72,6 @@ export default function ContractorProfilePage() {
           profile_photo_url: data.profile_photo_url || "",
           portfolio_urls: data.portfolio_urls || [],
         })
-      }
-
-      // Fetch paired clients
-      const { data: jobs } = await supabase
-        .from("jobs")
-        .select("homeowner_id, job_type, status")
-        .eq("contractor_id", user.id)
-
-      if (jobs && jobs.length > 0) {
-        const ownerIds = [...new Set(jobs.map((j: any) => j.homeowner_id).filter(Boolean))]
-        if (ownerIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, username")
-            .in("id", ownerIds)
-          const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-          setClients(jobs.map((j: any) => ({
-            username: profileMap[j.homeowner_id]?.username || "Homeowner",
-            job_type: j.job_type,
-            status: j.status,
-          })))
-        }
       }
 
       setLoading(false)
@@ -277,29 +248,6 @@ export default function ContractorProfilePage() {
           </button>
         )}
       </div>
-
-      {/* Paired Clients */}
-      {clients.length > 0 && (
-        <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            <Users className="h-4 w-4" />
-            Your Clients
-          </h3>
-          <div className="flex flex-col gap-2">
-            {clients.map((client, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/30 px-4 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{client.username}</p>
-                  <p className="text-xs text-muted-foreground">{client.job_type}</p>
-                </div>
-                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                  {client.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-6 flex items-center gap-4">

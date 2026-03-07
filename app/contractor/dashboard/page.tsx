@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, MessageSquare, ArrowRight } from "lucide-react"
+import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -15,8 +15,8 @@ type Job = {
   budget: number | null
   status: string
   created_at: string
+  customer_name: string
   photo_urls?: string[]
-  homeowner: { username: string } | null
 }
 
 export default function ContractorDashboard() {
@@ -40,27 +40,12 @@ export default function ContractorDashboard() {
       // Fetch recent jobs assigned to this contractor
       const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id, photo_urls")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, photo_urls")
         .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5)
 
-      // Fetch homeowner profiles separately
-      const ownerIds = [...new Set((jobsRaw || []).map((j: any) => j.homeowner_id).filter(Boolean))]
-      let profileMap: Record<string, any> = {}
-      if (ownerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", ownerIds)
-        profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-      }
-      const jobs = (jobsRaw || []).map((j: any) => ({
-        ...j,
-        homeowner: j.homeowner_id ? profileMap[j.homeowner_id] || null : null,
-      }))
-
-      setMyJobs(jobs)
+      setMyJobs(jobsRaw || [])
 
       // Count assigned jobs
       const { count: assigned } = await supabase
@@ -110,7 +95,7 @@ export default function ContractorDashboard() {
           Contractor Dashboard
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          View your assigned jobs and communications.
+          View your assigned jobs and submit reports.
         </p>
       </div>
 
@@ -159,6 +144,7 @@ export default function ContractorDashboard() {
                 className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
               >
                 <div className="mb-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm font-semibold text-foreground">{job.customer_name || "Customer"}</p>
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <MapPin className="h-3.5 w-3.5" />
                     {job.address}, {job.zip_code}
@@ -174,11 +160,6 @@ export default function ContractorDashboard() {
                     </div>
                   )}
                 </div>
-                {job.homeowner && (
-                  <p className="mb-1 text-xs font-medium text-muted-foreground">
-                    Homeowner: {job.homeowner.username}
-                  </p>
-                )}
                 <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
                 {job.photo_urls && job.photo_urls.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
@@ -190,11 +171,10 @@ export default function ContractorDashboard() {
                   </div>
                 )}
                 <Link
-                  href="/contractor/messages"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                  href="/contractor/report"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Message Homeowner
+                  Submit Report
                 </Link>
               </div>
             ))}

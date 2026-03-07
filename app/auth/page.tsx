@@ -1,16 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
 import Link from "next/link"
-import { Home, Wrench, ArrowLeft } from "lucide-react"
+import { Wrench, ArrowLeft } from "lucide-react"
 import { Suspense } from "react"
 
 function AuthForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const role = searchParams.get("role") || "homeowner"
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,10 +21,6 @@ function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(true)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
-
-  const roleLabel = role === "contractor" ? "Contractor" : "Homeowner"
-  const RoleIcon = role === "contractor" ? Wrench : Home
-  const dashboardPath = role === "contractor" ? "/contractor/dashboard" : "/homeowner/dashboard"
 
   const handleSignUp = async () => {
     if (!email || !password) {
@@ -42,7 +36,7 @@ function AuthForm() {
       options: {
         data: {
           username: username || email.split("@")[0],
-          role: roleLabel,
+          role: "Contractor",
         },
       },
     })
@@ -54,10 +48,8 @@ function AuthForm() {
     }
 
     if (data.session) {
-      // Auto-confirmed — redirect immediately
-      router.push(dashboardPath)
+      router.push("/contractor/dashboard")
     } else if (data.user) {
-      // Email confirmation required
       setMessage("Check your email for a confirmation link, then log in!")
       setLoading(false)
       setIsSignUp(false)
@@ -84,22 +76,11 @@ function AuthForm() {
     }
 
     if (data.user) {
-      // Check if admin
       if (data.user.email?.toLowerCase() === "contact@leons-roofing.com") {
         router.push("/admin/dashboard")
         return
       }
-
-      // Check existing role and redirect
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single()
-
-      const userRole = profile?.role?.toLowerCase() || role
-      const path = userRole === "contractor" ? "/contractor/dashboard" : "/homeowner/dashboard"
-      router.push(path)
+      router.push("/contractor/dashboard")
     }
   }
 
@@ -113,17 +94,17 @@ function AuthForm() {
           </Link>
           <div className="mt-4 flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-              <RoleIcon className="h-7 w-7 text-primary" />
+              <Wrench className="h-7 w-7 text-primary" />
             </div>
           </div>
           <h1
             className="mt-4 text-2xl font-bold text-foreground"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {isSignUp ? "Join XRoof" : "Welcome back"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isSignUp ? `Sign up as a ${roleLabel}` : `Log in to your ${roleLabel} account`}
+            {isSignUp ? "Sign up as a contractor to receive leads" : "Log in to your contractor account"}
           </p>
         </div>
 

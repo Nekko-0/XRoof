@@ -13,7 +13,7 @@ type RecentJob = {
   job_type: string
   status: string
   created_at: string
-  homeowner_name: string
+  customer_name: string
 }
 
 export default function AdminDashboard() {
@@ -62,21 +62,12 @@ export default function AdminDashboard() {
       // Get recent pending jobs
       const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, status, created_at, homeowner_id")
+        .select("id, address, zip_code, job_type, status, created_at, customer_name")
         .in("status", ["Pending", "Assigned"])
         .order("created_at", { ascending: false })
         .limit(10)
 
       if (jobsRaw && jobsRaw.length > 0) {
-        const ownerIds = [...new Set(jobsRaw.map((j: any) => j.homeowner_id).filter(Boolean))]
-        let profileMap: Record<string, any> = {}
-        if (ownerIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, username")
-            .in("id", ownerIds)
-          profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-        }
         setRecentJobs(jobsRaw.map((j: any) => ({
           id: j.id,
           address: j.address,
@@ -84,7 +75,7 @@ export default function AdminDashboard() {
           job_type: j.job_type,
           status: j.status,
           created_at: j.created_at,
-          homeowner_name: profileMap[j.homeowner_id]?.username || "Unknown",
+          customer_name: j.customer_name || "Unknown",
         })))
       }
 
@@ -97,7 +88,7 @@ export default function AdminDashboard() {
   if (loading) return <p className="p-6">Loading admin dashboard...</p>
 
   const stats = [
-    { label: "Pending Jobs", value: pendingCount.toString(), icon: ClipboardList, color: "bg-amber-50 text-amber-700" },
+    { label: "Pending Leads", value: pendingCount.toString(), icon: ClipboardList, color: "bg-amber-50 text-amber-700" },
     { label: "Total Contractors", value: contractorCount.toString(), icon: Users, color: "bg-primary/10 text-primary" },
     { label: "Assigned Today", value: assignedTodayCount.toString(), icon: CheckCircle, color: "bg-green-50 text-green-700" },
   ]
@@ -118,7 +109,7 @@ export default function AdminDashboard() {
           Admin Dashboard
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage all jobs and assign contractors.
+          Manage leads and assign contractors.
         </p>
       </div>
 
@@ -144,7 +135,7 @@ export default function AdminDashboard() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Recent Jobs
+            Recent Leads
           </h3>
           <Link
             href="/admin/jobs"
@@ -157,7 +148,7 @@ export default function AdminDashboard() {
 
         {recentJobs.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
-            No jobs posted yet.
+            No leads yet.
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -168,7 +159,7 @@ export default function AdminDashboard() {
               >
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{job.homeowner_name}</p>
+                    <p className="text-sm font-medium text-foreground">{job.customer_name}</p>
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                       {job.job_type}
                     </span>
