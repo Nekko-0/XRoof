@@ -144,11 +144,21 @@ export default function AdminLeadsPage() {
       alert("Error assigning lead: " + error.message)
     } else {
       const contractor = contractors.find((c) => c.id === contractorId)
+      const lead = leads.find((j) => j.id === jobId)
       setLeads(leads.map((j) =>
         j.id === jobId
           ? { ...j, status: "Assigned", contractor_name: contractor?.username || "Unknown", contractor_email: contractor?.email || "" }
           : j
       ))
+
+      // Send in-app notification to contractor
+      await supabase.from("notifications").insert({
+        user_id: contractorId,
+        type: "lead_assigned",
+        title: "New Lead Assigned",
+        body: `New lead: ${lead?.job_type} at ${lead?.address}`,
+        read: false,
+      })
     }
     setAssigning(null)
   }

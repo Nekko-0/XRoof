@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, PenTool } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
+import { SignaturePadModal } from "@/components/signature-pad"
 
 type Job = {
   id: string
@@ -18,6 +19,7 @@ type Job = {
   customer_name: string
   customer_phone: string
   photo_urls?: string[]
+  signature_url?: string | null
 }
 
 export default function MyJobsPage() {
@@ -29,6 +31,8 @@ export default function MyJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState<string | null>(null)
+  const [signingJob, setSigningJob] = useState<string | null>(null)
+  const [savingSignature, setSavingSignature] = useState(false)
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -38,7 +42,7 @@ export default function MyJobsPage() {
 
       const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url")
         .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -64,6 +68,48 @@ export default function MyJobsPage() {
       setJobs(jobs.map((j) => j.id === jobId ? { ...j, status: "Completed" } : j))
     }
     setCompleting(null)
+  }
+
+  const handleSaveSignature = async (dataUrl: string) => {
+    if (!signingJob) return
+    setSavingSignature(true)
+
+    // Convert data URL to blob
+    const res = await fetch(dataUrl)
+    const blob = await res.blob()
+    const fileName = `${signingJob}-${Date.now()}.png`
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from("signatures")
+      .upload(fileName, blob, { contentType: "image/png" })
+
+    if (uploadError) {
+      alert("Error uploading signature: " + uploadError.message)
+      setSavingSignature(false)
+      return
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("signatures")
+      .getPublicUrl(fileName)
+
+    const signatureUrl = urlData.publicUrl
+
+    // Update job record
+    const { error: updateError } = await supabase
+      .from("jobs")
+      .update({ signature_url: signatureUrl })
+      .eq("id", signingJob)
+
+    if (updateError) {
+      alert("Error saving signature: " + updateError.message)
+    } else {
+      setJobs(jobs.map((j) => j.id === signingJob ? { ...j, signature_url: signatureUrl } : j))
+      setSigningJob(null)
+    }
+    setSavingSignature(false)
   }
 
   const timeAgo = (dateStr: string) => {
@@ -144,6 +190,14 @@ export default function MyJobsPage() {
                 </div>
               )}
 
+              {/* Signature */}
+              {job.signature_url && (
+                <div className="mb-3">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Customer Signature</p>
+                  <img src={job.signature_url} alt="Customer signature" className="h-16 rounded-lg border border-border bg-white" />
+                </div>
+              )}
+
               {/* Bottom row: Budget + Actions */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -178,6 +232,15 @@ export default function MyJobsPage() {
                     <FileText className="h-3 w-3" />
                     Report
                   </Link>
+                  {job.status !== "Completed" && !job.signature_url && (
+                    <button
+                      onClick={() => setSigningJob(job.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                    >
+                      <PenTool className="h-3 w-3" />
+                      Signature
+                    </button>
+                  )}
                   {job.status !== "Completed" && (
                     <button
                       onClick={() => handleComplete(job.id)}
@@ -194,6 +257,13 @@ export default function MyJobsPage() {
           ))}
         </div>
       )}
+
+      <SignaturePadModal
+        open={signingJob !== null}
+        onClose={() => setSigningJob(null)}
+        onSave={handleSaveSignature}
+        saving={savingSignature}
+      />
     </div>
   )
 }
