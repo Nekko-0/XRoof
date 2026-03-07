@@ -67,20 +67,27 @@ export default function ContractorReportPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const job = jobs.find((j) => j.id === selectedJobId)
+
     setSaving(true)
-    const { error } = await supabase.from("reports").insert({
-      job_id: selectedJobId,
-      contractor_id: user.id,
-      customer_name: customerName,
-      customer_address: customerAddress,
-      price_quote: priceQuote ? Number(priceQuote) : null,
-      scope_of_work: scopeOfWork,
+    const res = await fetch("/api/send-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contractorName: user.user_metadata?.username || user.email?.split("@")[0] || "Contractor",
+        customerName,
+        customerAddress,
+        jobType: job?.job_type || "",
+        priceQuote,
+        scopeOfWork,
+      }),
     })
 
-    if (error) {
-      alert("Error submitting report: " + error.message)
+    const data = await res.json()
+    if (!res.ok) {
+      alert("Error sending report: " + (data.error || "Unknown error"))
     } else {
-      alert("Report submitted successfully!")
+      alert("Report sent successfully!")
       router.push("/contractor/dashboard")
     }
     setSaving(false)
