@@ -1,28 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { Mail, Phone, MapPin, Pencil, Building2, Clock, FileText, Save, X } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
+import { Mail, Phone, MapPin, Pencil, Save, X, Briefcase, CheckCircle, LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 type Profile = {
-  company_name: string
   service_zips: string[]
   phone: string
   email: string
-  years_experience: number | null
-  about: string
 }
 
 export default function ContractorProfilePage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
+  const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [isNew, setIsNew] = useState(false)
+  const [activeJobs, setActiveJobs] = useState(0)
+  const [completedJobs, setCompletedJobs] = useState(0)
+  const [userName, setUserName] = useState("")
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,32 +28,42 @@ export default function ContractorProfilePage() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, service_zips, phone, email, years_experience, about")
+        .select("service_zips, phone, email")
         .eq("id", user.id)
         .single()
 
+      setUserName(user.user_metadata?.username || user.email?.split("@")[0] || "Contractor")
+
+      // Fetch job counts
+      const { count: active } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("contractor_id", user.id)
+        .in("status", ["Assigned", "Accepted"])
+      setActiveJobs(active || 0)
+
+      const { count: completed } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("contractor_id", user.id)
+        .eq("status", "Completed")
+      setCompletedJobs(completed || 0)
+
       if (error || !data) {
-        // Profile doesn't exist or has no data — start in edit mode
         setProfile({
-          company_name: "",
           service_zips: [],
           phone: "",
           email: user.email || "",
-          years_experience: null,
-          about: "",
         })
         setEditing(true)
-        setIsNew(true)
       } else {
         setProfile({
-          company_name: data.company_name || "",
           service_zips: data.service_zips || [],
           phone: data.phone || "",
           email: data.email || "",
-          years_experience: data.years_experience ?? null,
-          about: data.about || "",
         })
       }
+
       setLoading(false)
     }
 
@@ -72,12 +78,9 @@ export default function ContractorProfilePage() {
     const { error } = await supabase
       .from("profiles")
       .update({
-        company_name: profile.company_name,
         service_zips: profile.service_zips,
         phone: profile.phone,
         email: profile.email,
-        years_experience: profile.years_experience,
-        about: profile.about,
       })
       .eq("id", user.id)
 
@@ -89,36 +92,71 @@ export default function ContractorProfilePage() {
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
+
   if (loading) return <p className="p-6">Loading profile...</p>
   if (!profile) return <p className="p-6">Profile not found. Please log in again.</p>
 
-  const initials = profile.company_name
-    ? profile.company_name.slice(0, 2).toUpperCase()
-    : "??"
+  const initials = userName.slice(0, 2).toUpperCase()
+
+  const profileStats = [
+    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-emerald-900/30 text-emerald-400" },
+    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-900/30 text-blue-400" },
+  ]
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-            Company Profile
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your company information.
-          </p>
+      {/* Profile header with avatar */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+            {initials}
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+              {userName}
+            </h2>
+            <p className="text-xs text-muted-foreground">Contractor</p>
+          </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Stats grid */}
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        {profileStats.map((stat) => (
+          <div key={stat.label} className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.color}`}>
+              <stat.icon className="h-4 w-4" />
+            </div>
+            <p className="text-xl font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit/Save buttons */}
+      <div className="mb-4 flex justify-end">
         {editing ? (
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Save className="h-3.5 w-3.5" />
               Save
             </button>
             <button
               onClick={() => setEditing(false)}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
             >
               <X className="h-3.5 w-3.5" />
               Cancel
@@ -127,7 +165,7 @@ export default function ContractorProfilePage() {
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
           >
             <Pencil className="h-3.5 w-3.5" />
             Edit Profile
@@ -135,27 +173,9 @@ export default function ContractorProfilePage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-            {initials}
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-foreground">
-              {profile.company_name || "No company name set"}
-            </h3>
-            <p className="text-sm text-muted-foreground">Contractor</p>
-          </div>
-        </div>
-
+      {/* Profile fields */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4">
-          <ProfileField
-            icon={<Building2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
-            label="Company Name"
-            value={profile.company_name}
-            editing={editing}
-            onChange={(v) => setProfile({ ...profile, company_name: v })}
-          />
           <ProfileField
             icon={<MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
             label="Service Area Zip Codes"
@@ -178,32 +198,6 @@ export default function ContractorProfilePage() {
             editing={editing}
             onChange={(v) => setProfile({ ...profile, email: v })}
           />
-          <ProfileField
-            icon={<Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
-            label="Years Experience"
-            value={profile.years_experience?.toString() || ""}
-            editing={editing}
-            onChange={(v) => setProfile({ ...profile, years_experience: v ? Number(v) : null })}
-            suffix={!editing ? " years" : undefined}
-          />
-          <div className="flex items-start gap-3 rounded-lg bg-secondary/30 px-4 py-3">
-            <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-muted-foreground">About Company</p>
-              {editing ? (
-                <textarea
-                  value={profile.about}
-                  onChange={(e) => setProfile({ ...profile, about: e.target.value })}
-                  rows={4}
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              ) : (
-                <p className="text-sm leading-relaxed text-foreground">
-                  {profile.about || "No description set"}
-                </p>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -217,7 +211,6 @@ function ProfileField({
   editing,
   onChange,
   placeholder,
-  suffix,
 }: {
   icon: React.ReactNode
   label: string
@@ -225,7 +218,6 @@ function ProfileField({
   editing: boolean
   onChange: (v: string) => void
   placeholder?: string
-  suffix?: string
 }) {
   return (
     <div className="flex items-start gap-3 rounded-lg bg-secondary/30 px-4 py-3">
@@ -241,7 +233,7 @@ function ProfileField({
           />
         ) : (
           <p className="text-sm text-foreground">
-            {value || "Not set"}{suffix && value ? suffix : ""}
+            {value || "Not set"}
           </p>
         )}
       </div>

@@ -9,11 +9,11 @@ export function Footer() {
             <Home className="h-3 w-3 text-primary-foreground" />
           </div>
           <span className="text-sm font-medium text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-            RoofConnect
+            XRoof
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          {'2026 RoofConnect. All rights reserved.'}
+          {'2026 XRoof. All rights reserved.'}
         </p>
       </div>
     </footer>

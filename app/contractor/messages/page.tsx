@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { ChatInterface } from "@/components/chat-interface"
+
+const ADMIN_EMAIL = "contact@leons-roofing.com"
 
 type Conversation = {
   job_id: string
@@ -21,10 +23,7 @@ type Message = {
 }
 
 export default function ContractorMessagesPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+
 
   const [userId, setUserId] = useState("")
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -42,10 +41,20 @@ export default function ContractorMessagesPage() {
       if (!user) return
       setUserId(user.id)
 
+      // Find admin user
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .ilike("email", ADMIN_EMAIL)
+        .single()
+
+      const adminId = adminProfile?.id || ""
+      const adminName = "Admin"
+
       // Get all jobs assigned to this contractor
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("id, job_type, homeowner_id")
+        .select("id, job_type, customer_name")
         .eq("contractor_id", user.id)
 
       if (!jobs || jobs.length === 0) {
@@ -53,23 +62,9 @@ export default function ContractorMessagesPage() {
         return
       }
 
-      // Fetch homeowner profiles separately
-      const ownerIds = [...new Set(jobs.map((j: any) => j.homeowner_id).filter(Boolean))]
-      let profileMap: Record<string, any> = {}
-      if (ownerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", ownerIds)
-        profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-      }
-
       // For each job, get the latest message
       const convos: Conversation[] = []
       for (const job of jobs) {
-        const homeowner = profileMap[job.homeowner_id] || null
-        if (!homeowner) continue
-
         const { data: lastMsg } = await supabase
           .from("messages")
           .select("content, created_at")
@@ -80,9 +75,9 @@ export default function ContractorMessagesPage() {
 
         convos.push({
           job_id: job.id,
-          contact_id: job.homeowner_id!,
-          contact_name: homeowner.username || "Homeowner",
-          job_type: job.job_type,
+          contact_id: adminId,
+          contact_name: adminName,
+          job_type: `${job.job_type} — ${job.customer_name || "Customer"}`,
           last_message: lastMsg?.content || "No messages yet",
           last_time: lastMsg?.created_at || new Date().toISOString(),
         })
@@ -119,7 +114,7 @@ export default function ContractorMessagesPage() {
   const handleSelectConversation = async (jobId: string, contactId: string) => {
     setSelectedJobId(jobId)
     setSelectedContactId(contactId)
-    const convo = conversations.find((c) => c.job_id === jobId && c.contact_id === contactId)
+    const convo = conversations.find((c) => c.job_id === jobId)
     setSelectedContactName(convo?.contact_name || "")
     await fetchMessages(jobId)
   }

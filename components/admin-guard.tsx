@@ -4,16 +4,20 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+const ADMIN_EMAIL = "contact@leons-roofing.com"
+
+export function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setChecked(true)
-      } else {
+      if (!session) {
         router.push("/auth")
+      } else if (session.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+        router.push("/contractor/dashboard")
+      } else {
+        setChecked(true)
       }
     })
 

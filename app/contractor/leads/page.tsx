@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
-import { MapPin, DollarSign, CheckCircle, MessageSquare } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, PenTool } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
+import { SignaturePadModal } from "@/components/signature-pad"
 
-type Lead = {
+type Job = {
   id: string
   address: string
   zip_code: string
@@ -15,145 +16,279 @@ type Lead = {
   budget: number | null
   status: string
   created_at: string
-  homeowner: { username: string } | null
+  customer_name: string
+  customer_phone: string
+  photo_urls?: string[]
+  signature_url?: string | null
+  signed_at?: string | null
 }
 
-export default function LeadsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  const [leads, setLeads] = useState<Lead[]>([])
+export default function MyJobsPage() {
+  const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
-  const [accepting, setAccepting] = useState<string | null>(null)
+  const [completing, setCompleting] = useState<string | null>(null)
+  const [signingJob, setSigningJob] = useState<string | null>(null)
+  const [savingSignature, setSavingSignature] = useState(false)
+  const [contractorName, setContractorName] = useState("")
 
   useEffect(() => {
-    const fetchLeads = async () => {
+    const fetchJobs = async () => {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: jobsRaw, error } = await supabase
+      setContractorName(user.user_metadata?.username || user.email || "")
+
+      const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, homeowner_id")
-        .is("contractor_id", null)
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url, signed_at")
+        .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
 
-      if (error) {
-        console.error("Error fetching leads:", error.message)
-      } else {
-        // Fetch homeowner profiles separately
-        const ownerIds = [...new Set((jobsRaw || []).map((j: any) => j.homeowner_id).filter(Boolean))]
-        let profileMap: Record<string, any> = {}
-        if (ownerIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, username")
-            .in("id", ownerIds)
-          profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
-        }
-        setLeads((jobsRaw || []).map((j: any) => ({
-          ...j,
-          homeowner: j.homeowner_id ? profileMap[j.homeowner_id] || null : null,
-        })))
-      }
+      setJobs(jobsRaw || [])
       setLoading(false)
     }
 
-    fetchLeads()
+    fetchJobs()
   }, [])
 
-  const handleAccept = async (jobId: string) => {
-    setAccepting(jobId)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  const handleComplete = async (jobId: string) => {
+    if (!confirm("Mark this job as completed?")) return
 
+    setCompleting(jobId)
     const { error } = await supabase
       .from("jobs")
-      .update({ contractor_id: user.id, status: "Accepted" })
+      .update({ status: "Completed" })
       .eq("id", jobId)
 
     if (error) {
-      alert("Error accepting lead: " + error.message)
+      alert("Error: " + error.message)
     } else {
-      setLeads(leads.filter((l) => l.id !== jobId))
+      setJobs(jobs.map((j) => j.id === jobId ? { ...j, status: "Completed" } : j))
     }
-    setAccepting(null)
+    setCompleting(null)
+  }
+
+  const handleSaveSignature = async (dataUrl: string, finalPrice: number) => {
+    if (!signingJob) return
+    setSavingSignature(true)
+
+    // Convert data URL to blob
+    const res = await fetch(dataUrl)
+    const blob = await res.blob()
+    const fileName = `${signingJob}-${Date.now()}.png`
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from("signatures")
+      .upload(fileName, blob, { contentType: "image/png" })
+
+    if (uploadError) {
+      alert("Error uploading certificate: " + uploadError.message)
+      setSavingSignature(false)
+      return
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("signatures")
+      .getPublicUrl(fileName)
+
+    const signatureUrl = urlData.publicUrl
+
+    // Update job record with certificate URL, locked price, and signed timestamp
+    const { error: updateError } = await supabase
+      .from("jobs")
+      .update({
+        signature_url: signatureUrl,
+        budget: finalPrice,
+        signed_at: new Date().toISOString(),
+      })
+      .eq("id", signingJob)
+
+    if (updateError) {
+      alert("Error saving certificate: " + updateError.message)
+    } else {
+      setJobs(jobs.map((j) => j.id === signingJob ? {
+        ...j,
+        signature_url: signatureUrl,
+        budget: finalPrice,
+        signed_at: new Date().toISOString(),
+      } : j))
+      setSigningJob(null)
+    }
+    setSavingSignature(false)
   }
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    if (days === 0) return "Today"
-    if (days === 1) return "1 day ago"
+    const mins = Math.floor(diff / (1000 * 60))
+    if (mins < 1) return "Just now"
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days === 1) return "Yesterday"
     if (days < 7) return `${days} days ago`
     return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? "s" : ""} ago`
   }
 
-  if (loading) return <p className="p-6">Loading leads...</p>
+  if (loading) return <p className="p-6">Loading your leads...</p>
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          All Leads
+    <div className="flex flex-col gap-4">
+      {/* Header */}
+      <div className="text-center lg:text-left">
+        <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+          My Leads
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Browse and accept roofing leads from homeowners in your area.
-        </p>
       </div>
 
-      {leads.length === 0 ? (
+      {jobs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
-          No available leads right now. Check back soon!
+          No leads assigned to you yet. Check back soon!
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {leads.map((lead) => (
+          {jobs.map((job) => (
             <div
-              key={lead.id}
-              className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+              key={job.id}
+              className="rounded-2xl border border-border border-l-4 border-l-primary bg-card p-4 shadow-sm"
             >
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {lead.address}, {lead.zip_code}
+              {/* Name + Status */}
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground">{job.customer_name || "Customer"}</h3>
+                <StatusBadge status={job.status} />
+              </div>
+
+              {/* Timestamp */}
+              <p className="mb-3 text-xs text-muted-foreground">{timeAgo(job.created_at)}</p>
+
+              {/* Info rows */}
+              <div className="mb-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{job.address} &middot; {job.zip_code}</span>
                 </div>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                  {lead.job_type}
-                </span>
-                <StatusBadge status={lead.status.toLowerCase()} />
-                {lead.budget && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    ${lead.budget.toLocaleString()}
+                {job.customer_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{job.customer_phone}</span>
                   </div>
                 )}
-                <span className="text-xs text-muted-foreground">Posted {timeAgo(lead.created_at)}</span>
+                <div className="flex items-center gap-2">
+                  <HomeIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{job.job_type}</span>
+                </div>
               </div>
-              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleAccept(lead.id)}
-                  disabled={accepting === lead.id}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  {accepting === lead.id ? "Accepting..." : "Accept Lead"}
-                </button>
-                <Link
-                  href="/contractor/messages"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Message Homeowner
-                </Link>
+
+              {/* Description */}
+              {job.description && (
+                <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
+              )}
+
+              {/* Photos */}
+              {job.photo_urls && job.photo_urls.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {job.photo_urls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Job photo ${i + 1}`} className="h-14 w-14 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* Signed Certificate */}
+              {job.signature_url && (
+                <div className="mb-3">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    Signed Certificate{job.signed_at && ` \u2014 ${new Date(job.signed_at).toLocaleDateString()}`}
+                  </p>
+                  <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
+                    <img src={job.signature_url} alt="Completion certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
+                  </a>
+                </div>
+              )}
+
+              {/* Bottom row: Budget + Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  {job.budget && (
+                    <span className="flex items-center gap-1 text-sm font-semibold text-emerald-400">
+                      <DollarSign className="h-4 w-4" />
+                      ${job.budget.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {job.customer_phone && (
+                    <>
+                      <a
+                        href={`tel:${job.customer_phone}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                      >
+                        <Phone className="h-3 w-3" />
+                        Call
+                      </a>
+                      <a
+                        href={`sms:${job.customer_phone}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        Text
+                      </a>
+                    </>
+                  )}
+                  <Link
+                    href="/contractor/report"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    <FileText className="h-3 w-3" />
+                    Report
+                  </Link>
+                  {job.status !== "Completed" && !job.signature_url && (
+                    <button
+                      onClick={() => setSigningJob(job.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                    >
+                      <PenTool className="h-3 w-3" />
+                      Signature
+                    </button>
+                  )}
+                  {job.status !== "Completed" && (
+                    <button
+                      onClick={() => handleComplete(job.id)}
+                      disabled={completing === job.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      {completing === job.id ? "..." : "Complete"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <SignaturePadModal
+        open={signingJob !== null}
+        onClose={() => setSigningJob(null)}
+        onSave={handleSaveSignature}
+        saving={savingSignature}
+        jobDetails={(() => {
+          const j = jobs.find((j) => j.id === signingJob)
+          if (!j) return undefined
+          return {
+            jobType: j.job_type,
+            address: `${j.address} ${j.zip_code}`,
+            customerName: j.customer_name,
+            contractorName,
+            budget: j.budget,
+          }
+        })()}
+      />
     </div>
   )
 }
