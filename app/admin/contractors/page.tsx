@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { MapPin, Mail, Phone, Briefcase, Search } from "lucide-react"
 
 type ContractorProfile = {
@@ -16,11 +16,6 @@ type ContractorProfile = {
 }
 
 export default function AdminContractorsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [contractors, setContractors] = useState<ContractorProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [zipFilter, setZipFilter] = useState("")

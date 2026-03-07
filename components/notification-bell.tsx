@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Bell } from "lucide-react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { cn } from "@/lib/utils"
 
 type Notification = {
@@ -15,11 +15,6 @@ type Notification = {
 }
 
 export function NotificationBell() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { ClipboardList, Users, CheckCircle, ArrowRight, MapPin } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
@@ -17,11 +17,6 @@ type RecentJob = {
 }
 
 export default function AdminDashboard() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [pendingCount, setPendingCount] = useState(0)
   const [contractorCount, setContractorCount] = useState(0)
   const [assignedTodayCount, setAssignedTodayCount] = useState(0)

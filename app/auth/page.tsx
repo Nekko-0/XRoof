@@ -2,18 +2,13 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
 import { Home, ArrowLeft, Target, MessageSquare, BarChart3 } from "lucide-react"
 import { Suspense } from "react"
 
 function AuthForm() {
   const router = useRouter()
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

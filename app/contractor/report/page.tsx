@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { FileText, DollarSign, MapPin } from "lucide-react"
 
 type AssignedJob = {
@@ -14,10 +14,6 @@ type AssignedJob = {
 }
 
 export default function ContractorReportPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const router = useRouter()
 
   const [jobs, setJobs] = useState<AssignedJob[]>([])

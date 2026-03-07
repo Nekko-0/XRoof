@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { MapPin, DollarSign, UserPlus, Check, Plus, Phone, UserMinus } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
@@ -29,11 +29,6 @@ type Contractor = {
 }
 
 export default function AdminLeadsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [leads, setLeads] = useState<Lead[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [loading, setLoading] = useState(true)

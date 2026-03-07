@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/notification-bell"
 
@@ -52,10 +52,6 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const isContractor = role === "contractor"
 
   const handleLogout = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
     await supabase.auth.signOut()
     router.push("/")
   }

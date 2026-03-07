@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
 import { Mail, Phone, MapPin, Pencil, Save, X, Briefcase, CheckCircle, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -12,11 +12,6 @@ type Profile = {
 }
 
 export default function ContractorProfilePage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [editing, setEditing] = useState(false)
