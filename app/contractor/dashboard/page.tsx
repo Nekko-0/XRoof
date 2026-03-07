@@ -160,7 +160,7 @@ export default function ContractorDashboard() {
       </div>
 
       {/* Stats */}
-      <div id="dashboard-stats" className="grid grid-cols-3 gap-3">
+      <div id="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}

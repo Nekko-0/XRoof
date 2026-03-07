@@ -70,7 +70,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       {/* Sidebar — hidden on mobile for contractor, hamburger for admin */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
           isContractor
             ? "-translate-x-full lg:translate-x-0"
             : mobileOpen ? "translate-x-0" : "-translate-x-full"

@@ -145,7 +145,7 @@ export default function MyJobsPage() {
               )}
 
               {/* Bottom row: Budget + Actions */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   {job.budget && (
                     <span className="flex items-center gap-1 text-sm font-semibold text-green-700">
@@ -154,7 +154,7 @@ export default function MyJobsPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {job.customer_phone && (
                     <a
                       href={`tel:${job.customer_phone}`}

@@ -370,8 +370,8 @@ export default function AdminLeadsPage() {
                 )}
 
                 {lead.contractor_name ? (
-                  <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Check className="h-4 w-4 text-blue-600" />
                       <span className="text-blue-700">
                         Assigned to <strong>{lead.contractor_name}</strong>
@@ -392,7 +392,7 @@ export default function AdminLeadsPage() {
                     <select
                       value={selectedContractor[lead.id] || ""}
                       onChange={(e) => setSelectedContractor({ ...selectedContractor, [lead.id]: e.target.value })}
-                      className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
                       <option value="">Select contractor...</option>
                       {matching.length > 0 && (
