@@ -4,8 +4,8 @@
   "description": "Roofing contractor lead management",
   "start_url": "/contractor/dashboard",
   "display": "standalone",
-  "background_color": "#fefaee",
-  "theme_color": "#80011f",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
     {
       "src": "/icons/icon-192.png",

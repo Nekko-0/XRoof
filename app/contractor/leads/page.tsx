@@ -197,7 +197,7 @@ export default function MyJobsPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   {job.budget && (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-green-700">
+                    <span className="flex items-center gap-1 text-sm font-semibold text-emerald-400">
                       <DollarSign className="h-4 w-4" />
                       ${job.budget.toLocaleString()}
                     </span>
@@ -242,7 +242,7 @@ export default function MyJobsPage() {
                     <button
                       onClick={() => handleComplete(job.id)}
                       disabled={completing === job.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                     >
                       <CheckCircle className="h-3 w-3" />
                       {completing === job.id ? "..." : "Complete"}

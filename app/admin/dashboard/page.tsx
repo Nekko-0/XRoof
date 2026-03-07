@@ -83,9 +83,9 @@ export default function AdminDashboard() {
   if (loading) return <p className="p-6">Loading admin dashboard...</p>
 
   const stats = [
-    { label: "Pending Leads", value: pendingCount.toString(), icon: ClipboardList, color: "bg-amber-50 text-amber-700" },
+    { label: "Pending Leads", value: pendingCount.toString(), icon: ClipboardList, color: "bg-amber-900/30 text-amber-400" },
     { label: "Total Contractors", value: contractorCount.toString(), icon: Users, color: "bg-primary/10 text-primary" },
-    { label: "Assigned Today", value: assignedTodayCount.toString(), icon: CheckCircle, color: "bg-green-50 text-green-700" },
+    { label: "Assigned Today", value: assignedTodayCount.toString(), icon: CheckCircle, color: "bg-emerald-900/30 text-emerald-400" },
   ]
 
   const timeAgo = (dateStr: string) => {

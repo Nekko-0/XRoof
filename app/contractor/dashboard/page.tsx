@@ -78,9 +78,9 @@ export default function ContractorDashboard() {
   if (loading) return <p className="p-6">Loading dashboard...</p>
 
   const stats = [
-    { label: "Assigned", value: assignedCount.toString(), icon: ClipboardList, color: "bg-blue-50 text-blue-700" },
-    { label: "Active", value: activeCount.toString(), icon: Briefcase, color: "bg-yellow-50 text-yellow-700" },
-    { label: "Completed", value: completedCount.toString(), icon: CheckCircle, color: "bg-green-50 text-green-700" },
+    { label: "Assigned", value: assignedCount.toString(), icon: ClipboardList, color: "bg-blue-900/30 text-blue-400" },
+    { label: "Active", value: activeCount.toString(), icon: Briefcase, color: "bg-yellow-900/30 text-yellow-400" },
+    { label: "Completed", value: completedCount.toString(), icon: CheckCircle, color: "bg-emerald-900/30 text-emerald-400" },
   ]
 
   const steps = [

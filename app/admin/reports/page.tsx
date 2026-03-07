@@ -128,8 +128,8 @@ export default function AdminReportsPage() {
                 )}
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                   report.status === "Reviewed"
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                    ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
+                    : "bg-amber-900/30 text-amber-400 border border-amber-700"
                 }`}>
                   {report.status}
                 </span>

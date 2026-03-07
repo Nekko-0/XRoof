@@ -384,10 +384,10 @@ export default function AdminLeadsPage() {
                 )}
 
                 {lead.contractor_name ? (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Check className="h-4 w-4 text-blue-600" />
-                      <span className="text-blue-700">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span className="text-primary">
                         Assigned to <strong>{lead.contractor_name}</strong>
                         {lead.contractor_email && <span className="ml-1 font-normal">({lead.contractor_email})</span>}
                       </span>
@@ -395,7 +395,7 @@ export default function AdminLeadsPage() {
                     <button
                       onClick={() => handleUnassign(lead.id)}
                       disabled={assigning === lead.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-red-900/30 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-900/50 disabled:opacity-50"
                     >
                       <UserMinus className="h-3.5 w-3.5" />
                       {assigning === lead.id ? "Removing..." : "Remove"}

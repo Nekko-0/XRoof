@@ -103,8 +103,8 @@ export default function ContractorProfilePage() {
   const initials = userName.slice(0, 2).toUpperCase()
 
   const profileStats = [
-    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-green-50 text-green-700" },
-    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-50 text-blue-700" },
+    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-emerald-900/30 text-emerald-400" },
+    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-900/30 text-blue-400" },
   ]
 
   return (
