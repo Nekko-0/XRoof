@@ -20,6 +20,7 @@ type Job = {
   customer_phone: string
   photo_urls?: string[]
   signature_url?: string | null
+  signed_at?: string | null
 }
 
 export default function MyJobsPage() {
@@ -28,6 +29,7 @@ export default function MyJobsPage() {
   const [completing, setCompleting] = useState<string | null>(null)
   const [signingJob, setSigningJob] = useState<string | null>(null)
   const [savingSignature, setSavingSignature] = useState(false)
+  const [contractorName, setContractorName] = useState("")
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -35,9 +37,11 @@ export default function MyJobsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      setContractorName(user.user_metadata?.username || user.email || "")
+
       const { data: jobsRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url")
+        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url, signed_at")
         .eq("contractor_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -65,7 +69,7 @@ export default function MyJobsPage() {
     setCompleting(null)
   }
 
-  const handleSaveSignature = async (dataUrl: string) => {
+  const handleSaveSignature = async (dataUrl: string, finalPrice: number) => {
     if (!signingJob) return
     setSavingSignature(true)
 
@@ -80,7 +84,7 @@ export default function MyJobsPage() {
       .upload(fileName, blob, { contentType: "image/png" })
 
     if (uploadError) {
-      alert("Error uploading signature: " + uploadError.message)
+      alert("Error uploading certificate: " + uploadError.message)
       setSavingSignature(false)
       return
     }
@@ -92,16 +96,25 @@ export default function MyJobsPage() {
 
     const signatureUrl = urlData.publicUrl
 
-    // Update job record
+    // Update job record with certificate URL, locked price, and signed timestamp
     const { error: updateError } = await supabase
       .from("jobs")
-      .update({ signature_url: signatureUrl })
+      .update({
+        signature_url: signatureUrl,
+        budget: finalPrice,
+        signed_at: new Date().toISOString(),
+      })
       .eq("id", signingJob)
 
     if (updateError) {
-      alert("Error saving signature: " + updateError.message)
+      alert("Error saving certificate: " + updateError.message)
     } else {
-      setJobs(jobs.map((j) => j.id === signingJob ? { ...j, signature_url: signatureUrl } : j))
+      setJobs(jobs.map((j) => j.id === signingJob ? {
+        ...j,
+        signature_url: signatureUrl,
+        budget: finalPrice,
+        signed_at: new Date().toISOString(),
+      } : j))
       setSigningJob(null)
     }
     setSavingSignature(false)
@@ -185,11 +198,15 @@ export default function MyJobsPage() {
                 </div>
               )}
 
-              {/* Signature */}
+              {/* Signed Certificate */}
               {job.signature_url && (
                 <div className="mb-3">
-                  <p className="mb-1 text-xs font-medium text-muted-foreground">Customer Signature</p>
-                  <img src={job.signature_url} alt="Customer signature" className="h-16 rounded-lg border border-border bg-white" />
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    Signed Certificate{job.signed_at && ` \u2014 ${new Date(job.signed_at).toLocaleDateString()}`}
+                  </p>
+                  <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
+                    <img src={job.signature_url} alt="Completion certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
+                  </a>
                 </div>
               )}
 
@@ -260,6 +277,17 @@ export default function MyJobsPage() {
         onClose={() => setSigningJob(null)}
         onSave={handleSaveSignature}
         saving={savingSignature}
+        jobDetails={(() => {
+          const j = jobs.find((j) => j.id === signingJob)
+          if (!j) return undefined
+          return {
+            jobType: j.job_type,
+            address: `${j.address} ${j.zip_code}`,
+            customerName: j.customer_name,
+            contractorName,
+            budget: j.budget,
+          }
+        })()}
       />
     </div>
   )

@@ -3,11 +3,13 @@ import { createClient } from "@supabase/supabase-js"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const webpush = require("web-push")
 
-webpush.setVapidDetails(
-  "mailto:contact@leons-roofing.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    "mailto:contact@leons-roofing.com",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  )
+}
 
 export async function POST(req: NextRequest) {
   const { user_id, title, body } = await req.json()
