@@ -210,20 +210,22 @@ export default function MyJobsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {job.customer_phone && (
-                    <a
-                      href={`tel:${job.customer_phone}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
-                    >
-                      <Phone className="h-3 w-3" />
-                      Call
-                    </a>
-                    <a
-                      href={`sms:${job.customer_phone}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
-                    >
-                      <MessageSquare className="h-3 w-3" />
-                      Text
-                    </a>
+                    <>
+                      <a
+                        href={`tel:${job.customer_phone}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                      >
+                        <Phone className="h-3 w-3" />
+                        Call
+                      </a>
+                      <a
+                        href={`sms:${job.customer_phone}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        Text
+                      </a>
+                    </>
                   )}
                   <Link
                     href="/contractor/report"
