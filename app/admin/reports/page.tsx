@@ -122,7 +122,10 @@ export default function AdminReportsPage() {
           {reports.map((report) => (
             <div key={report.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <div className="mb-3 flex flex-wrap items-center gap-3">
-                <p className="text-sm font-semibold text-foreground">{report.contractor_name}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  <span className="text-xs font-medium text-muted-foreground">Contractor: </span>
+                  {report.contractor_name}
+                </p>
                 {report.job_type && (
                   <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
                     {report.job_type}
@@ -162,10 +165,10 @@ export default function AdminReportsPage() {
               {report.status === "Pending" && (
                 <button
                   onClick={() => handleMarkReviewed(report.id)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                 >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Mark as Reviewed
+                  <FileText className="h-3.5 w-3.5" />
+                  Send Report
                 </button>
               )}
             </div>

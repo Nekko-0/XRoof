@@ -4,8 +4,6 @@ import { useEffect, useState } from "react"
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
 import { ChatInterface } from "@/components/chat-interface"
 
-const ADMIN_EMAIL = "contact@leons-roofing.com"
-
 type Conversation = {
   job_id: string
   contact_id: string
@@ -22,7 +20,7 @@ type Message = {
   created_at: string
 }
 
-export default function ContractorMessagesPage() {
+export default function AdminMessagesPage() {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -44,30 +42,33 @@ export default function ContractorMessagesPage() {
       if (!user) return
       setUserId(user.id)
 
-      // Find admin user
-      const { data: adminProfile } = await supabase
-        .from("profiles")
-        .select("id, username")
-        .ilike("email", ADMIN_EMAIL)
-        .single()
-
-      const adminId = adminProfile?.id || ""
-      const adminName = "Admin"
-
-      // Get all jobs assigned to this contractor
+      // Get all jobs (admin sees all)
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("id, job_type, customer_name")
-        .eq("contractor_id", user.id)
+        .select("id, job_type, customer_name, contractor_id")
+        .not("contractor_id", "is", null)
 
       if (!jobs || jobs.length === 0) {
         setLoading(false)
         return
       }
 
-      // For each job, get the latest message
+      // Get contractor profiles
+      const contractorIds = [...new Set(jobs.map((j) => j.contractor_id).filter(Boolean))]
+      let profileMap: Record<string, any> = {}
+      if (contractorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", contractorIds)
+        profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+      }
+
+      // Build conversations per job
       const convos: Conversation[] = []
       for (const job of jobs) {
+        const contractorName = profileMap[job.contractor_id]?.username || "Contractor"
+
         const { data: lastMsg } = await supabase
           .from("messages")
           .select("content, created_at")
@@ -78,17 +79,19 @@ export default function ContractorMessagesPage() {
 
         convos.push({
           job_id: job.id,
-          contact_id: adminId,
-          contact_name: adminName,
+          contact_id: job.contractor_id,
+          contact_name: contractorName,
           job_type: `${job.job_type} — ${job.customer_name || "Customer"}`,
           last_message: lastMsg?.content || "No messages yet",
           last_time: lastMsg?.created_at || new Date().toISOString(),
         })
       }
 
+      // Sort by most recent message
+      convos.sort((a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime())
+
       setConversations(convos)
 
-      // Auto-select first conversation
       if (convos.length > 0) {
         setSelectedJobId(convos[0].job_id)
         setSelectedContactId(convos[0].contact_id)

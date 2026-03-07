@@ -33,6 +33,7 @@ const adminNav: NavItem[] = [
   { label: "Leads", href: "/admin/jobs", icon: ClipboardList },
   { label: "Contractors", href: "/admin/contractors", icon: Users },
   { label: "Reports", href: "/admin/reports", icon: FileText },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
 ]
 
 // Bottom tab bar items for contractor mobile
