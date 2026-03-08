@@ -175,13 +175,13 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                 key={tab.href}
                 href={tab.href}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-4 py-1.5 text-xs font-medium transition-colors",
+                  "flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
-                <tab.icon className={cn("h-5 w-5", isActive && "text-primary")} />
+                <tab.icon className={cn("h-6 w-6", isActive && "text-primary")} />
                 {tab.label}
               </Link>
             )

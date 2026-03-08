@@ -146,7 +146,7 @@ export default function AdminDashboard() {
             {recentJobs.map((job) => (
               <div
                 key={job.id}
-                className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
               >
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
                 </div>
                 <Link
                   href="/admin/jobs"
-                  className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                 >
                   Manage
                 </Link>

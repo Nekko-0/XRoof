@@ -89,3 +89,12 @@
     @apply bg-background text-foreground overflow-x-hidden;
   }
 }
+
+/* Mobile safe area support for notched devices (iPhone X+) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}

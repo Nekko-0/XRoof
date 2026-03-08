@@ -187,50 +187,50 @@ export default function MyJobsPage() {
                     <>
                       <a
                         href={`tel:${job.customer_phone}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
                       >
-                        <Phone className="h-3 w-3" />
+                        <Phone className="h-3.5 w-3.5" />
                         Call
                       </a>
                       <a
                         href={`sms:${job.customer_phone}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
                       >
-                        <MessageSquare className="h-3 w-3" />
+                        <MessageSquare className="h-3.5 w-3.5" />
                         Text
                       </a>
                     </>
                   )}
                   <Link
                     href={`/contractor/contract/${job.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                   >
-                    <ScrollText className="h-3 w-3" />
+                    <ScrollText className="h-3.5 w-3.5" />
                     Contract
                   </Link>
                   <Link
                     href="/contractor/report"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
                   >
-                    <FileText className="h-3 w-3" />
+                    <FileText className="h-3.5 w-3.5" />
                     Report
                   </Link>
                   {job.status !== "Completed" ? (
                     <button
                       onClick={() => handleComplete(job.id)}
                       disabled={completing === job.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                     >
-                      <CheckCircle className="h-3 w-3" />
+                      <CheckCircle className="h-3.5 w-3.5" />
                       {completing === job.id ? "..." : "Complete"}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleReopen(job.id)}
                       disabled={reopening === job.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
                     >
-                      <RotateCcw className="h-3 w-3" />
+                      <RotateCcw className="h-3.5 w-3.5" />
                       {reopening === job.id ? "..." : "Reopen"}
                     </button>
                   )}

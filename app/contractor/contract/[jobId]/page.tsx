@@ -504,7 +504,7 @@ export default function ContractPage() {
         {/* Payment Terms */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Payment Terms</h3>
-          <div className="mb-3 flex items-center gap-3">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground">Deposit:</span>
               {!isSigned ? (
