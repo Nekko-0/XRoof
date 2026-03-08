@@ -47,6 +47,7 @@ export default function AdminContractViewPage() {
   const [job, setJob] = useState<Job | null>(null)
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -56,6 +57,7 @@ export default function AdminContractViewPage() {
         const res = await fetch(`/api/contracts/${jobId}`)
         const data = await res.json()
 
+        setDebugInfo(data.debug || null)
         if (data.job) setJob(data.job)
         if (data.contract) {
           setContract({
@@ -65,6 +67,7 @@ export default function AdminContractViewPage() {
         }
       } catch (err) {
         console.error("Failed to fetch contract:", err)
+        setDebugInfo({ fetchError: String(err) })
       }
 
       setLoading(false)
@@ -81,6 +84,11 @@ export default function AdminContractViewPage() {
         Back to Contractors
       </Link>
       <p className="text-muted-foreground">No contract has been created for this job yet.</p>
+      {debugInfo && (
+        <pre className="mt-4 rounded bg-secondary/30 p-3 text-xs text-muted-foreground overflow-auto">
+          {JSON.stringify(debugInfo, null, 2)}
+        </pre>
+      )}
     </div>
   )
 
