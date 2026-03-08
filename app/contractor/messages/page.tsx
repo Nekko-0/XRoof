@@ -24,8 +24,6 @@ type Message = {
 }
 
 export default function ContractorMessagesPage() {
-
-
   const [userId, setUserId] = useState("")
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -34,6 +32,7 @@ export default function ContractorMessagesPage() {
   const [selectedContactName, setSelectedContactName] = useState("")
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
+  const [adminId, setAdminId] = useState("")
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -50,50 +49,42 @@ export default function ContractorMessagesPage() {
         .ilike("email", ADMIN_EMAIL)
         .single()
 
-      const adminId = adminProfile?.id || ""
-      const adminName = "Admin"
+      const foundAdminId = adminProfile?.id || ""
+      setAdminId(foundAdminId)
 
-      // Get all jobs assigned to this contractor
+      // Get first job for sending messages (needed as job_id reference)
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("id, job_type, customer_name")
+        .select("id")
         .eq("contractor_id", user.id)
+        .limit(1)
 
-      if (!jobs || jobs.length === 0) {
-        setLoading(false)
-        return
-      }
+      const firstJobId = jobs?.[0]?.id || "general"
 
-      // For each job, get the latest message
-      const convos: Conversation[] = []
-      for (const job of jobs) {
-        const { data: lastMsg } = await supabase
-          .from("messages")
-          .select("content, created_at")
-          .eq("job_id", job.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single()
+      // Get latest message between this contractor and admin
+      const { data: lastMsg } = await supabase
+        .from("messages")
+        .select("content, created_at")
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-        convos.push({
-          job_id: job.id,
-          contact_id: adminId,
-          contact_name: adminName,
-          job_type: `${job.job_type} — ${job.customer_name || "Customer"}`,
-          last_message: lastMsg?.content || "No messages yet",
-          last_time: lastMsg?.created_at || new Date().toISOString(),
-        })
-      }
+      // Always show exactly ONE admin conversation
+      const convos: Conversation[] = [{
+        job_id: firstJobId,
+        contact_id: foundAdminId,
+        contact_name: "Admin",
+        job_type: "Leon's Roofing",
+        last_message: lastMsg?.content || "No messages yet",
+        last_time: lastMsg?.created_at || new Date().toISOString(),
+      }]
 
       setConversations(convos)
-
-      // Auto-select first conversation
-      if (convos.length > 0) {
-        setSelectedJobId(convos[0].job_id)
-        setSelectedContactId(convos[0].contact_id)
-        setSelectedContactName(convos[0].contact_name)
-        await fetchMessages(convos[0].job_id)
-      }
+      setSelectedJobId(firstJobId)
+      setSelectedContactId(foundAdminId)
+      setSelectedContactName("Admin")
+      await fetchAllMessages(user.id)
 
       setLoading(false)
     }
@@ -101,35 +92,32 @@ export default function ContractorMessagesPage() {
     fetchConversations()
   }, [])
 
-  const fetchMessages = async (jobId: string) => {
+  const fetchAllMessages = async (uid: string) => {
     setMessagesLoading(true)
     const { data } = await supabase
       .from("messages")
       .select("id, sender_id, content, image_url, created_at")
-      .eq("job_id", jobId)
+      .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
       .order("created_at", { ascending: true })
 
     setMessages(data || [])
     setMessagesLoading(false)
   }
 
-  const handleSelectConversation = async (jobId: string, contactId: string) => {
-    setSelectedJobId(jobId)
-    setSelectedContactId(contactId)
-    const convo = conversations.find((c) => c.job_id === jobId)
-    setSelectedContactName(convo?.contact_name || "")
-    await fetchMessages(jobId)
+  const handleSelectConversation = async (_jobId: string, _contactId: string) => {
+    // Only one conversation, just refresh messages
+    await fetchAllMessages(userId)
   }
 
   const handleSendMessage = async (text: string) => {
-    if (!userId || !selectedJobId || !selectedContactId) return
+    if (!userId || !adminId) return
 
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        job_id: selectedJobId,
+        job_id: selectedJobId !== "general" ? selectedJobId : null,
         sender_id: userId,
-        receiver_id: selectedContactId,
+        receiver_id: adminId,
         content: text,
       })
       .select("id, sender_id, content, created_at")
@@ -143,9 +131,9 @@ export default function ContractorMessagesPage() {
   }
 
   const handleSendImage = async (file: File) => {
-    if (!userId || !selectedJobId || !selectedContactId) return
+    if (!userId || !adminId) return
 
-    const fileName = `${selectedJobId}-${Date.now()}-${file.name}`
+    const fileName = `msg-${Date.now()}-${file.name}`
     const { error: uploadError } = await supabase.storage
       .from("message-attachments")
       .upload(fileName, file, { contentType: file.type })
@@ -162,9 +150,9 @@ export default function ContractorMessagesPage() {
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        job_id: selectedJobId,
+        job_id: selectedJobId !== "general" ? selectedJobId : null,
         sender_id: userId,
-        receiver_id: selectedContactId,
+        receiver_id: adminId,
         content: "",
         image_url: urlData.publicUrl,
       })

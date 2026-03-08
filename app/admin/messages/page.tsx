@@ -34,11 +34,12 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     const fetchConversations = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const user = session.user
       setUserId(user.id)
 
-      // Get all jobs (admin sees all)
+      // Get all jobs with contractors
       const { data: jobs } = await supabase
         .from("jobs")
         .select("id, job_type, customer_name, contractor_id")
@@ -49,7 +50,7 @@ export default function AdminMessagesPage() {
         return
       }
 
-      // Get contractor profiles
+      // Get unique contractor IDs and their profiles
       const contractorIds = [...new Set(jobs.map((j) => j.contractor_id).filter(Boolean))]
       let profileMap: Record<string, any> = {}
       if (contractorIds.length > 0) {
@@ -60,24 +61,34 @@ export default function AdminMessagesPage() {
         profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
       }
 
-      // Build conversations per job
-      const convos: Conversation[] = []
+      // Group jobs by contractor — one conversation per contractor
+      const contractorJobMap: Record<string, any[]> = {}
       for (const job of jobs) {
-        const contractorName = profileMap[job.contractor_id]?.username || "Contractor"
+        if (!contractorJobMap[job.contractor_id]) {
+          contractorJobMap[job.contractor_id] = []
+        }
+        contractorJobMap[job.contractor_id].push(job)
+      }
 
+      // Build one conversation per contractor
+      const convos: Conversation[] = []
+      for (const [contractorId, contractorJobs] of Object.entries(contractorJobMap)) {
+        const contractorName = profileMap[contractorId]?.username || "Contractor"
+
+        // Get latest message between admin and this contractor
         const { data: lastMsg } = await supabase
           .from("messages")
           .select("content, created_at")
-          .eq("job_id", job.id)
+          .or(`sender_id.eq.${contractorId},receiver_id.eq.${contractorId}`)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
 
         convos.push({
-          job_id: job.id,
-          contact_id: job.contractor_id,
+          job_id: contractorJobs[0].id, // Use first job for sending
+          contact_id: contractorId,
           contact_name: contractorName,
-          job_type: `${job.job_type} — ${job.customer_name || "Customer"}`,
+          job_type: `${contractorJobs.length} job${contractorJobs.length > 1 ? "s" : ""}`,
           last_message: lastMsg?.content || "No messages yet",
           last_time: lastMsg?.created_at || new Date().toISOString(),
         })
@@ -92,7 +103,7 @@ export default function AdminMessagesPage() {
         setSelectedJobId(convos[0].job_id)
         setSelectedContactId(convos[0].contact_id)
         setSelectedContactName(convos[0].contact_name)
-        await fetchMessages(convos[0].job_id)
+        await fetchMessagesForContractor(convos[0].contact_id)
       }
 
       setLoading(false)
@@ -101,12 +112,12 @@ export default function AdminMessagesPage() {
     fetchConversations()
   }, [])
 
-  const fetchMessages = async (jobId: string) => {
+  const fetchMessagesForContractor = async (contractorId: string) => {
     setMessagesLoading(true)
     const { data } = await supabase
       .from("messages")
       .select("id, sender_id, content, image_url, created_at")
-      .eq("job_id", jobId)
+      .or(`sender_id.eq.${contractorId},receiver_id.eq.${contractorId}`)
       .order("created_at", { ascending: true })
 
     setMessages(data || [])
@@ -116,18 +127,18 @@ export default function AdminMessagesPage() {
   const handleSelectConversation = async (jobId: string, contactId: string) => {
     setSelectedJobId(jobId)
     setSelectedContactId(contactId)
-    const convo = conversations.find((c) => c.job_id === jobId)
+    const convo = conversations.find((c) => c.contact_id === contactId)
     setSelectedContactName(convo?.contact_name || "")
-    await fetchMessages(jobId)
+    await fetchMessagesForContractor(contactId)
   }
 
   const handleSendMessage = async (text: string) => {
-    if (!userId || !selectedJobId || !selectedContactId) return
+    if (!userId || !selectedContactId) return
 
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        job_id: selectedJobId,
+        job_id: selectedJobId || null,
         sender_id: userId,
         receiver_id: selectedContactId,
         content: text,
@@ -143,9 +154,9 @@ export default function AdminMessagesPage() {
   }
 
   const handleSendImage = async (file: File) => {
-    if (!userId || !selectedJobId || !selectedContactId) return
+    if (!userId || !selectedContactId) return
 
-    const fileName = `${selectedJobId}-${Date.now()}-${file.name}`
+    const fileName = `msg-${Date.now()}-${file.name}`
     const { error: uploadError } = await supabase.storage
       .from("message-attachments")
       .upload(fileName, file, { contentType: file.type })
@@ -162,7 +173,7 @@ export default function AdminMessagesPage() {
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        job_id: selectedJobId,
+        job_id: selectedJobId || null,
         sender_id: userId,
         receiver_id: selectedContactId,
         content: "",
