@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -23,7 +23,8 @@ interface DashboardShellProps {
 const contractorNav: NavItem[] = [
   { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
   { label: "My Jobs", href: "/contractor/leads", icon: FileText },
-  { label: "Request Report", href: "/contractor/report", icon: FileText },
+  { label: "Measure", href: "/contractor/measure", icon: Ruler },
+  { label: "Reports", href: "/contractor/report", icon: FileText },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
@@ -32,6 +33,7 @@ const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
   { label: "Leads", href: "/admin/jobs", icon: ClipboardList },
   { label: "Contractors", href: "/admin/contractors", icon: Users },
+  { label: "Measure", href: "/admin/measure", icon: Ruler },
   { label: "Reports", href: "/admin/reports", icon: FileText },
   { label: "Messages", href: "/admin/messages", icon: MessageSquare },
 ]

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { FileText, DollarSign, MapPin } from "lucide-react"
+import { FileText, DollarSign, MapPin, Plus } from "lucide-react"
 
 type AssignedJob = {
   id: string
@@ -103,6 +104,14 @@ export default function ContractorReportPage() {
           Request a job report with your pricing and scope of work. A detailed report will be generated and sent to your email.
         </p>
       </div>
+
+      <Link
+        href="/contractor/report-builder"
+        className="mx-auto flex w-full max-w-2xl items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-6 py-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+      >
+        <Plus className="h-4 w-4" />
+        Or Create Your Own Report
+      </Link>
 
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-5">

@@ -98,3 +98,29 @@
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Print styles for report view */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove sidebar, header, nav for clean print */
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

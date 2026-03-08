@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { FileText, DollarSign, MapPin, CheckCircle } from "lucide-react"
+import { FileText, DollarSign, MapPin, CheckCircle, Plus, Eye } from "lucide-react"
 
 type Report = {
   id: string
@@ -121,6 +122,16 @@ export default function AdminReportsPage() {
         </p>
       </div>
 
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/admin/report-builder/new"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" />
+          Create Report
+        </Link>
+      </div>
+
       {reports.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
           No reports submitted yet.
@@ -173,12 +184,27 @@ export default function AdminReportsPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/admin/report-builder/${report.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Edit Report
+                </Link>
+                <Link
+                  href={`/admin/report-view/${report.id}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Link>
                 {report.status === "Pending" && (
                   <button
                     onClick={() => handleMarkReviewed(report.id)}
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <CheckCircle className="h-3.5 w-3.5" />
                     Mark Reviewed
                   </button>
                 )}
