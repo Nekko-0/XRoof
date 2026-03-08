@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
 import { ArrowLeft, Printer } from "lucide-react"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
@@ -53,28 +52,19 @@ export default function AdminContractViewPage() {
     const load = async () => {
       setLoading(true)
 
-      const { data: jobData } = await supabase
-        .from("jobs")
-        .select("id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
-        .eq("id", jobId)
-        .single()
+      try {
+        const res = await fetch(`/api/contracts/${jobId}`)
+        const data = await res.json()
 
-      if (!jobData) { setLoading(false); return }
-      setJob(jobData)
-
-      const { data: existing } = await supabase
-        .from("contracts")
-        .select("*")
-        .eq("job_id", jobId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-
-      if (existing) {
-        setContract({
-          ...existing,
-          terms: { ...DEFAULT_TERMS, ...existing.terms },
-        })
+        if (data.job) setJob(data.job)
+        if (data.contract) {
+          setContract({
+            ...data.contract,
+            terms: { ...DEFAULT_TERMS, ...data.contract.terms },
+          })
+        }
+      } catch (err) {
+        console.error("Failed to fetch contract:", err)
       }
 
       setLoading(false)

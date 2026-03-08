@@ -394,7 +394,7 @@ export default function AdminLeadsPage() {
                   <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
                 )}
 
-                {(lead.status === "Accepted" || lead.status === "Completed") && (
+                {(lead.signed_at || lead.status === "Accepted" || lead.status === "Completed") && (
                   <div className="mb-3">
                     <Link
                       href={`/admin/contract/${lead.id}`}

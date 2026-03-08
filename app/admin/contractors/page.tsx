@@ -79,13 +79,13 @@ export default function AdminContractorsPage() {
     if (contractsMap[contractorId]) return
 
     setLoadingContracts(true)
-    const { data } = await supabase
-      .from("contracts")
-      .select("id, job_id, status, contract_date, customer_name, project_address")
-      .eq("contractor_id", contractorId)
-      .order("contract_date", { ascending: false })
-
-    setContractsMap((prev) => ({ ...prev, [contractorId]: data || [] }))
+    try {
+      const res = await fetch(`/api/contracts/by-contractor/${contractorId}`)
+      const data = await res.json()
+      setContractsMap((prev) => ({ ...prev, [contractorId]: data || [] }))
+    } catch {
+      setContractsMap((prev) => ({ ...prev, [contractorId]: [] }))
+    }
     setLoadingContracts(false)
   }
 
