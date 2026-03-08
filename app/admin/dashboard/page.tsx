@@ -19,7 +19,7 @@ type RecentJob = {
 export default function AdminDashboard() {
   const [pendingCount, setPendingCount] = useState(0)
   const [contractorCount, setContractorCount] = useState(0)
-  const [assignedTodayCount, setAssignedTodayCount] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -43,22 +43,18 @@ export default function AdminDashboard() {
 
       setContractorCount(contractors || 0)
 
-      // Count assigned today
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const { count: assignedToday } = await supabase
+      // Count completed jobs
+      const { count: completed } = await supabase
         .from("jobs")
         .select("*", { count: "exact", head: true })
-        .eq("status", "Assigned")
-        .gte("updated_at", today.toISOString())
+        .eq("status", "Completed")
 
-      setAssignedTodayCount(assignedToday || 0)
+      setCompletedCount(completed || 0)
 
-      // Get recent pending jobs
+      // Get recent jobs (all statuses)
       const { data: jobsRaw } = await supabase
         .from("jobs")
         .select("id, address, zip_code, job_type, status, created_at, customer_name")
-        .in("status", ["Pending", "Assigned"])
         .order("created_at", { ascending: false })
         .limit(10)
 
@@ -85,7 +81,7 @@ export default function AdminDashboard() {
   const stats = [
     { label: "Pending Leads", value: pendingCount.toString(), icon: ClipboardList, color: "bg-amber-900/30 text-amber-400" },
     { label: "Total Contractors", value: contractorCount.toString(), icon: Users, color: "bg-primary/10 text-primary" },
-    { label: "Assigned Today", value: assignedTodayCount.toString(), icon: CheckCircle, color: "bg-emerald-900/30 text-emerald-400" },
+    { label: "Completed Jobs", value: completedCount.toString(), icon: CheckCircle, color: "bg-emerald-900/30 text-emerald-400" },
   ]
 
   const timeAgo = (dateStr: string) => {

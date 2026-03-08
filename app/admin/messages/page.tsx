@@ -17,6 +17,7 @@ type Message = {
   id: string
   sender_id: string
   content: string
+  image_url?: string | null
   created_at: string
 }
 
@@ -104,7 +105,7 @@ export default function AdminMessagesPage() {
     setMessagesLoading(true)
     const { data } = await supabase
       .from("messages")
-      .select("id, sender_id, content, created_at")
+      .select("id, sender_id, content, image_url, created_at")
       .eq("job_id", jobId)
       .order("created_at", { ascending: true })
 
@@ -131,11 +132,47 @@ export default function AdminMessagesPage() {
         receiver_id: selectedContactId,
         content: text,
       })
-      .select("id, sender_id, content, created_at")
+      .select("id, sender_id, content, image_url, created_at")
       .single()
 
     if (error) {
       alert("Error sending message: " + error.message)
+    } else if (data) {
+      setMessages([...messages, data])
+    }
+  }
+
+  const handleSendImage = async (file: File) => {
+    if (!userId || !selectedJobId || !selectedContactId) return
+
+    const fileName = `${selectedJobId}-${Date.now()}-${file.name}`
+    const { error: uploadError } = await supabase.storage
+      .from("message-attachments")
+      .upload(fileName, file, { contentType: file.type })
+
+    if (uploadError) {
+      alert("Error uploading file: " + uploadError.message)
+      return
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("message-attachments")
+      .getPublicUrl(fileName)
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        job_id: selectedJobId,
+        sender_id: userId,
+        receiver_id: selectedContactId,
+        content: "",
+        image_url: urlData.publicUrl,
+      })
+      .select("id, sender_id, content, image_url, created_at")
+      .single()
+
+    if (error) {
+      alert("Error sending image: " + error.message)
     } else if (data) {
       setMessages([...messages, data])
     }
@@ -150,6 +187,7 @@ export default function AdminMessagesPage() {
       onSelectConversation={handleSelectConversation}
       messages={messages}
       onSendMessage={handleSendMessage}
+      onSendImage={handleSendImage}
       selectedContactName={selectedContactName}
       loading={messagesLoading}
     />

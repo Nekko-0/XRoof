@@ -397,7 +397,7 @@ export default function AdminLeadsPage() {
                 {(lead.status === "Accepted" || lead.status === "Completed") && (
                   <div className="mb-3">
                     <Link
-                      href={`/contractor/contract/${lead.id}`}
+                      href={`/admin/contract/${lead.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/30"
                     >
                       <ScrollText className="h-3 w-3" />

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { MapPin, Mail, Phone, Briefcase, Search } from "lucide-react"
+import Link from "next/link"
+import { MapPin, Mail, Phone, Briefcase, Search, ScrollText, ChevronDown, ChevronUp } from "lucide-react"
 
 type ContractorProfile = {
   id: string
@@ -19,6 +20,9 @@ export default function AdminContractorsPage() {
   const [contractors, setContractors] = useState<ContractorProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [zipFilter, setZipFilter] = useState("")
+  const [expandedContractor, setExpandedContractor] = useState<string | null>(null)
+  const [contractsMap, setContractsMap] = useState<Record<string, any[]>>({})
+  const [loadingContracts, setLoadingContracts] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +69,25 @@ export default function AdminContractorsPage() {
 
     fetchData()
   }, [])
+
+  const handleToggleContracts = async (contractorId: string) => {
+    if (expandedContractor === contractorId) {
+      setExpandedContractor(null)
+      return
+    }
+    setExpandedContractor(contractorId)
+    if (contractsMap[contractorId]) return
+
+    setLoadingContracts(true)
+    const { data } = await supabase
+      .from("contracts")
+      .select("id, job_id, status, contract_date, customer_name, project_address")
+      .eq("contractor_id", contractorId)
+      .order("contract_date", { ascending: false })
+
+    setContractsMap((prev) => ({ ...prev, [contractorId]: data || [] }))
+    setLoadingContracts(false)
+  }
 
   const filtered = zipFilter
     ? contractors.filter((c) => c.service_zips.some((z) => z.includes(zipFilter)))
@@ -149,7 +172,50 @@ export default function AdminContractorsPage() {
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   {c.active_jobs} active job{c.active_jobs !== 1 ? "s" : ""}
                 </span>
+                <button
+                  onClick={() => handleToggleContracts(c.id)}
+                  className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"
+                >
+                  <ScrollText className="h-3 w-3" />
+                  Contracts
+                  {expandedContractor === c.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
               </div>
+
+              {expandedContractor === c.id && (
+                <div className="mt-3 border-t border-border pt-3">
+                  {loadingContracts ? (
+                    <p className="text-xs text-muted-foreground">Loading contracts...</p>
+                  ) : (contractsMap[c.id] || []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No contracts yet.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {(contractsMap[c.id] || []).map((contract: any) => (
+                        <Link
+                          key={contract.id}
+                          href={`/admin/contract/${contract.job_id}`}
+                          className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 text-xs transition-colors hover:bg-secondary/50"
+                        >
+                          <div>
+                            <p className="font-medium text-foreground">{contract.customer_name || "Customer"}</p>
+                            <p className="text-muted-foreground">{contract.project_address || "No address"}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              contract.status === "signed" ? "bg-emerald-900/30 text-emerald-400" : "bg-amber-900/30 text-amber-400"
+                            }`}>
+                              {contract.status || "draft"}
+                            </span>
+                            {contract.contract_date && (
+                              <p className="mt-0.5 text-muted-foreground">{new Date(contract.contract_date).toLocaleDateString()}</p>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

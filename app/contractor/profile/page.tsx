@@ -23,8 +23,9 @@ export default function ContractorProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = "/auth"; return }
+      const user = session.user
 
       const { data, error } = await supabase
         .from("profiles")
@@ -72,8 +73,9 @@ export default function ContractorProfilePage() {
 
   const handleSave = async () => {
     if (!profile) return
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const user = session.user
 
     const { error } = await supabase
       .from("profiles")

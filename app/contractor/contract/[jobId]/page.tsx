@@ -81,8 +81,9 @@ export default function ContractPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/auth"); return }
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.push("/auth"); return }
+      const user = session.user
 
       // Fetch job
       const { data: jobData } = await supabase
@@ -242,8 +243,9 @@ export default function ContractPage() {
 
   const handleSaveDraft = async () => {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const user = session.user
 
     const contractData = {
       ...getContractData(),
@@ -292,8 +294,9 @@ export default function ContractPage() {
     }
 
     setSigning(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const user = session.user
 
     const contractorSigUrl = await uploadSignature(contractorPadRef.current, `${jobId}-contractor`)
     if (!contractorSigUrl) { setSigning(false); return }

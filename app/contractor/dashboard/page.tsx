@@ -31,8 +31,9 @@ export default function ContractorDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = "/auth"; return }
+      const user = session.user
 
       // Fetch recent jobs assigned to this contractor
       const { data: jobsRaw } = await supabase

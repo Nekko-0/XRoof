@@ -23,7 +23,7 @@ interface DashboardShellProps {
 const contractorNav: NavItem[] = [
   { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
   { label: "My Jobs", href: "/contractor/leads", icon: FileText },
-  { label: "Submit Report", href: "/contractor/report", icon: FileText },
+  { label: "Request Report", href: "/contractor/report", icon: FileText },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]

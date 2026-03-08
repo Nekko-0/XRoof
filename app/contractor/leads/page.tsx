@@ -31,8 +31,9 @@ export default function MyJobsPage() {
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = "/auth"; return }
+      const user = session.user
 
       const { data: jobsRaw } = await supabase
         .from("jobs")

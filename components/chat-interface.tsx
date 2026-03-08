@@ -108,6 +108,9 @@ export function ChatInterface({
                 <span className="text-sm font-semibold text-foreground">{convo.contact_name}</span>
                 <span className="text-xs text-muted-foreground">{formatTime(convo.last_time)}</span>
               </div>
+              {convo.job_type && (
+                <span className="text-[11px] font-medium text-primary/70">{convo.job_type}</span>
+              )}
               {convo.company_name && (
                 <span className="text-xs text-muted-foreground">{convo.company_name}</span>
               )}

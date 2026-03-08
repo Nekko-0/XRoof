@@ -29,8 +29,9 @@ export default function ContractorReportPage() {
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = "/auth"; return }
+      const user = session.user
 
       const { data } = await supabase
         .from("jobs")
@@ -60,8 +61,9 @@ export default function ContractorReportPage() {
       return
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const user = session.user
 
     const job = jobs.find((j) => j.id === selectedJobId)
 
@@ -95,10 +97,10 @@ export default function ContractorReportPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          Submit Report
+          Request Report
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Submit a job report with your pricing and scope of the work and I will generate you a detailed report you can use to close jobs. Report will be sent to your email.
+          Request a job report with your pricing and scope of work. A detailed report will be generated and sent to your email.
         </p>
       </div>
 
@@ -185,7 +187,7 @@ export default function ContractorReportPage() {
             disabled={saving || !selectedJobId}
             className="mt-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {saving ? "Submitting..." : "Submit Report"}
+            {saving ? "Submitting..." : "Request Report"}
           </button>
         </div>
       </div>

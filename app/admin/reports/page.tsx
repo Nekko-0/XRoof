@@ -87,6 +87,19 @@ export default function AdminReportsPage() {
     }
   }
 
+  const handleMarkCompleted = async (reportId: string) => {
+    const { error } = await supabase
+      .from("reports")
+      .update({ status: "Completed" })
+      .eq("id", reportId)
+
+    if (error) {
+      alert("Error: " + error.message)
+    } else {
+      setReports(reports.map((r) => r.id === reportId ? { ...r, status: "Completed" } : r))
+    }
+  }
+
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -127,7 +140,9 @@ export default function AdminReportsPage() {
                   </span>
                 )}
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  report.status === "Reviewed"
+                  report.status === "Completed"
+                    ? "bg-blue-900/30 text-blue-400 border border-blue-700"
+                    : report.status === "Reviewed"
                     ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
                     : "bg-amber-900/30 text-amber-400 border border-amber-700"
                 }`}>
@@ -157,15 +172,26 @@ export default function AdminReportsPage() {
                 <p className="text-sm text-foreground">{report.scope_of_work}</p>
               </div>
 
-              {report.status === "Pending" && (
-                <button
-                  onClick={() => handleMarkReviewed(report.id)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Send Report
-                </button>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {report.status === "Pending" && (
+                  <button
+                    onClick={() => handleMarkReviewed(report.id)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Mark Reviewed
+                  </button>
+                )}
+                {report.status === "Reviewed" && (
+                  <button
+                    onClick={() => handleMarkCompleted(report.id)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-900/30 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-900/50"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Mark Completed
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
