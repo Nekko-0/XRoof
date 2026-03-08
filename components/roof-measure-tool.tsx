@@ -170,7 +170,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         initMap(lat, lng)
         initStreetView(lat, lng)
       } else {
-        alert("Address not found. Please try a more specific address.")
+        alert("Address not found (status: " + status + "). Please try a more specific address.")
       }
     })
   }
