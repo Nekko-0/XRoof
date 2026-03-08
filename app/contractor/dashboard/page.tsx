@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall, ScrollText } from "lucide-react"
+import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, FileText, Target, Users, PhoneCall, ScrollText, MessageSquare, Gift, BadgePercent } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -11,18 +11,14 @@ type Job = {
   address: string
   zip_code: string
   job_type: string
-  description: string
   budget: number | null
   status: string
   created_at: string
   customer_name: string
-  photo_urls?: string[]
-  signature_url?: string | null
-  signed_at?: string | null
 }
 
 export default function ContractorDashboard() {
-  const [myJobs, setMyJobs] = useState<Job[]>([])
+  const [completedJobs, setCompletedJobs] = useState<Job[]>([])
   const [assignedCount, setAssignedCount] = useState(0)
   const [activeCount, setActiveCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
@@ -35,15 +31,15 @@ export default function ContractorDashboard() {
       if (!session) { window.location.href = "/auth"; return }
       const user = session.user
 
-      // Fetch recent jobs assigned to this contractor
-      const { data: jobsRaw } = await supabase
+      // Fetch all completed jobs
+      const { data: completedRaw } = await supabase
         .from("jobs")
-        .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, photo_urls, signature_url, signed_at")
+        .select("id, address, zip_code, job_type, budget, status, created_at, customer_name")
         .eq("contractor_id", user.id)
+        .eq("status", "Completed")
         .order("created_at", { ascending: false })
-        .limit(5)
 
-      setMyJobs(jobsRaw || [])
+      setCompletedJobs(completedRaw || [])
 
       // Count assigned jobs
       const { count: assigned } = await supabase
@@ -104,6 +100,30 @@ export default function ContractorDashboard() {
       title: "You Manage & Close",
       desc: "Contact homeowners, provide quotes, and update job status through your dashboard",
       icon: PhoneCall,
+    },
+    {
+      num: "4",
+      title: "Free Roof Reports",
+      desc: "I will make you a free roof report you can use to close deals, free of charge",
+      icon: Gift,
+    },
+    {
+      num: "5",
+      title: "10% on Signed Jobs",
+      desc: "After you close and sign a job, I will receive 10% of the signed contract",
+      icon: BadgePercent,
+    },
+    {
+      num: "6",
+      title: "No Monthly Fees",
+      desc: "You don't pay anything — no monthly subscriptions that might or might not work. Start for free, only pay when you close jobs",
+      icon: DollarSign,
+    },
+    {
+      num: "7",
+      title: "Direct Support",
+      desc: "If questions arise, you can contact me via the Messages tab. I will help with any problem you may have",
+      icon: MessageSquare,
     },
   ]
 
@@ -173,98 +193,20 @@ export default function ContractorDashboard() {
         ))}
       </div>
 
-      {/* Recent Jobs */}
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Your Jobs
-          </h3>
-          <Link
-            href="/contractor/leads"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
-          >
-            View All
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {myJobs.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
-            No jobs assigned to you yet. Check back soon!
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {myJobs.map((job) => (
-              <div
-                key={job.id}
-                className="rounded-2xl border border-border border-l-4 border-l-primary bg-card p-4 shadow-sm"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-bold text-foreground">{job.customer_name || "Customer"}</p>
-                  <StatusBadge status={job.status} />
-                </div>
-                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {job.address}, {job.zip_code}
-                  </span>
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                    {job.job_type}
-                  </span>
-                  {job.budget && (
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      ${job.budget.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                {job.description && (
-                  <p className="mb-2 text-xs leading-relaxed text-muted-foreground line-clamp-2">{job.description}</p>
-                )}
-                {job.photo_urls && job.photo_urls.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {job.photo_urls.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt={`Job photo ${i + 1}`} className="h-12 w-12 rounded-lg object-cover border border-border" />
-                      </a>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href={`/contractor/contract/${job.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    <ScrollText className="h-3 w-3" />
-                    View Contract
-                  </Link>
-                  <Link
-                    href="/contractor/report"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
-                  >
-                    <FileText className="h-3 w-3" />
-                    Request Report
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* Completed Jobs with Certificates */}
+      {/* Completed Jobs */}
       <div id="completed-jobs">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Completed Jobs
         </h3>
-        {myJobs.filter((j) => j.status === "Completed").length === 0 ? (
+        {completedJobs.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-sm">
             No completed jobs yet.
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {myJobs.filter((j) => j.status === "Completed").map((job) => (
+            {completedJobs.map((job) => (
               <div
-                key={`completed-${job.id}`}
+                key={job.id}
                 className="rounded-2xl border border-border border-l-4 border-l-emerald-600 bg-card p-4 shadow-sm"
               >
                 <div className="mb-2 flex items-center justify-between">
@@ -288,9 +230,9 @@ export default function ContractorDashboard() {
                 </div>
                 <Link
                   href={`/contractor/contract/${job.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  <ScrollText className="h-3 w-3" />
+                  <ScrollText className="h-3.5 w-3.5" />
                   View Contract
                 </Link>
               </div>
