@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, PenTool } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, PenTool, ScrollText } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 import { SignaturePadModal } from "@/components/signature-pad"
 
@@ -240,8 +240,15 @@ export default function MyJobsPage() {
                     </>
                   )}
                   <Link
-                    href="/contractor/report"
+                    href={`/contractor/contract/${job.id}`}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    <ScrollText className="h-3 w-3" />
+                    Contract
+                  </Link>
+                  <Link
+                    href="/contractor/report"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
                   >
                     <FileText className="h-3 w-3" />
                     Report
