@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { MapPin, DollarSign, UserPlus, Check, Plus, Phone, UserMinus } from "lucide-react"
+import { MapPin, DollarSign, UserPlus, Check, Plus, Phone, UserMinus, ScrollText } from "lucide-react"
+import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 
 type Lead = {
@@ -172,12 +173,17 @@ export default function AdminLeadsPage() {
   }
 
   const handleUnassign = async (jobId: string) => {
-    if (!confirm("Remove this contractor and reassign the lead?")) return
+    if (!confirm("Remove this contractor and reassign the lead? This will delete any existing contract.")) return
 
     setAssigning(jobId)
+
+    // Delete any contracts for this job
+    await supabase.from("contracts").delete().eq("job_id", jobId)
+
+    // Clear job assignment, signature, and status
     const { error } = await supabase
       .from("jobs")
-      .update({ contractor_id: null, status: "Pending" })
+      .update({ contractor_id: null, status: "Pending", signature_url: null, signed_at: null })
       .eq("id", jobId)
 
     if (error) {
@@ -185,10 +191,11 @@ export default function AdminLeadsPage() {
     } else {
       setLeads(leads.map((j) =>
         j.id === jobId
-          ? { ...j, status: "Pending", contractor_name: null, contractor_email: null }
+          ? { ...j, status: "Pending", contractor_name: null, contractor_email: null, signature_url: null, signed_at: null }
           : j
       ))
     }
+    setAssigning(jobId)
     setAssigning(null)
   }
 
@@ -387,15 +394,15 @@ export default function AdminLeadsPage() {
                   <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{lead.description}</p>
                 )}
 
-                {lead.signature_url && (
+                {(lead.status === "Accepted" || lead.status === "Completed") && (
                   <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">
-                      Signed Certificate{lead.signed_at && ` — ${new Date(lead.signed_at).toLocaleDateString()}`}
-                      {lead.budget && ` — $${lead.budget.toLocaleString()}`}
-                    </p>
-                    <a href={lead.signature_url} target="_blank" rel="noopener noreferrer">
-                      <img src={lead.signature_url} alt="Completion certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
-                    </a>
+                    <Link
+                      href={`/contractor/contract/${lead.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/30"
+                    >
+                      <ScrollText className="h-3 w-3" />
+                      View Contract
+                    </Link>
                   </div>
                 )}
 

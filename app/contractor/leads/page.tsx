@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, PenTool, ScrollText } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, ScrollText, RotateCcw } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
-import { SignaturePadModal } from "@/components/signature-pad"
 
 type Job = {
   id: string
@@ -27,17 +26,13 @@ export default function MyJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState<string | null>(null)
-  const [signingJob, setSigningJob] = useState<string | null>(null)
-  const [savingSignature, setSavingSignature] = useState(false)
-  const [contractorName, setContractorName] = useState("")
+  const [reopening, setReopening] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      setContractorName(user.user_metadata?.username || user.email || "")
 
       const { data: jobsRaw } = await supabase
         .from("jobs")
@@ -69,55 +64,21 @@ export default function MyJobsPage() {
     setCompleting(null)
   }
 
-  const handleSaveSignature = async (dataUrl: string, finalPrice: number) => {
-    if (!signingJob) return
-    setSavingSignature(true)
+  const handleReopen = async (jobId: string) => {
+    if (!confirm("Reopen this job? Status will be set back to Accepted.")) return
 
-    // Convert data URL to blob
-    const res = await fetch(dataUrl)
-    const blob = await res.blob()
-    const fileName = `${signingJob}-${Date.now()}.png`
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from("signatures")
-      .upload(fileName, blob, { contentType: "image/png" })
-
-    if (uploadError) {
-      alert("Error uploading certificate: " + uploadError.message)
-      setSavingSignature(false)
-      return
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("signatures")
-      .getPublicUrl(fileName)
-
-    const signatureUrl = urlData.publicUrl
-
-    // Update job record with certificate URL, locked price, and signed timestamp
-    const { error: updateError } = await supabase
+    setReopening(jobId)
+    const { error } = await supabase
       .from("jobs")
-      .update({
-        signature_url: signatureUrl,
-        budget: finalPrice,
-        signed_at: new Date().toISOString(),
-      })
-      .eq("id", signingJob)
+      .update({ status: "Accepted" })
+      .eq("id", jobId)
 
-    if (updateError) {
-      alert("Error saving certificate: " + updateError.message)
+    if (error) {
+      alert("Error: " + error.message)
     } else {
-      setJobs(jobs.map((j) => j.id === signingJob ? {
-        ...j,
-        signature_url: signatureUrl,
-        budget: finalPrice,
-        signed_at: new Date().toISOString(),
-      } : j))
-      setSigningJob(null)
+      setJobs(jobs.map((j) => j.id === jobId ? { ...j, status: "Accepted" } : j))
     }
-    setSavingSignature(false)
+    setReopening(null)
   }
 
   const timeAgo = (dateStr: string) => {
@@ -253,16 +214,7 @@ export default function MyJobsPage() {
                     <FileText className="h-3 w-3" />
                     Report
                   </Link>
-                  {job.status !== "Completed" && !job.signature_url && (
-                    <button
-                      onClick={() => setSigningJob(job.id)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
-                    >
-                      <PenTool className="h-3 w-3" />
-                      Signature
-                    </button>
-                  )}
-                  {job.status !== "Completed" && (
+                  {job.status !== "Completed" ? (
                     <button
                       onClick={() => handleComplete(job.id)}
                       disabled={completing === job.id}
@@ -270,6 +222,15 @@ export default function MyJobsPage() {
                     >
                       <CheckCircle className="h-3 w-3" />
                       {completing === job.id ? "..." : "Complete"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleReopen(job.id)}
+                      disabled={reopening === job.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      {reopening === job.id ? "..." : "Reopen"}
                     </button>
                   )}
                 </div>
@@ -279,23 +240,6 @@ export default function MyJobsPage() {
         </div>
       )}
 
-      <SignaturePadModal
-        open={signingJob !== null}
-        onClose={() => setSigningJob(null)}
-        onSave={handleSaveSignature}
-        saving={savingSignature}
-        jobDetails={(() => {
-          const j = jobs.find((j) => j.id === signingJob)
-          if (!j) return undefined
-          return {
-            jobType: j.job_type,
-            address: `${j.address} ${j.zip_code}`,
-            customerName: j.customer_name,
-            contractorName,
-            budget: j.budget,
-          }
-        })()}
-      />
     </div>
   )
 }

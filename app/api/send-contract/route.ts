@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } }
   )
 
@@ -78,6 +78,8 @@ export async function POST(req: Request) {
       </p>
       <p style="font-size:11px;color:#555;">${terms.payment_terms_text || ""}</p>
 
+      ${terms.work_start_date ? `<h3 style="font-size:14px;margin:20px 0 8px;">Work Start Date</h3><p style="font-size:12px;font-weight:bold;">${new Date(terms.work_start_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>` : ""}
+
       <h3 style="font-size:14px;margin:20px 0 8px;">Scheduling & Delays</h3>
       <p style="font-size:11px;color:#555;">${terms.scheduling_text || ""}</p>
 
@@ -90,9 +92,6 @@ export async function POST(req: Request) {
       <h3 style="font-size:14px;margin:20px 0 8px;">Warranty</h3>
       <p style="font-size:12px;margin:0 0 3px;"><strong>Workmanship warranty:</strong> ${terms.warranty_years || 5} years</p>
       <p style="font-size:11px;color:#555;">${terms.warranty_text || ""}</p>
-
-      <h3 style="font-size:14px;margin:20px 0 8px;">Final Inspection</h3>
-      <p style="font-size:11px;color:#555;">${terms.inspection_text || ""}</p>
 
       <h3 style="font-size:14px;margin:20px 0 8px;">Governing Law</h3>
       <p style="font-size:11px;color:#555;">This agreement shall be governed by the laws of the State of ${terms.governing_state || "Wisconsin"}.</p>

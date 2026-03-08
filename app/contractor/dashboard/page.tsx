@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall } from "lucide-react"
+import { Briefcase, CheckCircle, ClipboardList, MapPin, DollarSign, ArrowRight, FileText, Target, Users, PhoneCall, ScrollText } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
 
 type Job = {
@@ -229,22 +229,22 @@ export default function ContractorDashboard() {
                     ))}
                   </div>
                 )}
-                {job.signature_url && (
-                  <div className="mb-2">
-                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
-                      Signed Certificate{job.signed_at && ` — ${new Date(job.signed_at).toLocaleDateString()}`}
-                    </p>
-                    <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
-                      <img src={job.signature_url} alt="Certificate" className="h-16 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
-                    </a>
-                  </div>
-                )}
-                <Link
-                  href="/contractor/report"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  Submit Report
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/contractor/contract/${job.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    <ScrollText className="h-3 w-3" />
+                    View Contract
+                  </Link>
+                  <Link
+                    href="/contractor/report"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                  >
+                    <FileText className="h-3 w-3" />
+                    Request Report
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -285,18 +285,13 @@ export default function ContractorDashboard() {
                     </span>
                   )}
                 </div>
-                {job.signature_url ? (
-                  <div>
-                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
-                      Signed Certificate{job.signed_at && ` — ${new Date(job.signed_at).toLocaleDateString()}`}
-                    </p>
-                    <a href={job.signature_url} target="_blank" rel="noopener noreferrer">
-                      <img src={job.signature_url} alt="Certificate" className="h-20 rounded-lg border border-border bg-white hover:opacity-80 transition-opacity" />
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No certificate signed</p>
-                )}
+                <Link
+                  href={`/contractor/contract/${job.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <ScrollText className="h-3 w-3" />
+                  View Contract
+                </Link>
               </div>
             ))}
           </div>

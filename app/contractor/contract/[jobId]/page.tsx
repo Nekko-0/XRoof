@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import SignaturePadLib from "signature_pad"
 import { supabase } from "@/lib/supabaseClient"
-import { ArrowLeft, Save, PenTool, Printer, Mail, Eraser, Check } from "lucide-react"
+import { ArrowLeft, Save, PenTool, Printer, Mail, Check, RotateCcw } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
-import { DEFAULT_TERMS, type ContractTerms, type ScopeItem } from "@/components/contract-terms-defaults"
+import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 
 type Job = {
   id: string
@@ -61,6 +61,9 @@ export default function ContractPage() {
   const [contractorPhone, setContractorPhone] = useState("")
   const [contractorEmail, setContractorEmail] = useState("")
   const [contractorAddress, setContractorAddress] = useState("")
+  const [customerName, setCustomerName] = useState("")
+  const [customerAddress, setCustomerAddress] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
   const [contractPrice, setContractPrice] = useState("")
   const [depositPercent, setDepositPercent] = useState(50)
   const [terms, setTerms] = useState<ContractTerms>(DEFAULT_TERMS)
@@ -114,14 +117,20 @@ export default function ContractPage() {
         setContractorPhone(existing.contractor_phone || "")
         setContractorEmail(existing.contractor_email || "")
         setContractorAddress(existing.contractor_address || "")
+        setCustomerName(existing.customer_name)
+        setCustomerAddress(existing.project_address)
+        setCustomerPhone(jobData.customer_phone || "")
         setContractPrice(existing.contract_price?.toString() || "")
         setDepositPercent(existing.deposit_percent || 50)
-        setTerms(existing.terms || DEFAULT_TERMS)
+        setTerms({ ...DEFAULT_TERMS, ...existing.terms })
       } else {
         // Pre-fill from profile and job
         setContractorName(profile?.username || user.user_metadata?.username || "")
         setContractorCompany(profile?.company_name || "")
         setContractorEmail(profile?.email || user.email || "")
+        setCustomerName(jobData.customer_name)
+        setCustomerAddress(`${jobData.address} ${jobData.zip_code}`)
+        setCustomerPhone(jobData.customer_phone || "")
         setContractPrice(jobData.budget?.toString() || "")
       }
 
@@ -157,7 +166,6 @@ export default function ContractPage() {
       setEmpty(true)
     }
 
-    // Small delay to ensure canvas is rendered
     const timer = setTimeout(() => {
       initPad(contractorCanvasRef, contractorPadRef, setContractorSigEmpty)
       initPad(customerCanvasRef, customerPadRef, setCustomerSigEmpty)
@@ -206,6 +214,18 @@ export default function ContractPage() {
     }))
   }
 
+  const handleEditSigned = () => {
+    if (!confirm("Editing this contract will remove all signatures. Both parties will need to sign again. Continue?")) return
+    setContract((prev) => prev ? {
+      ...prev,
+      status: "draft",
+      contractor_signature_url: null,
+      customer_signature_url: null,
+      contractor_signed_at: null,
+      customer_signed_at: null,
+    } : null)
+  }
+
   const getContractData = () => ({
     job_id: jobId,
     contractor_name: contractorName,
@@ -213,8 +233,8 @@ export default function ContractPage() {
     contractor_phone: contractorPhone || null,
     contractor_email: contractorEmail || null,
     contractor_address: contractorAddress || null,
-    customer_name: job?.customer_name || "",
-    project_address: `${job?.address || ""} ${job?.zip_code || ""}`,
+    customer_name: customerName,
+    project_address: customerAddress,
     contract_price: parseFloat(contractPrice) || 0,
     deposit_percent: depositPercent,
     terms,
@@ -225,12 +245,20 @@ export default function ContractPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const contractData = { ...getContractData(), contractor_id: user.id, status: "draft" }
+    const contractData = {
+      ...getContractData(),
+      contractor_id: user.id,
+      status: "draft",
+      contractor_signature_url: null,
+      customer_signature_url: null,
+      contractor_signed_at: null,
+      customer_signed_at: null,
+    }
 
     if (contract?.id) {
-      const { error } = await supabase.from("contracts").update(contractData).eq("id", contract.id)
+      const { data, error } = await supabase.from("contracts").update(contractData).eq("id", contract.id).select().single()
       if (error) alert("Error saving: " + error.message)
-      else alert("Draft saved!")
+      else { setContract(data); alert("Draft saved!") }
     } else {
       const { data, error } = await supabase.from("contracts").insert(contractData).select().single()
       if (error) alert("Error saving: " + error.message)
@@ -297,7 +325,6 @@ export default function ContractPage() {
 
     if (savedContract) {
       setContract(savedContract)
-      // Also update the job with signature info
       await supabase.from("jobs").update({
         signature_url: customerSigUrl,
         budget: parseFloat(contractPrice) || 0,
@@ -335,7 +362,6 @@ export default function ContractPage() {
 
   return (
     <div className="mx-auto max-w-2xl pb-20">
-      {/* Back button */}
       <div className="mb-4 print:hidden">
         <Link href="/contractor/leads" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
@@ -343,7 +369,6 @@ export default function ContractPage() {
         </Link>
       </div>
 
-      {/* Contract document */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:border-0 print:shadow-none print:bg-white print:text-black" id="contract-content">
 
         {/* Header */}
@@ -374,9 +399,9 @@ export default function ContractPage() {
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Customer</h3>
             <div className="space-y-2">
-              <p className="px-3 py-1.5 text-sm text-foreground print:p-0">{job.customer_name}</p>
-              <p className="px-3 py-1.5 text-sm text-foreground print:p-0">{job.address}, {job.zip_code}</p>
-              {job.customer_phone && <p className="px-3 py-1.5 text-sm text-foreground print:p-0">{job.customer_phone}</p>}
+              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer Name" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Project Address" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
               <p className="px-3 py-1.5 text-sm text-muted-foreground print:p-0">
                 Contract Date: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
               </p>
@@ -456,6 +481,23 @@ export default function ContractPage() {
           )}
         </div>
 
+        {/* Work Start Date */}
+        <div className="mb-6">
+          <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Work Start Date</h3>
+          {!isSigned ? (
+            <input
+              type="date"
+              value={terms.work_start_date || ""}
+              onChange={(e) => updateTerm("work_start_date", e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+          ) : (
+            <p className="text-sm font-semibold text-foreground">
+              {terms.work_start_date ? new Date(terms.work_start_date + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "To be determined"}
+            </p>
+          )}
+        </div>
+
         {/* Payment Terms */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Payment Terms</h3>
@@ -494,10 +536,10 @@ export default function ContractPage() {
           )}
         </div>
 
-        {/* Legal Clauses (Accordion) */}
+        {/* Legal Clauses */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Terms & Conditions</h3>
-          <Accordion type="multiple" defaultValue={isSigned ? ["scheduling", "hidden-damage", "subcontractors", "warranty", "inspection", "governing"] : []}>
+          <Accordion type="multiple" defaultValue={isSigned ? ["scheduling", "hidden-damage", "subcontractors", "warranty", "governing"] : []}>
             <AccordionItem value="scheduling">
               <AccordionTrigger className="text-sm">Scheduling & Delays</AccordionTrigger>
               <AccordionContent>
@@ -544,20 +586,9 @@ export default function ContractPage() {
                   <span className="text-xs text-muted-foreground">years</span>
                 </div>
                 {!isSigned ? (
-                  <textarea value={terms.warranty_text} onChange={(e) => updateTerm("warranty_text", e.target.value)} rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
+                  <textarea value={terms.warranty_text} onChange={(e) => updateTerm("warranty_text", e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">{terms.warranty_text}</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="inspection">
-              <AccordionTrigger className="text-sm">Final Inspection</AccordionTrigger>
-              <AccordionContent>
-                {!isSigned ? (
-                  <textarea value={terms.inspection_text} onChange={(e) => updateTerm("inspection_text", e.target.value)} rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
-                ) : (
-                  <p className="text-xs text-muted-foreground leading-relaxed">{terms.inspection_text}</p>
                 )}
               </AccordionContent>
             </AccordionItem>
@@ -589,7 +620,6 @@ export default function ContractPage() {
 
         {/* Signatures */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Contractor Signature */}
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Contractor Signature
@@ -618,7 +648,6 @@ export default function ContractPage() {
             )}
           </div>
 
-          {/* Customer Signature */}
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Customer Signature
@@ -674,6 +703,13 @@ export default function ContractPage() {
         {isSigned && (
           <>
             <button
+              onClick={handleEditSigned}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Edit Contract
+            </button>
+            <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
             >
@@ -692,7 +728,6 @@ export default function ContractPage() {
         )}
       </div>
 
-      {/* Print styles */}
       <style jsx global>{`
         @media print {
           body { background: white !important; color: black !important; }
