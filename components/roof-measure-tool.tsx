@@ -227,7 +227,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           const firstPt = plane.points[0]
           const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
           const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
-          if (dist < 1.5) {
+          if (dist < 0.8) {
             // Close polygon — recalculate area and stop drawing
             updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
             setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
@@ -245,7 +245,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           for (const pt of p.points) {
             const existingPos = new window.google.maps.LatLng(pt.lat, pt.lng)
             const d = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, existingPos)
-            if (d < 2 && d < bestDist) {
+            if (d < 5 && d < bestDist) {
               bestDist = d
               snapLat = pt.lat
               snapLng = pt.lng
