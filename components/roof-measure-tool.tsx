@@ -319,6 +319,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           position: { lat: pt.lat, lng: pt.lng },
           map: mapInstanceRef.current,
           draggable: !drawingActiveRef.current,
+          clickable: !drawingActiveRef.current,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 6,
