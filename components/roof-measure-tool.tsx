@@ -90,9 +90,12 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const geocoderRef = useRef<any>(null)
   const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null)
   const drawingActiveRef = useRef(false)
+  const activePlaneIndexRef = useRef(0)
+  const addressMarkerRef = useRef<any>(null)
 
-  // Keep ref in sync
+  // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
+  useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
 
   // Load Google Maps script
   useEffect(() => {
@@ -135,6 +138,14 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
     mapInstanceRef.current = map
     geocoderRef.current = new window.google.maps.Geocoder()
+
+    // Drop red pin marker at the geocoded address location
+    if (addressMarkerRef.current) addressMarkerRef.current.setMap(null)
+    addressMarkerRef.current = new window.google.maps.Marker({
+      position: { lat, lng },
+      map,
+      title: "Property Location",
+    })
 
     // Click handler for drawing — use ref to avoid stale closure
     map.addListener("click", (e: any) => {
@@ -186,18 +197,22 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     })
   }
 
-  // Add point to current plane
+  // Add point to current plane — uses ref to avoid stale closure in map click handler
   const addPointToPlane = (lat: number, lng: number) => {
+    const idx = activePlaneIndexRef.current
     setPlanes((prev) => {
       const updated = [...prev]
-      if (!updated[activePlaneIndex]) {
-        updated[activePlaneIndex] = { name: `Plane ${activePlaneIndex + 1}`, points: [], area_sqft: 0 }
+      if (!updated[idx]) {
+        updated[idx] = { name: `Plane ${idx + 1}`, points: [], area_sqft: 0 }
       }
-      updated[activePlaneIndex].points.push({ lat, lng })
+      updated[idx] = {
+        ...updated[idx],
+        points: [...updated[idx].points, { lat, lng }],
+      }
 
       // Calculate area if 3+ points
-      if (updated[activePlaneIndex].points.length >= 3) {
-        updated[activePlaneIndex].area_sqft = calculatePolygonArea(updated[activePlaneIndex].points)
+      if (updated[idx].points.length >= 3) {
+        updated[idx].area_sqft = calculatePolygonArea(updated[idx].points)
       }
 
       return updated
@@ -397,12 +412,15 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     }
   }
 
-  // Add new plane
+  // Add new plane — immediately update refs so click handler uses new plane
   const addPlane = () => {
     const newPlane: RoofPlane = { name: `Plane ${planes.length + 1}`, points: [], area_sqft: 0 }
+    const newIndex = planes.length
     setPlanes([...planes, newPlane])
-    setActivePlaneIndex(planes.length)
+    setActivePlaneIndex(newIndex)
+    activePlaneIndexRef.current = newIndex
     setDrawingActive(true)
+    drawingActiveRef.current = true
   }
 
   // Delete plane
@@ -414,16 +432,18 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     }
   }
 
-  // Undo last point
+  // Undo last point — uses ref to avoid stale closure
   const undoLastPoint = () => {
+    const idx = activePlaneIndexRef.current
     setPlanes((prev) => {
       const updated = [...prev]
-      if (updated[activePlaneIndex]?.points.length > 0) {
-        updated[activePlaneIndex] = {
-          ...updated[activePlaneIndex],
-          points: updated[activePlaneIndex].points.slice(0, -1),
-          area_sqft: updated[activePlaneIndex].points.length > 3
-            ? calculatePolygonArea(updated[activePlaneIndex].points.slice(0, -1))
+      if (updated[idx]?.points.length > 0) {
+        const newPoints = updated[idx].points.slice(0, -1)
+        updated[idx] = {
+          ...updated[idx],
+          points: newPoints,
+          area_sqft: newPoints.length >= 3
+            ? calculatePolygonArea(newPoints)
             : 0,
         }
       }
@@ -654,6 +674,9 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Click on the roof rake (sloped edge): P1 at the bottom (eave), P2 midway, P3 at the top (ridge). The angle will be calculated automatically.
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Drag to rotate the view — navigate around the house to see the garage or back roof sections.
                 </p>
                 <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-amber-400">
                   Estimated pitch — verify with physical measurement for exact accuracy (~85-90% accurate)
