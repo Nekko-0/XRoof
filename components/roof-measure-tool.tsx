@@ -221,21 +221,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       if (window.google?.maps?.geometry) {
         const clickPos = new window.google.maps.LatLng(lat, lng)
 
-        // Check if clicking near the first point of CURRENT plane to close it (needs 3+ points)
-        const plane = updated[idx]
-        if (plane.points.length >= 3) {
-          const firstPt = plane.points[0]
-          const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
-          const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
-          if (dist < 0.8) {
-            // Close polygon — recalculate area and stop drawing
-            updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
-            setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
-            return updated
-          }
-        }
-
-        // Snap to existing points from OTHER planes only (within 2m)
+        // Snap to existing points from OTHER planes only (within 5m)
         // Skip current plane so tight corners can have closely-placed points
         let bestDist = Infinity
         for (let pIdx = 0; pIdx < updated.length; pIdx++) {
@@ -659,7 +645,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                   >
-                    {drawingActive ? "Drawing Active" : "Start Drawing"}
+                    {drawingActive ? "Stop Drawing" : "Start Drawing"}
                   </button>
                   <button
                     onClick={addPlane}
