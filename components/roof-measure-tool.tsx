@@ -231,7 +231,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           for (const pt of p.points) {
             const existingPos = new window.google.maps.LatLng(pt.lat, pt.lng)
             const d = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, existingPos)
-            if (d < 5 && d < bestDist) {
+            if (d < 1 && d < bestDist) {
               bestDist = d
               snapLat = pt.lat
               snapLng = pt.lng
