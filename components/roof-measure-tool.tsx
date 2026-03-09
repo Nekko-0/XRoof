@@ -124,6 +124,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const edgeLabelsRef = useRef<any[]>([])
   const [activeEdgeTool, setActiveEdgeTool] = useState<EdgeType | null>(null)
   const activeEdgeToolRef = useRef<EdgeType | null>(null)
+  const [mapZoom, setMapZoom] = useState(20)
+  const planeLabelsRef = useRef<any[]>([])
 
   // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
@@ -181,6 +183,11 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       title: "Drag to correct property",
     })
 
+    // Track zoom level for label visibility
+    map.addListener("zoom_changed", () => {
+      setMapZoom(map.getZoom() || 20)
+    })
+
     // Click handler for drawing — use ref to avoid stale closure
     map.addListener("click", (e: any) => {
       if (!drawingActiveRef.current) return
@@ -204,6 +211,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       zoom: 1,
       disableDefaultUI: false,
       showRoadLabels: false,
+      zoomControl: false,
+      scrollwheel: false,
     })
 
     streetViewInstanceRef.current = sv
@@ -303,10 +312,14 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     markersRef.current.forEach((m) => m.setMap(null))
     edgeLinesRef.current.forEach((l) => l.setMap(null))
     edgeLabelsRef.current.forEach((l) => l.setMap(null))
+    planeLabelsRef.current.forEach((l) => l.setMap(null))
     polygonsRef.current = []
     markersRef.current = []
     edgeLinesRef.current = []
     edgeLabelsRef.current = []
+    planeLabelsRef.current = []
+
+    const showLabels = mapZoom >= 19
 
     planes.forEach((plane, planeIdx) => {
       const planeColor = planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6"
@@ -368,8 +381,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         })
         edgeLinesRef.current.push(edgeLine)
 
-        // Measurement label at midpoint
-        if (window.google?.maps?.geometry) {
+        // Measurement label at midpoint (only shown when zoomed in enough)
+        if (showLabels && window.google?.maps?.geometry) {
           const latLng1 = new window.google.maps.LatLng(p1.lat, p1.lng)
           const latLng2 = new window.google.maps.LatLng(p2.lat, p2.lng)
           const distMeters = window.google.maps.geometry.spherical.computeDistanceBetween(latLng1, latLng2)
@@ -432,8 +445,30 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         })
         markersRef.current.push(marker)
       })
+
+      // Plane centroid label (pitch + area) — shown when zoomed in
+      if (showLabels && plane.points.length >= 3 && plane.area_sqft > 0) {
+        const centroidLat = plane.points.reduce((s, p) => s + p.lat, 0) / plane.points.length
+        const centroidLng = plane.points.reduce((s, p) => s + p.lng, 0) / plane.points.length
+        const planeLabel = new window.google.maps.Marker({
+          position: { lat: centroidLat, lng: centroidLng },
+          map: mapInstanceRef.current,
+          icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 0 },
+          label: {
+            text: `${selectedPitch}\n${plane.area_sqft.toLocaleString()} sqft`,
+            color: "#fff",
+            fontSize: "13px",
+            fontWeight: "bold",
+            className: "edge-measurement-label",
+          },
+          clickable: false,
+          draggable: false,
+          zIndex: 5,
+        })
+        planeLabelsRef.current.push(planeLabel)
+      }
     })
-  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool])
+  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool, mapZoom, selectedPitch])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
@@ -903,7 +938,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                       className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
                     >
                       <RotateCcw className="h-3 w-3" />
-                      Reset Points
+                      Redo Pitch
                     </button>
                   )}
                 </div>
