@@ -32,10 +32,36 @@ function getPitchFromDegrees(deg: number): { pitch: string; factor: number } {
   return { pitch: closest.pitch, factor: closest.factor }
 }
 
+type EdgeType =
+  | "unspecified" | "eaves" | "valleys" | "hips" | "ridges"
+  | "rakes" | "wall_flashing" | "step_flashing" | "parapet_wall" | "transition"
+
+const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; dashed: boolean }> = {
+  unspecified:   { label: "Unspecified",   color: "#38bdf8", dashed: false },
+  eaves:         { label: "Eaves",         color: "#34d399", dashed: false },
+  valleys:       { label: "Valleys",       color: "#f87171", dashed: false },
+  hips:          { label: "Hips",          color: "#a78bfa", dashed: false },
+  ridges:        { label: "Ridges",        color: "#a3e635", dashed: false },
+  rakes:         { label: "Rakes",         color: "#fbbf24", dashed: false },
+  wall_flashing: { label: "Wall Flashing", color: "#22d3ee", dashed: true  },
+  step_flashing: { label: "Step Flashing", color: "#fb7185", dashed: true  },
+  parapet_wall:  { label: "Parapet Wall",  color: "#fb923c", dashed: false },
+  transition:    { label: "Transition",    color: "#e879f9", dashed: false },
+}
+
+function formatDistance(meters: number): string {
+  const totalInches = meters * 39.3701
+  const feet = Math.floor(totalInches / 12)
+  const inches = Math.round(totalInches % 12)
+  if (inches === 12) return `${feet + 1}ft 0in`
+  return `${feet}ft ${inches}in`
+}
+
 type RoofPlane = {
   name: string
   points: { lat: number; lng: number }[]
   area_sqft: number
+  edgeTypes: EdgeType[]
 }
 
 export type RoofMeasurement = {
@@ -94,10 +120,15 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const activePlaneIndexRef = useRef(0)
   const addressMarkerRef = useRef<any>(null)
   const streetViewInitedRef = useRef(false)
+  const edgeLinesRef = useRef<any[]>([])
+  const edgeLabelsRef = useRef<any[]>([])
+  const [activeEdgeTool, setActiveEdgeTool] = useState<EdgeType | null>(null)
+  const activeEdgeToolRef = useRef<EdgeType | null>(null)
 
   // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
   useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
+  useEffect(() => { activeEdgeToolRef.current = activeEdgeTool }, [activeEdgeTool])
 
   // Load Google Maps script
   useEffect(() => {
@@ -212,7 +243,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     setPlanes((prev) => {
       const updated = [...prev]
       if (!updated[idx]) {
-        updated[idx] = { name: `Plane ${idx + 1}`, points: [], area_sqft: 0 }
+        updated[idx] = { name: `Plane ${idx + 1}`, points: [], area_sqft: 0, edgeTypes: [] }
       }
 
       let snapLat = lat
@@ -243,6 +274,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       updated[idx] = {
         ...updated[idx],
         points: [...updated[idx].points, { lat: snapLat, lng: snapLng }],
+        edgeTypes: [...(updated[idx].edgeTypes || []), "unspecified" as EdgeType],
       }
 
       // Calculate area if 3+ points
@@ -262,43 +294,105 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     return Math.round(areaSqMeters * 10.7639) // sq meters to sq feet
   }
 
-  // Draw polygons on map
+  // Draw polygons, edge lines, measurement labels, and vertex markers on map
   useEffect(() => {
     if (!mapInstanceRef.current || !window.google) return
 
-    // Clear old polygons and markers
+    // Clear everything
     polygonsRef.current.forEach((p) => p.setMap(null))
     markersRef.current.forEach((m) => m.setMap(null))
+    edgeLinesRef.current.forEach((l) => l.setMap(null))
+    edgeLabelsRef.current.forEach((l) => l.setMap(null))
     polygonsRef.current = []
     markersRef.current = []
+    edgeLinesRef.current = []
+    edgeLabelsRef.current = []
 
     planes.forEach((plane, planeIdx) => {
-      const color = planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6"
+      const planeColor = planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6"
 
-      // Draw closed polygon only when 3+ points
+      // Draw semi-transparent fill polygon (no stroke — edges drawn separately)
       if (plane.points.length >= 3) {
         const polygon = new window.google.maps.Polygon({
           paths: plane.points.map((p) => ({ lat: p.lat, lng: p.lng })),
-          strokeColor: color,
-          strokeOpacity: 0.9,
-          strokeWeight: 2,
-          fillColor: color,
-          fillOpacity: 0.25,
+          strokeWeight: 0,
+          fillColor: planeColor,
+          fillOpacity: 0.2,
           map: mapInstanceRef.current,
           clickable: false,
         })
         polygonsRef.current.push(polygon)
-      } else if (plane.points.length === 2) {
-        // Draw a polyline connecting the 2 points (not a polygon)
-        const polyline = new window.google.maps.Polyline({
-          path: plane.points.map((p) => ({ lat: p.lat, lng: p.lng })),
-          strokeColor: color,
-          strokeOpacity: 0.9,
-          strokeWeight: 2,
+      }
+
+      // Draw individual edge polylines + measurement labels
+      const edgeCount = plane.points.length >= 3 ? plane.points.length : plane.points.length - 1
+      for (let i = 0; i < edgeCount; i++) {
+        const j = (i + 1) % plane.points.length
+        const p1 = plane.points[i]
+        const p2 = plane.points[j]
+        const edgeType = (plane.edgeTypes || [])[i] || "unspecified"
+        const config = EDGE_TYPE_CONFIG[edgeType]
+
+        // Edge polyline
+        const polylineOpts: any = {
+          path: [{ lat: p1.lat, lng: p1.lng }, { lat: p2.lat, lng: p2.lng }],
+          strokeColor: config.color,
+          strokeOpacity: config.dashed ? 0 : 1,
+          strokeWeight: 3,
           map: mapInstanceRef.current,
-          clickable: false,
+          clickable: !drawingActiveRef.current && activeEdgeToolRef.current !== null,
+        }
+        // Dashed line effect
+        if (config.dashed) {
+          polylineOpts.icons = [{
+            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: config.color, scale: 3 },
+            offset: "0",
+            repeat: "12px",
+          }]
+        }
+        const edgeLine = new window.google.maps.Polyline(polylineOpts)
+
+        // Click listener for edge type assignment
+        const ePlaneIdx = planeIdx
+        const eEdgeIdx = i
+        edgeLine.addListener("click", () => {
+          const tool = activeEdgeToolRef.current
+          if (!tool) return
+          setPlanes((prev) => {
+            const updated = [...prev]
+            const edgeTypes = [...(updated[ePlaneIdx].edgeTypes || [])]
+            edgeTypes[eEdgeIdx] = tool
+            updated[ePlaneIdx] = { ...updated[ePlaneIdx], edgeTypes }
+            return updated
+          })
         })
-        polygonsRef.current.push(polyline)
+        edgeLinesRef.current.push(edgeLine)
+
+        // Measurement label at midpoint
+        if (window.google?.maps?.geometry) {
+          const latLng1 = new window.google.maps.LatLng(p1.lat, p1.lng)
+          const latLng2 = new window.google.maps.LatLng(p2.lat, p2.lng)
+          const distMeters = window.google.maps.geometry.spherical.computeDistanceBetween(latLng1, latLng2)
+          if (distMeters > 0.3) {
+            const midLat = (p1.lat + p2.lat) / 2
+            const midLng = (p1.lng + p2.lng) / 2
+            const label = new window.google.maps.Marker({
+              position: { lat: midLat, lng: midLng },
+              map: mapInstanceRef.current,
+              icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 0 },
+              label: {
+                text: formatDistance(distMeters),
+                color: "#fff",
+                fontSize: "11px",
+                fontWeight: "bold",
+                className: "edge-measurement-label",
+              },
+              clickable: false,
+              draggable: false,
+            })
+            edgeLabelsRef.current.push(label)
+          }
+        }
       }
 
       // Draw vertex markers (plain dots, draggable only when not drawing)
@@ -311,13 +405,13 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 6,
-            fillColor: color,
+            fillColor: planeColor,
             fillOpacity: 1,
             strokeColor: "#fff",
             strokeWeight: 2,
           },
+          zIndex: 10,
         })
-        // On drag end, update this point's position and recalculate
         const pIdx = planeIdx
         const ptI = ptIdx
         marker.addListener("dragend", () => {
@@ -339,7 +433,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         markersRef.current.push(marker)
       })
     })
-  }, [planes, activePlaneIndex, drawingActive])
+  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
@@ -466,7 +560,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
   // Add new plane — immediately update refs so click handler uses new plane
   const addPlane = () => {
-    const newPlane: RoofPlane = { name: `Plane ${planes.length + 1}`, points: [], area_sqft: 0 }
+    const newPlane: RoofPlane = { name: `Plane ${planes.length + 1}`, points: [], area_sqft: 0, edgeTypes: [] }
     const newIndex = planes.length
     setPlanes([...planes, newPlane])
     setActivePlaneIndex(newIndex)
@@ -491,9 +585,11 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       const updated = [...prev]
       if (updated[idx]?.points.length > 0) {
         const newPoints = updated[idx].points.slice(0, -1)
+        const newEdgeTypes = (updated[idx].edgeTypes || []).slice(0, -1)
         updated[idx] = {
           ...updated[idx],
           points: newPoints,
+          edgeTypes: newEdgeTypes,
           area_sqft: newPoints.length >= 3
             ? calculatePolygonArea(newPoints)
             : 0,
@@ -548,6 +644,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Edge label text shadow for readability on satellite */}
+      <style>{`.edge-measurement-label { text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7); }`}</style>
       {/* Address Search */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-end">
         <div className="flex-1">
@@ -637,7 +735,9 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   <button
                     onClick={() => {
                       if (planes.length === 0) addPlane()
-                      setDrawingActive(!drawingActive)
+                      const next = !drawingActive
+                      setDrawingActive(next)
+                      if (next) setActiveEdgeTool(null)
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                       drawingActive
@@ -667,6 +767,40 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   <p className="mb-3 text-xs text-muted-foreground">
                     Click on the roof corners to draw a polygon. Add at least 3 points to calculate area.
                   </p>
+                )}
+
+                {/* Edge Type Tools */}
+                {planes.some((p) => p.points.length >= 2) && !drawingActive && (
+                  <div className="mb-3 border-t border-border pt-3">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      Edges Tools — select a type, then click an edge on the map
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Object.entries(EDGE_TYPE_CONFIG) as [EdgeType, { label: string; color: string; dashed: boolean }][]).map(([key, config]) => (
+                        <button
+                          key={key}
+                          onClick={() => setActiveEdgeTool(activeEdgeTool === key ? null : key)}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors border ${
+                            activeEdgeTool === key
+                              ? "ring-2 ring-white/40 border-white/30 bg-white/10 text-white"
+                              : "border-border bg-secondary/30 text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <span
+                            className="inline-block h-0.5 w-4 rounded-sm"
+                            style={{
+                              backgroundColor: config.color,
+                              borderStyle: config.dashed ? "dashed" : "solid",
+                              height: config.dashed ? 0 : 3,
+                              borderBottomWidth: config.dashed ? 3 : 0,
+                              borderBottomColor: config.dashed ? config.color : undefined,
+                            }}
+                          />
+                          {config.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* Planes List */}
