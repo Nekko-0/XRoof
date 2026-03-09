@@ -88,7 +88,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const currentPolygonRef = useRef<any>(null)
   const currentMarkersRef = useRef<any[]>([])
   const geocoderRef = useRef<any>(null)
-  const latLngRef = useRef<{ lat: number; lng: number } | null>(null)
+  const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null)
   const drawingActiveRef = useRef(false)
 
   // Keep ref in sync
@@ -160,6 +160,17 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     setStreetViewPoints([])
   }, [])
 
+  // Init map + street view AFTER the div renders (triggered by latLng state change)
+  useEffect(() => {
+    if (!latLng || !mapLoaded) return
+    // Small delay to ensure DOM has rendered the map div
+    const timer = setTimeout(() => {
+      initMap(latLng.lat, latLng.lng)
+      initStreetView(latLng.lat, latLng.lng)
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [latLng, mapLoaded])
+
   // Handle address search
   const handleSearch = async () => {
     if (!address.trim() || !mapLoaded) return
@@ -168,11 +179,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     geocoder.geocode({ address: address.trim() }, (results: any[], status: string) => {
       if (status === "OK" && results[0]) {
         const loc = results[0].geometry.location
-        const lat = loc.lat()
-        const lng = loc.lng()
-        latLngRef.current = { lat, lng }
-        initMap(lat, lng)
-        initStreetView(lat, lng)
+        setLatLng({ lat: loc.lat(), lng: loc.lng() })
       } else {
         alert("Address not found (status: " + status + "). Please try a more specific address.")
       }
@@ -494,7 +501,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       </div>
 
       {/* Map / Street View Tabs */}
-      {latLngRef.current && (
+      {latLng && (
         <>
           <div className="flex gap-1 rounded-xl border border-border bg-secondary/30 p-1">
             <button
