@@ -353,7 +353,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         markersRef.current.push(marker)
       })
     })
-  }, [planes, activePlaneIndex])
+  }, [planes, activePlaneIndex, drawingActive])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
