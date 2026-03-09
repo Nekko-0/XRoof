@@ -49,13 +49,6 @@ const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; dashed:
   transition:    { label: "Transition",    color: "#e879f9", dashed: false },
 }
 
-function formatDistance(meters: number): string {
-  const totalInches = meters * 39.3701
-  const feet = Math.floor(totalInches / 12)
-  const inches = Math.round(totalInches % 12)
-  if (inches === 12) return `${feet + 1}ft 0in`
-  return `${feet}ft ${inches}in`
-}
 
 type RoofPlane = {
   name: string
@@ -121,16 +114,20 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const addressMarkerRef = useRef<any>(null)
   const streetViewInitedRef = useRef(false)
   const edgeLinesRef = useRef<any[]>([])
-  const edgeLabelsRef = useRef<any[]>([])
   const [activeEdgeTool, setActiveEdgeTool] = useState<EdgeType | null>(null)
   const activeEdgeToolRef = useRef<EdgeType | null>(null)
   const [mapZoom, setMapZoom] = useState(20)
   const planeLabelsRef = useRef<any[]>([])
+  const [satPitchActive, setSatPitchActive] = useState(false)
+  const satPitchActiveRef = useRef(false)
+  const satCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [satPitchPoints, setSatPitchPoints] = useState<{ x: number; y: number }[]>([])
 
   // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
   useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
   useEffect(() => { activeEdgeToolRef.current = activeEdgeTool }, [activeEdgeTool])
+  useEffect(() => { satPitchActiveRef.current = satPitchActive }, [satPitchActive])
 
   // Load Google Maps script
   useEffect(() => {
@@ -190,6 +187,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
     // Click handler for drawing — use ref to avoid stale closure
     map.addListener("click", (e: any) => {
+      if (satPitchActiveRef.current) return
       if (!drawingActiveRef.current) return
       // Remove the red pin on first drawing click so it doesn't interfere
       if (addressMarkerRef.current) {
@@ -211,8 +209,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       zoom: 1,
       disableDefaultUI: false,
       showRoadLabels: false,
-      zoomControl: false,
-      scrollwheel: false,
     })
 
     streetViewInstanceRef.current = sv
@@ -311,12 +307,10 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     polygonsRef.current.forEach((p) => p.setMap(null))
     markersRef.current.forEach((m) => m.setMap(null))
     edgeLinesRef.current.forEach((l) => l.setMap(null))
-    edgeLabelsRef.current.forEach((l) => l.setMap(null))
     planeLabelsRef.current.forEach((l) => l.setMap(null))
     polygonsRef.current = []
     markersRef.current = []
     edgeLinesRef.current = []
-    edgeLabelsRef.current = []
     planeLabelsRef.current = []
 
     const showLabels = mapZoom >= 19
@@ -380,32 +374,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           })
         })
         edgeLinesRef.current.push(edgeLine)
-
-        // Measurement label at midpoint (only shown when zoomed in enough)
-        if (showLabels && window.google?.maps?.geometry) {
-          const latLng1 = new window.google.maps.LatLng(p1.lat, p1.lng)
-          const latLng2 = new window.google.maps.LatLng(p2.lat, p2.lng)
-          const distMeters = window.google.maps.geometry.spherical.computeDistanceBetween(latLng1, latLng2)
-          if (distMeters > 0.3) {
-            const midLat = (p1.lat + p2.lat) / 2
-            const midLng = (p1.lng + p2.lng) / 2
-            const label = new window.google.maps.Marker({
-              position: { lat: midLat, lng: midLng },
-              map: mapInstanceRef.current,
-              icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 0 },
-              label: {
-                text: formatDistance(distMeters),
-                color: "#fff",
-                fontSize: "11px",
-                fontWeight: "bold",
-                className: "edge-measurement-label",
-              },
-              clickable: false,
-              draggable: false,
-            })
-            edgeLabelsRef.current.push(label)
-          }
-        }
       }
 
       // Draw vertex markers (plain dots, draggable only when not drawing)
@@ -593,6 +561,113 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     }
   }
 
+  // Satellite pitch canvas click handler
+  const handleSatCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (satPitchPoints.length >= 3) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const newPoints = [...satPitchPoints, { x, y }]
+    setSatPitchPoints(newPoints)
+
+    if (newPoints.length >= 2) {
+      const p1 = newPoints[0]
+      const pLast = newPoints[newPoints.length - 1]
+      const rise = Math.abs(p1.y - pLast.y)
+      const run = Math.abs(pLast.x - p1.x)
+      if (run > 0) {
+        const angle = Math.atan2(rise, run) * (180 / Math.PI)
+        const { pitch, factor } = getPitchFromDegrees(angle)
+        setSelectedPitch(pitch)
+        setPitchFactor(factor)
+      }
+    }
+  }
+
+  // Satellite pitch canvas drawing
+  useEffect(() => {
+    const canvas = satCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const container = canvas.parentElement
+    if (container && (canvas.width === 0 || canvas.height === 0)) {
+      canvas.width = container.clientWidth
+      canvas.height = container.clientHeight
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (satPitchPoints.length === 0) return
+
+    ctx.strokeStyle = "#22c55e"
+    ctx.fillStyle = "#22c55e"
+    ctx.lineWidth = 2
+
+    satPitchPoints.forEach((pt, i) => {
+      ctx.beginPath()
+      ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = "#fff"
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.fillStyle = "#fff"
+      ctx.font = "bold 12px sans-serif"
+      ctx.fillText(`P${i + 1}`, pt.x + 10, pt.y - 5)
+      ctx.fillStyle = "#22c55e"
+      ctx.strokeStyle = "#22c55e"
+      ctx.lineWidth = 2
+    })
+
+    if (satPitchPoints.length >= 2) {
+      ctx.beginPath()
+      ctx.moveTo(satPitchPoints[0].x, satPitchPoints[0].y)
+      for (let i = 1; i < satPitchPoints.length; i++) {
+        ctx.lineTo(satPitchPoints[i].x, satPitchPoints[i].y)
+      }
+      ctx.strokeStyle = "#22c55e"
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      const lastPt = satPitchPoints[satPitchPoints.length - 1]
+      ctx.beginPath()
+      ctx.setLineDash([5, 5])
+      ctx.moveTo(satPitchPoints[0].x, satPitchPoints[0].y)
+      ctx.lineTo(lastPt.x, satPitchPoints[0].y)
+      ctx.strokeStyle = "#ef4444"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      ctx.beginPath()
+      ctx.setLineDash([5, 5])
+      ctx.moveTo(lastPt.x, satPitchPoints[0].y)
+      ctx.lineTo(lastPt.x, lastPt.y)
+      ctx.strokeStyle = "#ef4444"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      const p1 = satPitchPoints[0]
+      const pLast = lastPt
+      const rise = Math.abs(p1.y - pLast.y)
+      const run = Math.abs(pLast.x - p1.x)
+      if (run > 0) {
+        const angle = Math.atan2(rise, run) * (180 / Math.PI)
+        const { pitch, factor } = getPitchFromDegrees(angle)
+        ctx.fillStyle = "rgba(0,0,0,0.7)"
+        ctx.fillRect(10, 10, 180, 55)
+        ctx.fillStyle = "#22c55e"
+        ctx.font = "bold 14px sans-serif"
+        ctx.fillText(`Angle: ${angle.toFixed(1)}°`, 20, 30)
+        ctx.fillText(`Pitch: ${pitch}`, 20, 48)
+        ctx.fillStyle = "#8a8a8a"
+        ctx.font = "11px sans-serif"
+        ctx.fillText(`Factor: ${factor.toFixed(3)}`, 20, 62)
+      }
+    }
+  }, [satPitchPoints])
+
   // Add new plane — immediately update refs so click handler uses new plane
   const addPlane = () => {
     const newPlane: RoofPlane = { name: `Plane ${planes.length + 1}`, points: [], area_sqft: 0, edgeTypes: [] }
@@ -762,7 +837,23 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           {/* Satellite View */}
           <div className={activeTab === "satellite" ? "block" : "hidden"}>
             <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-              <div ref={mapRef} className="h-[400px] sm:h-[500px] w-full" />
+              <div className="relative">
+                <div ref={mapRef} className="h-[400px] sm:h-[500px] w-full" />
+                <canvas
+                  ref={satCanvasRef}
+                  onClick={handleSatCanvasClick}
+                  className={`absolute inset-0 h-full w-full ${satPitchActive && satPitchPoints.length < 3 ? "cursor-crosshair" : ""}`}
+                  style={{
+                    pointerEvents: satPitchActive && satPitchPoints.length < 3 ? "auto" : "none",
+                    zIndex: 50,
+                  }}
+                />
+                {satPitchActive && (
+                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-400" style={{ zIndex: 51 }}>
+                    Click {3 - satPitchPoints.length} point{3 - satPitchPoints.length !== 1 ? "s" : ""} on the roof edge
+                  </div>
+                )}
+              </div>
 
               {/* Drawing Controls */}
               <div className="border-t border-border p-4">
@@ -772,7 +863,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                       if (planes.length === 0) addPlane()
                       const next = !drawingActive
                       setDrawingActive(next)
-                      if (next) setActiveEdgeTool(null)
+                      if (next) { setActiveEdgeTool(null); setSatPitchActive(false) }
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                       drawingActive
@@ -781,6 +872,30 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     }`}
                   >
                     {drawingActive ? "Stop Drawing" : "Start Drawing"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const activating = !satPitchActive
+                      setSatPitchActive(activating)
+                      if (activating) {
+                        setDrawingActive(false)
+                        setActiveEdgeTool(null)
+                        setSatPitchPoints([])
+                        const canvas = satCanvasRef.current
+                        if (canvas?.parentElement) {
+                          canvas.width = canvas.parentElement.clientWidth
+                          canvas.height = canvas.parentElement.clientHeight
+                        }
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                      satPitchActive
+                        ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
+                        : "border border-border bg-background text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Ruler className="h-3.5 w-3.5" />
+                    {satPitchActive ? "Measuring Pitch" : "Measure Pitch"}
                   </button>
                   <button
                     onClick={addPlane}
@@ -796,6 +911,20 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     <RotateCcw className="h-3.5 w-3.5" />
                     Undo
                   </button>
+                  {satPitchActive && (
+                    <span className="text-xs text-muted-foreground">
+                      {satPitchPoints.length}/3 points
+                    </span>
+                  )}
+                  {satPitchPoints.length > 0 && (
+                    <button
+                      onClick={() => { setSatPitchPoints([]); setSatPitchActive(true) }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Redo Pitch
+                    </button>
+                  )}
                 </div>
 
                 {drawingActive && (
@@ -814,7 +943,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                       {(Object.entries(EDGE_TYPE_CONFIG) as [EdgeType, { label: string; color: string; dashed: boolean }][]).map(([key, config]) => (
                         <button
                           key={key}
-                          onClick={() => setActiveEdgeTool(activeEdgeTool === key ? null : key)}
+                          onClick={() => { setActiveEdgeTool(activeEdgeTool === key ? null : key); setSatPitchActive(false) }}
                           className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors border ${
                             activeEdgeTool === key
                               ? "ring-2 ring-white/40 border-white/30 bg-white/10 text-white"
