@@ -212,6 +212,22 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       if (!updated[idx]) {
         updated[idx] = { name: `Plane ${idx + 1}`, points: [], area_sqft: 0 }
       }
+
+      // Check if clicking near the first point to close the polygon (needs 3+ points)
+      const plane = updated[idx]
+      if (plane.points.length >= 3 && window.google?.maps?.geometry) {
+        const firstPt = plane.points[0]
+        const clickPos = new window.google.maps.LatLng(lat, lng)
+        const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
+        const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
+        if (dist < 3) {
+          // Close polygon — recalculate area and stop drawing
+          updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
+          setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
+          return updated
+        }
+      }
+
       updated[idx] = {
         ...updated[idx],
         points: [...updated[idx].points, { lat, lng }],
@@ -271,30 +287,59 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         polygonsRef.current.push(polyline)
       }
 
-      // Draw vertex markers (numbered)
+      // Draw vertex markers (plain dots, draggable)
       plane.points.forEach((pt, ptIdx) => {
         const marker = new window.google.maps.Marker({
           position: { lat: pt.lat, lng: pt.lng },
           map: mapInstanceRef.current,
-          label: {
-            text: `${ptIdx + 1}`,
-            color: "#fff",
-            fontSize: "10px",
-            fontWeight: "bold",
-          },
+          draggable: true,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 10,
+            scale: 6,
             fillColor: color,
             fillOpacity: 1,
             strokeColor: "#fff",
             strokeWeight: 2,
           },
         })
+        // On drag end, update this point's position and recalculate
+        const pIdx = planeIdx
+        const ptI = ptIdx
+        marker.addListener("dragend", () => {
+          const newPos = marker.getPosition()
+          if (!newPos) return
+          setPlanes((prev) => {
+            const updated = [...prev]
+            if (!updated[pIdx] || !updated[pIdx].points[ptI]) return prev
+            const newPoints = [...updated[pIdx].points]
+            newPoints[ptI] = { lat: newPos.lat(), lng: newPos.lng() }
+            updated[pIdx] = {
+              ...updated[pIdx],
+              points: newPoints,
+              area_sqft: newPoints.length >= 3 ? calculatePolygonArea(newPoints) : 0,
+            }
+            return updated
+          })
+        })
         markersRef.current.push(marker)
       })
     })
   }, [planes, activePlaneIndex])
+
+  // Resize canvas when switching to Street View tab or activating pitch measure
+  useEffect(() => {
+    if (activeTab !== "streetview") return
+    const timer = setTimeout(() => {
+      const canvas = streetViewCanvasRef.current
+      if (!canvas) return
+      const container = canvas.parentElement
+      if (container) {
+        canvas.width = container.clientWidth
+        canvas.height = container.clientHeight
+      }
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [activeTab, pitchMeasureActive])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
@@ -303,9 +348,9 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Resize canvas to match container
+    // Resize canvas to match container (in case it hasn't been resized yet)
     const container = canvas.parentElement
-    if (container) {
+    if (container && (canvas.width === 0 || canvas.height === 0)) {
       canvas.width = container.clientWidth
       canvas.height = container.clientHeight
     }
