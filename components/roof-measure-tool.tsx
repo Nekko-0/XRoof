@@ -349,21 +349,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     })
   }, [planes, activePlaneIndex])
 
-  // Resize canvas when switching to Street View tab or activating pitch measure
-  useEffect(() => {
-    if (activeTab !== "streetview") return
-    const timer = setTimeout(() => {
-      const canvas = streetViewCanvasRef.current
-      if (!canvas) return
-      const container = canvas.parentElement
-      if (container) {
-        canvas.width = container.clientWidth
-        canvas.height = container.clientHeight
-      }
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [activeTab, pitchMeasureActive])
-
   // Street View canvas for 3-point pitch
   useEffect(() => {
     const canvas = streetViewCanvasRef.current
@@ -746,7 +731,10 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   ref={streetViewCanvasRef}
                   onClick={handleStreetViewClick}
                   className={`absolute inset-0 h-full w-full ${pitchMeasureActive && streetViewPoints.length < 3 ? "cursor-crosshair" : ""}`}
-                  style={{ pointerEvents: pitchMeasureActive && streetViewPoints.length < 3 ? "auto" : "none" }}
+                  style={{
+                    pointerEvents: pitchMeasureActive && streetViewPoints.length < 3 ? "auto" : "none",
+                    zIndex: 50,
+                  }}
                 />
                 {pitchMeasureActive && (
                   <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-400">
@@ -759,8 +747,17 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 <div className="mb-3 flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => {
-                      setPitchMeasureActive(!pitchMeasureActive)
-                      if (!pitchMeasureActive) setStreetViewPoints([])
+                      const activating = !pitchMeasureActive
+                      setPitchMeasureActive(activating)
+                      if (activating) {
+                        setStreetViewPoints([])
+                        // Resize canvas NOW while div is visible
+                        const canvas = streetViewCanvasRef.current
+                        if (canvas?.parentElement) {
+                          canvas.width = canvas.parentElement.clientWidth
+                          canvas.height = canvas.parentElement.clientHeight
+                        }
+                      }
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                       pitchMeasureActive
