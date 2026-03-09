@@ -76,6 +76,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const [pitchFactor, setPitchFactor] = useState(1.118)
   const [wastePercent, setWastePercent] = useState(15)
   const [streetViewPoints, setStreetViewPoints] = useState<{ x: number; y: number }[]>([])
+  const [pitchMeasureActive, setPitchMeasureActive] = useState(false)
 
   // Refs
   const mapRef = useRef<HTMLDivElement>(null)
@@ -139,17 +140,23 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     mapInstanceRef.current = map
     geocoderRef.current = new window.google.maps.Geocoder()
 
-    // Drop red pin marker at the geocoded address location
+    // Drop red pin marker at the geocoded address location — draggable so user can move to correct house
     if (addressMarkerRef.current) addressMarkerRef.current.setMap(null)
     addressMarkerRef.current = new window.google.maps.Marker({
       position: { lat, lng },
       map,
-      title: "Property Location",
+      draggable: true,
+      title: "Drag to correct property",
     })
 
     // Click handler for drawing — use ref to avoid stale closure
     map.addListener("click", (e: any) => {
       if (!drawingActiveRef.current) return
+      // Remove the red pin on first drawing click so it doesn't interfere
+      if (addressMarkerRef.current) {
+        addressMarkerRef.current.setMap(null)
+        addressMarkerRef.current = null
+      }
       const latLng = e.latLng
       addPointToPlane(latLng.lat(), latLng.lng())
     })
@@ -238,47 +245,47 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     markersRef.current = []
 
     planes.forEach((plane, planeIdx) => {
-      if (plane.points.length < 2) {
-        // Just draw markers
-        plane.points.forEach((pt) => {
-          const marker = new window.google.maps.Marker({
-            position: { lat: pt.lat, lng: pt.lng },
-            map: mapInstanceRef.current,
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 6,
-              fillColor: planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6",
-              fillOpacity: 1,
-              strokeColor: "#fff",
-              strokeWeight: 2,
-            },
-          })
-          markersRef.current.push(marker)
+      const color = planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6"
+
+      // Draw closed polygon only when 3+ points
+      if (plane.points.length >= 3) {
+        const polygon = new window.google.maps.Polygon({
+          paths: plane.points.map((p) => ({ lat: p.lat, lng: p.lng })),
+          strokeColor: color,
+          strokeOpacity: 0.9,
+          strokeWeight: 2,
+          fillColor: color,
+          fillOpacity: 0.25,
+          map: mapInstanceRef.current,
         })
-        return
+        polygonsRef.current.push(polygon)
+      } else if (plane.points.length === 2) {
+        // Draw a polyline connecting the 2 points (not a polygon)
+        const polyline = new window.google.maps.Polyline({
+          path: plane.points.map((p) => ({ lat: p.lat, lng: p.lng })),
+          strokeColor: color,
+          strokeOpacity: 0.9,
+          strokeWeight: 2,
+          map: mapInstanceRef.current,
+        })
+        polygonsRef.current.push(polyline)
       }
 
-      // Draw polygon
-      const polygon = new window.google.maps.Polygon({
-        paths: plane.points.map((p) => ({ lat: p.lat, lng: p.lng })),
-        strokeColor: planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6",
-        strokeOpacity: 0.9,
-        strokeWeight: 2,
-        fillColor: planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6",
-        fillOpacity: 0.25,
-        map: mapInstanceRef.current,
-      })
-      polygonsRef.current.push(polygon)
-
-      // Draw vertex markers
-      plane.points.forEach((pt) => {
+      // Draw vertex markers (numbered)
+      plane.points.forEach((pt, ptIdx) => {
         const marker = new window.google.maps.Marker({
           position: { lat: pt.lat, lng: pt.lng },
           map: mapInstanceRef.current,
+          label: {
+            text: `${ptIdx + 1}`,
+            color: "#fff",
+            fontSize: "10px",
+            fontWeight: "bold",
+          },
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 6,
-            fillColor: planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6",
+            scale: 10,
+            fillColor: color,
             fillOpacity: 1,
             strokeColor: "#fff",
             strokeWeight: 2,
@@ -651,33 +658,55 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 <canvas
                   ref={streetViewCanvasRef}
                   onClick={handleStreetViewClick}
-                  className="absolute inset-0 h-full w-full cursor-crosshair"
-                  style={{ pointerEvents: streetViewPoints.length >= 3 ? "none" : "auto" }}
+                  className={`absolute inset-0 h-full w-full ${pitchMeasureActive && streetViewPoints.length < 3 ? "cursor-crosshair" : ""}`}
+                  style={{ pointerEvents: pitchMeasureActive && streetViewPoints.length < 3 ? "auto" : "none" }}
                 />
+                {pitchMeasureActive && (
+                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-400">
+                    Click {3 - streetViewPoints.length} point{3 - streetViewPoints.length !== 1 ? "s" : ""} on the roof edge
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-border p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <p className="text-sm font-medium text-foreground">
-                    3-Point Pitch Measurement
-                  </p>
+                  <button
+                    onClick={() => {
+                      setPitchMeasureActive(!pitchMeasureActive)
+                      if (!pitchMeasureActive) setStreetViewPoints([])
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                      pitchMeasureActive
+                        ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
+                  >
+                    <Ruler className="h-3.5 w-3.5" />
+                    {pitchMeasureActive ? "Measuring — Click Roof Edge" : "Measure Pitch"}
+                  </button>
                   <span className="text-xs text-muted-foreground">
                     {streetViewPoints.length}/3 points placed
                   </span>
-                  <button
-                    onClick={() => setStreetViewPoints([])}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Reset Points
-                  </button>
+                  {streetViewPoints.length > 0 && (
+                    <button
+                      onClick={() => { setStreetViewPoints([]); setPitchMeasureActive(true) }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset Points
+                    </button>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Click on the roof rake (sloped edge): P1 at the bottom (eave), P2 midway, P3 at the top (ridge). The angle will be calculated automatically.
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Drag to rotate the view — navigate around the house to see the garage or back roof sections.
-                </p>
+                {!pitchMeasureActive && (
+                  <p className="text-xs text-muted-foreground">
+                    Drag to rotate the view — navigate around the house to see the garage or back roof sections. Click "Measure Pitch" when ready to place points.
+                  </p>
+                )}
+                {pitchMeasureActive && (
+                  <p className="text-xs text-muted-foreground">
+                    Click on the roof rake (sloped edge): P1 at the bottom (eave), P2 midway, P3 at the top (ridge). The angle will be calculated automatically.
+                  </p>
+                )}
                 <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-amber-400">
                   Estimated pitch — verify with physical measurement for exact accuracy (~85-90% accurate)
                 </p>
