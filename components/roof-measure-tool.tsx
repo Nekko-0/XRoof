@@ -89,6 +89,10 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const currentMarkersRef = useRef<any[]>([])
   const geocoderRef = useRef<any>(null)
   const latLngRef = useRef<{ lat: number; lng: number } | null>(null)
+  const drawingActiveRef = useRef(false)
+
+  // Keep ref in sync
+  useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
 
   // Load Google Maps script
   useEffect(() => {
@@ -132,13 +136,13 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     mapInstanceRef.current = map
     geocoderRef.current = new window.google.maps.Geocoder()
 
-    // Click handler for drawing
+    // Click handler for drawing — use ref to avoid stale closure
     map.addListener("click", (e: any) => {
-      if (!drawingActive) return
+      if (!drawingActiveRef.current) return
       const latLng = e.latLng
       addPointToPlane(latLng.lat(), latLng.lng())
     })
-  }, [drawingActive])
+  }, [])
 
   // Initialize street view
   const initStreetView = useCallback((lat: number, lng: number) => {
@@ -485,7 +489,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           disabled={!mapLoaded || !address.trim()}
           className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          Search
+          {!mapLoaded ? "Loading Maps..." : "Search"}
         </button>
       </div>
 
@@ -494,7 +498,14 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         <>
           <div className="flex gap-1 rounded-xl border border-border bg-secondary/30 p-1">
             <button
-              onClick={() => setActiveTab("satellite")}
+              onClick={() => {
+                setActiveTab("satellite")
+                setTimeout(() => {
+                  if (mapInstanceRef.current) {
+                    window.google?.maps?.event?.trigger(mapInstanceRef.current, "resize")
+                  }
+                }, 100)
+              }}
               className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "satellite"
                   ? "bg-primary text-primary-foreground"
