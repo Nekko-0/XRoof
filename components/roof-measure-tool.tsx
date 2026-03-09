@@ -227,7 +227,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           const firstPt = plane.points[0]
           const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
           const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
-          if (dist < 3) {
+          if (dist < 1.5) {
             // Close polygon — recalculate area and stop drawing
             updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
             setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
@@ -235,9 +235,12 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           }
         }
 
-        // Snap to any existing point from ANY plane (within 2m)
+        // Snap to existing points from OTHER planes only (within 2m)
+        // Skip current plane so tight corners can have closely-placed points
         let bestDist = Infinity
-        for (const p of updated) {
+        for (let pIdx = 0; pIdx < updated.length; pIdx++) {
+          if (pIdx === idx) continue // Skip current plane
+          const p = updated[pIdx]
           if (!p) continue
           for (const pt of p.points) {
             const existingPos = new window.google.maps.LatLng(pt.lat, pt.lng)
@@ -310,12 +313,12 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         polygonsRef.current.push(polyline)
       }
 
-      // Draw vertex markers (plain dots, draggable)
+      // Draw vertex markers (plain dots, draggable only when not drawing)
       plane.points.forEach((pt, ptIdx) => {
         const marker = new window.google.maps.Marker({
           position: { lat: pt.lat, lng: pt.lng },
           map: mapInstanceRef.current,
-          draggable: true,
+          draggable: !drawingActiveRef.current,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 6,
