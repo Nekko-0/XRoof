@@ -299,6 +299,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           fillColor: color,
           fillOpacity: 0.25,
           map: mapInstanceRef.current,
+          clickable: false,
         })
         polygonsRef.current.push(polygon)
       } else if (plane.points.length === 2) {
@@ -309,6 +310,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           strokeOpacity: 0.9,
           strokeWeight: 2,
           map: mapInstanceRef.current,
+          clickable: false,
         })
         polygonsRef.current.push(polyline)
       }
