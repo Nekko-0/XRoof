@@ -93,6 +93,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const drawingActiveRef = useRef(false)
   const activePlaneIndexRef = useRef(0)
   const addressMarkerRef = useRef<any>(null)
+  const streetViewInitedRef = useRef(false)
 
   // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
@@ -178,13 +179,14 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     setStreetViewPoints([])
   }, [])
 
-  // Init map + street view AFTER the div renders (triggered by latLng state change)
+  // Init satellite map AFTER the div renders (triggered by latLng state change)
+  // NOTE: Street View is NOT inited here — it's inited lazily when user clicks the Street View tab
+  // because StreetViewPanorama created inside display:none is permanently broken at 0x0
   useEffect(() => {
     if (!latLng || !mapLoaded) return
-    // Small delay to ensure DOM has rendered the map div
+    streetViewInitedRef.current = false // Reset so next tab switch re-inits for new address
     const timer = setTimeout(() => {
       initMap(latLng.lat, latLng.lng)
-      initStreetView(latLng.lat, latLng.lng)
     }, 50)
     return () => clearTimeout(timer)
   }, [latLng, mapLoaded])
@@ -618,16 +620,14 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
             <button
               onClick={() => {
                 setActiveTab("streetview")
-                // CRITICAL: Panorama loaded in hidden div (0x0). Must resize when tab becomes visible.
+                // Lazy init: create panorama ONLY when div is visible (first time)
+                // StreetViewPanorama created inside display:none is permanently broken
                 setTimeout(() => {
-                  if (streetViewInstanceRef.current && window.google?.maps?.event) {
-                    window.google.maps.event.trigger(streetViewInstanceRef.current, "resize")
-                    // Re-set position so panorama renders at correct size
-                    if (latLng) {
-                      streetViewInstanceRef.current.setPosition({ lat: latLng.lat, lng: latLng.lng })
-                    }
+                  if (!streetViewInitedRef.current && latLng) {
+                    initStreetView(latLng.lat, latLng.lng)
+                    streetViewInitedRef.current = true
                   }
-                  // Also resize the pitch measurement canvas
+                  // Resize pitch canvas (now in visible DOM with real dimensions)
                   const canvas = streetViewCanvasRef.current
                   if (canvas) {
                     const container = canvas.parentElement
@@ -636,7 +636,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                       canvas.height = container.clientHeight
                     }
                   }
-                }, 150)
+                }, 200)
               }}
               className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "streetview"
