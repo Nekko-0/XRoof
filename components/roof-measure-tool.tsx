@@ -213,24 +213,45 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         updated[idx] = { name: `Plane ${idx + 1}`, points: [], area_sqft: 0 }
       }
 
-      // Check if clicking near the first point to close the polygon (needs 3+ points)
-      const plane = updated[idx]
-      if (plane.points.length >= 3 && window.google?.maps?.geometry) {
-        const firstPt = plane.points[0]
+      let snapLat = lat
+      let snapLng = lng
+
+      if (window.google?.maps?.geometry) {
         const clickPos = new window.google.maps.LatLng(lat, lng)
-        const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
-        const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
-        if (dist < 3) {
-          // Close polygon — recalculate area and stop drawing
-          updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
-          setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
-          return updated
+
+        // Check if clicking near the first point of CURRENT plane to close it (needs 3+ points)
+        const plane = updated[idx]
+        if (plane.points.length >= 3) {
+          const firstPt = plane.points[0]
+          const firstPos = new window.google.maps.LatLng(firstPt.lat, firstPt.lng)
+          const dist = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, firstPos)
+          if (dist < 3) {
+            // Close polygon — recalculate area and stop drawing
+            updated[idx] = { ...plane, area_sqft: calculatePolygonArea(plane.points) }
+            setTimeout(() => { setDrawingActive(false); drawingActiveRef.current = false }, 0)
+            return updated
+          }
+        }
+
+        // Snap to any existing point from ANY plane (within 2m)
+        let bestDist = Infinity
+        for (const p of updated) {
+          if (!p) continue
+          for (const pt of p.points) {
+            const existingPos = new window.google.maps.LatLng(pt.lat, pt.lng)
+            const d = window.google.maps.geometry.spherical.computeDistanceBetween(clickPos, existingPos)
+            if (d < 2 && d < bestDist) {
+              bestDist = d
+              snapLat = pt.lat
+              snapLng = pt.lng
+            }
+          }
         }
       }
 
       updated[idx] = {
         ...updated[idx],
-        points: [...updated[idx].points, { lat, lng }],
+        points: [...updated[idx].points, { lat: snapLat, lng: snapLng }],
       }
 
       // Calculate area if 3+ points
@@ -595,7 +616,28 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
               Satellite — Draw Roof
             </button>
             <button
-              onClick={() => setActiveTab("streetview")}
+              onClick={() => {
+                setActiveTab("streetview")
+                // CRITICAL: Panorama loaded in hidden div (0x0). Must resize when tab becomes visible.
+                setTimeout(() => {
+                  if (streetViewInstanceRef.current && window.google?.maps?.event) {
+                    window.google.maps.event.trigger(streetViewInstanceRef.current, "resize")
+                    // Re-set position so panorama renders at correct size
+                    if (latLng) {
+                      streetViewInstanceRef.current.setPosition({ lat: latLng.lat, lng: latLng.lng })
+                    }
+                  }
+                  // Also resize the pitch measurement canvas
+                  const canvas = streetViewCanvasRef.current
+                  if (canvas) {
+                    const container = canvas.parentElement
+                    if (container) {
+                      canvas.width = container.clientWidth
+                      canvas.height = container.clientHeight
+                    }
+                  }
+                }, 150)
+              }}
               className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "streetview"
                   ? "bg-primary text-primary-foreground"
