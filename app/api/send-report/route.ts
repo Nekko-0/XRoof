@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   }
 
   const { error } = await resend.emails.send({
-    from: "XRoof Reports <onboarding@resend.dev>",
+    from: "XRoof Reports <contracts@xroof.io>",
     to: "contact@leons-roofing.com",
     subject: `New Report from ${contractorName || "Contractor"} — ${customerName}`,
     html: `

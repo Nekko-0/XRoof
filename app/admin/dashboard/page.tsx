@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { ClipboardList, Users, CheckCircle, ArrowRight, MapPin } from "lucide-react"
+import { ClipboardList, Users, CheckCircle, ArrowRight, MapPin, TrendingUp } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
+import { RevenueChart, JobsChart, MiniStatCard } from "@/components/dashboard-charts"
 
 type RecentJob = {
   id: string
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   const [completedCount, setCompletedCount] = useState(0)
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([])
   const [loading, setLoading] = useState(true)
+  const [analytics, setAnalytics] = useState<{ monthly: any[]; totalRevenue: number; totalJobsCompleted: number; totalReports: number; activeContractors: number } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,6 +71,12 @@ export default function AdminDashboard() {
           customer_name: j.customer_name || "Unknown",
         })))
       }
+
+      // Fetch analytics
+      try {
+        const res = await fetch("/api/analytics/admin")
+        if (res.ok) setAnalytics(await res.json())
+      } catch {}
 
       setLoading(false)
     }
@@ -121,6 +129,26 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Analytics */}
+      {analytics && (
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Analytics
+          </h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <MiniStatCard label="Total Revenue" value={`$${analytics.totalRevenue.toLocaleString()}`} trend={analytics.totalRevenue > 0 ? "up" : "flat"} />
+            <MiniStatCard label="Jobs Completed" value={analytics.totalJobsCompleted.toString()} />
+            <MiniStatCard label="Reports Made" value={analytics.totalReports.toString()} />
+            <MiniStatCard label="Active Contractors" value={analytics.activeContractors.toString()} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <RevenueChart data={analytics.monthly} />
+            <JobsChart data={analytics.monthly} barKey="jobs" label="Jobs Completed" />
+          </div>
+        </div>
+      )}
 
       {/* Recent Jobs */}
       <div>

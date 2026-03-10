@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Printer } from "lucide-react"
+import { ArrowLeft, Printer, Clock, Send, Eye as EyeIcon, PenTool } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 
@@ -48,6 +49,7 @@ export default function AdminContractViewPage() {
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [docEvents, setDocEvents] = useState<{ id: string; event_type: string; recipient_email: string; created_at: string }[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -65,6 +67,14 @@ export default function AdminContractViewPage() {
             terms: { ...DEFAULT_TERMS, ...data.contract.terms },
           })
         }
+
+        // Fetch document events
+        const { data: events } = await supabase
+          .from("document_events")
+          .select("id, event_type, recipient_email, created_at")
+          .eq("job_id", jobId)
+          .order("created_at", { ascending: true })
+        setDocEvents(events || [])
       } catch (err) {
         console.error("Failed to fetch contract:", err)
         setDebugInfo({ fetchError: String(err) })
@@ -121,9 +131,11 @@ export default function AdminContractViewPage() {
           <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
             contract.status === "signed"
               ? "bg-emerald-900/30 text-emerald-400"
-              : "bg-amber-900/30 text-amber-400"
+              : contract.status === "pending_customer"
+              ? "bg-amber-900/30 text-amber-400"
+              : "bg-blue-900/30 text-blue-400"
           }`}>
-            {contract.status}
+            {contract.status === "pending_customer" ? "Awaiting Customer Signature" : contract.status}
           </span>
         </div>
 
@@ -303,6 +315,37 @@ export default function AdminContractViewPage() {
           </div>
         </div>
       </div>
+
+      {/* Document Activity */}
+      {docEvents.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
+          <h3 className="mb-3 text-sm font-bold text-foreground">Document Activity</h3>
+          <div className="space-y-2">
+            {docEvents.map((ev) => {
+              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-400" />
+                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-400" />
+                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-400" />
+                : <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              const label = ev.event_type === "sent" ? "Contract sent"
+                : ev.event_type === "opened" ? "Email opened"
+                : ev.event_type === "signed" ? "Contract signed"
+                : ev.event_type === "viewed" ? "Link clicked"
+                : ev.event_type
+              return (
+                <div key={ev.id} className="flex items-center gap-3 text-sm">
+                  {icon}
+                  <span className="font-medium text-foreground">{label}</span>
+                  {ev.recipient_email && <span className="text-xs text-muted-foreground">({ev.recipient_email})</span>}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                    {new Date(ev.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Print button only */}
       <div className="mt-4 flex gap-2 print:hidden">

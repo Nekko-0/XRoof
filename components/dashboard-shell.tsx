@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -25,7 +25,8 @@ const contractorNav: NavItem[] = [
   { label: "My Jobs", href: "/contractor/leads", icon: FileText },
   { label: "Measure", href: "/contractor/measure", icon: Ruler },
   { label: "Reports", href: "/contractor/report", icon: FileText },
-  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Support", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Billing", href: "/contractor/billing", icon: CreditCard },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
 
@@ -35,13 +36,13 @@ const adminNav: NavItem[] = [
   { label: "Contractors", href: "/admin/contractors", icon: Users },
   { label: "Measure", href: "/admin/measure", icon: Ruler },
   { label: "Reports", href: "/admin/reports", icon: FileText },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
+  { label: "Support", href: "/admin/messages", icon: MessageSquare },
 ]
 
 // Bottom tab bar items for contractor mobile
 const contractorTabs: NavItem[] = [
   { label: "Home", href: "/contractor/dashboard", icon: Home },
-  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Support", href: "/contractor/messages", icon: MessageSquare },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
 

@@ -27,6 +27,8 @@ type ReportView = {
   worker_title: string
   worker_phone: string
   created_at: string
+  measurement_data: any
+  materials_visible: boolean
 }
 
 export default function ReportViewPage({ params }: { params: Promise<{ reportId: string }> }) {
@@ -182,6 +184,77 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
                 </div>
               </div>
             )}
+
+            {/* Edge Measurements */}
+            {report.measurement_data?.edge_totals && Object.keys(report.measurement_data.edge_totals).length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#1b5e20]">
+                  Edge Measurements
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {Object.entries(report.measurement_data.edge_totals as Record<string, number>)
+                    .filter(([, ft]) => ft > 0)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([type, ft]) => (
+                      <div key={type} className="flex items-center justify-between rounded-lg border border-border bg-secondary/20 px-3 py-2 print:border-gray-300 print:bg-gray-50">
+                        <span className="text-xs font-medium text-muted-foreground capitalize print:text-gray-500">{type.replace("_", " ")}</span>
+                        <span className="text-sm font-bold text-foreground print:text-black">{Math.round(ft)} ft</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Materials Estimate */}
+            {report.materials_visible && report.measurement_data?.edge_totals && (() => {
+              const et = report.measurement_data.edge_totals as Record<string, number>
+              const squares = report.roof_squares || report.measurement_data.order_squares || 0
+              const eavesLf = et.eaves || 0
+              const rakesLf = et.rakes || 0
+              const ridgesLf = et.ridges || 0
+              const valleysLf = et.valleys || 0
+              const hipsLf = et.hips || 0
+
+              const materials = [
+                { name: "Shingles", qty: Math.ceil(squares * 3), unit: "bundles", note: `${squares} sq × 3` },
+                { name: "Ridge Caps", qty: Math.ceil(ridgesLf / 20), unit: "bundles", note: `${Math.round(ridgesLf)} ft` },
+                ...(hipsLf > 0 ? [{ name: "Hip & Ridge", qty: Math.ceil(hipsLf / 20), unit: "bundles", note: `${Math.round(hipsLf)} ft` }] : []),
+                { name: "Drip Edge", qty: Math.ceil((eavesLf + rakesLf) / 10), unit: "pieces", note: `${Math.round(eavesLf + rakesLf)} ft` },
+                { name: "Ice & Water Shield", qty: Math.ceil(eavesLf / 66), unit: "rolls", note: `${Math.round(eavesLf)} ft` },
+                { name: "Starter Strip", qty: Math.ceil(eavesLf / 120), unit: "rolls", note: `${Math.round(eavesLf)} ft` },
+                ...(valleysLf > 0 ? [{ name: "Valley Metal", qty: Math.ceil(valleysLf / 10), unit: "pieces", note: `${Math.round(valleysLf)} ft` }] : []),
+                { name: "Underlayment", qty: Math.ceil(squares / 4), unit: "rolls", note: `${squares} sq` },
+                { name: "Nails (coil)", qty: Math.ceil(squares / 3), unit: "boxes", note: `${squares} sq` },
+              ]
+
+              return (
+                <div className="mb-6">
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#1b5e20]">
+                    Materials Estimate
+                  </h3>
+                  <div className="rounded-lg border border-border overflow-hidden print:border-gray-300">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-secondary/30 print:border-gray-300 print:bg-gray-100">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground print:text-gray-500">Material</th>
+                          <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground print:text-gray-500">Qty</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground print:text-gray-500">Unit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {materials.map((m) => (
+                          <tr key={m.name} className="border-b border-border/50 last:border-0 print:border-gray-200">
+                            <td className="px-3 py-2 font-medium text-foreground print:text-black">{m.name}</td>
+                            <td className="px-3 py-2 text-right font-bold text-foreground print:text-black">{m.qty}</td>
+                            <td className="px-3 py-2 text-muted-foreground print:text-gray-600">{m.unit}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Photos */}
             {visiblePhotos.length > 0 && (

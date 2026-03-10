@@ -12,6 +12,39 @@ export async function GET(
 ) {
   const { reportId } = await params
 
+  // Token-based lookup for public estimate page
+  const url = new URL(request.url)
+  const token = url.searchParams.get("token")
+
+  if (token) {
+    const { data: report, error } = await supabaseAdmin
+      .from("reports")
+      .select("*")
+      .eq("viewing_token", token)
+      .single()
+
+    if (error || !report) {
+      return NextResponse.json({ error: "Invalid link" }, { status: 404 })
+    }
+
+    if (report.viewing_token_expires_at && new Date(report.viewing_token_expires_at) < new Date()) {
+      return NextResponse.json({ error: "expired" }, { status: 410 })
+    }
+
+    let contractorName = "Unknown"
+    if (report.contractor_id) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("username")
+        .eq("id", report.contractor_id)
+        .single()
+      if (profile) contractorName = profile.username
+    }
+
+    return NextResponse.json({ ...report, contractor_name: contractorName })
+  }
+
+  // Standard ID-based lookup
   const { data, error } = await supabaseAdmin
     .from("reports")
     .select("*")
@@ -22,7 +55,6 @@ export async function GET(
     return NextResponse.json({ error: "Report not found" }, { status: 404 })
   }
 
-  // Fetch contractor name
   let contractorName = "Unknown"
   if (data.contractor_id) {
     const { data: profile } = await supabaseAdmin

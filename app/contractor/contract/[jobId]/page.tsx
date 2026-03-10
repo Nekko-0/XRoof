@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import SignaturePadLib from "signature_pad"
 import { supabase } from "@/lib/supabaseClient"
-import { ArrowLeft, Save, PenTool, Printer, Mail, Check, RotateCcw } from "lucide-react"
+import { ArrowLeft, Save, PenTool, Printer, Mail, Check, RotateCcw, Send, Clock, Eye as EyeIcon } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 
@@ -13,6 +13,7 @@ type Job = {
   id: string
   customer_name: string
   customer_phone: string
+  customer_email: string | null
   address: string
   zip_code: string
   job_type: string
@@ -54,6 +55,10 @@ export default function ContractPage() {
   const [signing, setSigning] = useState(false)
   const [emailing, setEmailing] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [customerEmailAddr, setCustomerEmailAddr] = useState("")
+  const [sendingToCustomer, setSendingToCustomer] = useState(false)
+  const [sentToCustomer, setSentToCustomer] = useState(false)
+  const [docEvents, setDocEvents] = useState<{ id: string; event_type: string; recipient_email: string; created_at: string }[]>([])
 
   // Editable fields
   const [contractorName, setContractorName] = useState("")
@@ -70,13 +75,17 @@ export default function ContractPage() {
 
   // Signature pads
   const contractorCanvasRef = useRef<HTMLCanvasElement>(null)
-  const customerCanvasRef = useRef<HTMLCanvasElement>(null)
   const contractorPadRef = useRef<SignaturePadLib | null>(null)
-  const customerPadRef = useRef<SignaturePadLib | null>(null)
   const [contractorSigEmpty, setContractorSigEmpty] = useState(true)
+  const customerCanvasRef = useRef<HTMLCanvasElement>(null)
+  const customerPadRef = useRef<SignaturePadLib | null>(null)
   const [customerSigEmpty, setCustomerSigEmpty] = useState(true)
+  const [signingMode, setSigningMode] = useState<"in-person" | "email">("in-person")
+  const [customerSigning, setCustomerSigning] = useState(false)
 
   const isSigned = contract?.status === "signed"
+  const isPendingCustomer = contract?.status === "pending_customer"
+  const isLocked = isSigned || isPendingCustomer
 
   useEffect(() => {
     const load = async () => {
@@ -88,7 +97,7 @@ export default function ContractPage() {
       // Fetch job
       const { data: jobData } = await supabase
         .from("jobs")
-        .select("id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
+        .select("id, customer_name, customer_phone, customer_email, address, zip_code, job_type, description, budget")
         .eq("id", jobId)
         .single()
 
@@ -124,6 +133,7 @@ export default function ContractPage() {
         setContractPrice(existing.contract_price?.toString() || "")
         setDepositPercent(existing.deposit_percent || 50)
         setTerms({ ...DEFAULT_TERMS, ...existing.terms })
+        setCustomerEmailAddr(existing.customer_email || jobData.customer_email || "")
       } else {
         // Pre-fill from profile and job
         setContractorName(profile?.username || user.user_metadata?.username || "")
@@ -133,51 +143,75 @@ export default function ContractPage() {
         setCustomerAddress(`${jobData.address} ${jobData.zip_code}`)
         setCustomerPhone(jobData.customer_phone || "")
         setContractPrice(jobData.budget?.toString() || "")
+        setCustomerEmailAddr(jobData.customer_email || "")
       }
+
+      // Fetch document events
+      const { data: events } = await supabase
+        .from("document_events")
+        .select("id, event_type, recipient_email, created_at")
+        .eq("job_id", jobId)
+        .order("created_at", { ascending: true })
+      setDocEvents(events || [])
 
       setLoading(false)
     }
     load()
   }, [jobId, router])
 
-  // Init signature pads after loading
+  const initPad = (canvasRef: React.RefObject<HTMLCanvasElement | null>, onEmpty: (empty: boolean) => void) => {
+    if (!canvasRef.current) return null
+    const canvas = canvasRef.current
+    const ratio = Math.max(window.devicePixelRatio || 1, 1)
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * ratio
+    canvas.height = rect.height * ratio
+    const ctx = canvas.getContext("2d")
+    if (ctx) ctx.scale(ratio, ratio)
+
+    const pad = new SignaturePadLib(canvas, {
+      backgroundColor: "rgb(255, 255, 255)",
+      penColor: "rgb(0, 0, 0)",
+    })
+    pad.addEventListener("endStroke", () => onEmpty(pad.isEmpty()))
+    onEmpty(true)
+    return pad
+  }
+
+  // Init contractor signature pad after loading
   useEffect(() => {
-    if (loading || isSigned) return
-
-    const initPad = (
-      canvasRef: React.RefObject<HTMLCanvasElement | null>,
-      padRef: React.MutableRefObject<SignaturePadLib | null>,
-      setEmpty: (v: boolean) => void
-    ) => {
-      if (!canvasRef.current) return
-      const canvas = canvasRef.current
-      const ratio = Math.max(window.devicePixelRatio || 1, 1)
-      const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * ratio
-      canvas.height = rect.height * ratio
-      const ctx = canvas.getContext("2d")
-      if (ctx) ctx.scale(ratio, ratio)
-
-      const pad = new SignaturePadLib(canvas, {
-        backgroundColor: "rgb(255, 255, 255)",
-        penColor: "rgb(0, 0, 0)",
-      })
-      pad.addEventListener("endStroke", () => setEmpty(pad.isEmpty()))
-      padRef.current = pad
-      setEmpty(true)
-    }
-
+    if (loading || isLocked) return
     const timer = setTimeout(() => {
-      initPad(contractorCanvasRef, contractorPadRef, setContractorSigEmpty)
-      initPad(customerCanvasRef, customerPadRef, setCustomerSigEmpty)
+      contractorPadRef.current = initPad(contractorCanvasRef, setContractorSigEmpty)
     }, 200)
-
     return () => {
       clearTimeout(timer)
       contractorPadRef.current?.off()
+    }
+  }, [loading, isLocked])
+
+  // Init customer in-person signature pad
+  useEffect(() => {
+    if (loading || isSigned || signingMode !== "in-person") return
+    if (!contract?.contractor_signature_url) return
+
+    // Try multiple times since canvas may not be in DOM immediately after state change
+    let attempts = 0
+    const tryInit = () => {
+      if (customerCanvasRef.current) {
+        customerPadRef.current = initPad(customerCanvasRef, setCustomerSigEmpty)
+      } else if (attempts < 5) {
+        attempts++
+        setTimeout(tryInit, 200)
+      }
+    }
+    const timer = setTimeout(tryInit, 100)
+
+    return () => {
+      clearTimeout(timer)
       customerPadRef.current?.off()
     }
-  }, [loading, isSigned])
+  }, [loading, isSigned, signingMode, contract?.contractor_signature_url])
 
   const updateTerm = (key: keyof ContractTerms, value: any) => {
     setTerms((prev) => ({ ...prev, [key]: value }))
@@ -215,8 +249,25 @@ export default function ContractPage() {
     }))
   }
 
-  const handleEditSigned = () => {
-    if (!confirm("Editing this contract will remove all signatures. Both parties will need to sign again. Continue?")) return
+  const handleEditSigned = async () => {
+    const msg = isSigned
+      ? "Editing this contract will remove all signatures. Both parties will need to sign again. Continue?"
+      : "Editing this contract will cancel the pending customer signature. Continue?"
+    if (!confirm(msg)) return
+
+    // Reset in DB too so the signing token is cleared
+    if (contract?.id) {
+      await supabase.from("contracts").update({
+        status: "draft",
+        contractor_signature_url: null,
+        customer_signature_url: null,
+        contractor_signed_at: null,
+        customer_signed_at: null,
+        signing_token: null,
+        signing_token_expires_at: null,
+      }).eq("id", contract.id)
+    }
+
     setContract((prev) => prev ? {
       ...prev,
       status: "draft",
@@ -225,6 +276,7 @@ export default function ContractPage() {
       contractor_signed_at: null,
       customer_signed_at: null,
     } : null)
+    setSentToCustomer(false)
   }
 
   const getContractData = () => ({
@@ -287,10 +339,7 @@ export default function ContractPage() {
 
   const handleSign = async () => {
     if (!contractorPadRef.current || contractorPadRef.current.isEmpty()) {
-      alert("Contractor signature is required"); return
-    }
-    if (!customerPadRef.current || customerPadRef.current.isEmpty()) {
-      alert("Customer signature is required"); return
+      alert("Please sign before saving"); return
     }
 
     setSigning(true)
@@ -301,18 +350,13 @@ export default function ContractPage() {
     const contractorSigUrl = await uploadSignature(contractorPadRef.current, `${jobId}-contractor`)
     if (!contractorSigUrl) { setSigning(false); return }
 
-    const customerSigUrl = await uploadSignature(customerPadRef.current, `${jobId}-customer`)
-    if (!customerSigUrl) { setSigning(false); return }
-
     const now = new Date().toISOString()
     const contractData = {
       ...getContractData(),
       contractor_id: user.id,
-      status: "signed",
+      status: "draft",
       contractor_signature_url: contractorSigUrl,
-      customer_signature_url: customerSigUrl,
       contractor_signed_at: now,
-      customer_signed_at: now,
     }
 
     let savedContract: Contract | null = null
@@ -328,14 +372,69 @@ export default function ContractPage() {
 
     if (savedContract) {
       setContract(savedContract)
-      await supabase.from("jobs").update({
-        signature_url: customerSigUrl,
-        budget: parseFloat(contractPrice) || 0,
-        signed_at: now,
-      }).eq("id", jobId)
+      alert("Contract signed and saved! You can now send it to the customer.")
     }
 
     setSigning(false)
+  }
+
+  const handleCustomerSignInPerson = async () => {
+    if (!customerPadRef.current || customerPadRef.current.isEmpty()) {
+      alert("Customer must sign before saving"); return
+    }
+    if (!contract?.id) { alert("Save the contract first"); return }
+
+    setCustomerSigning(true)
+    const customerSigUrl = await uploadSignature(customerPadRef.current, `${jobId}-customer`)
+    if (!customerSigUrl) { setCustomerSigning(false); return }
+
+    const now = new Date().toISOString()
+    const { data, error } = await supabase.from("contracts").update({
+      customer_signature_url: customerSigUrl,
+      customer_signed_at: now,
+      status: "signed",
+    }).eq("id", contract.id).select().single()
+
+    if (error) {
+      alert("Error: " + error.message)
+    } else if (data) {
+      setContract(data)
+
+      // Track signed event
+      await supabase.from("document_events").insert({
+        job_id: jobId,
+        document_type: "contract",
+        document_id: contract.id,
+        event_type: "signed",
+        recipient_email: "in-person",
+      })
+    }
+    setCustomerSigning(false)
+  }
+
+  const handleSendToCustomer = async () => {
+    if (!contract?.id) { alert("Save the contract first"); return }
+    if (!contract.contractor_signature_url) { alert("Please sign the contract first"); return }
+    if (!customerEmailAddr.trim()) { alert("Enter the customer's email address"); return }
+
+    setSendingToCustomer(true)
+    try {
+      const res = await fetch("/api/contracts/send-signing-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contract_id: contract.id, customer_email: customerEmailAddr.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert("Error: " + data.error)
+      } else {
+        setSentToCustomer(true)
+        setContract((prev) => prev ? { ...prev, status: "pending_customer" } : null)
+      }
+    } catch {
+      alert("Failed to send. Please try again.")
+    }
+    setSendingToCustomer(false)
   }
 
   const handleEmail = async () => {
@@ -392,19 +491,19 @@ export default function ContractPage() {
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contractor</h3>
             <div className="space-y-2">
-              <input value={contractorName} onChange={(e) => setContractorName(e.target.value)} placeholder="Name" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={contractorCompany} onChange={(e) => setContractorCompany(e.target.value)} placeholder="Company" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={contractorPhone} onChange={(e) => setContractorPhone(e.target.value)} placeholder="Phone" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={contractorEmail} onChange={(e) => setContractorEmail(e.target.value)} placeholder="Email" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={contractorAddress} onChange={(e) => setContractorAddress(e.target.value)} placeholder="Address" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={contractorName} onChange={(e) => setContractorName(e.target.value)} placeholder="Name" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={contractorCompany} onChange={(e) => setContractorCompany(e.target.value)} placeholder="Company" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={contractorPhone} onChange={(e) => setContractorPhone(e.target.value)} placeholder="Phone" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={contractorEmail} onChange={(e) => setContractorEmail(e.target.value)} placeholder="Email" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={contractorAddress} onChange={(e) => setContractorAddress(e.target.value)} placeholder="Address" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
             </div>
           </div>
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Customer</h3>
             <div className="space-y-2">
-              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer Name" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Project Address" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
-              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone" disabled={isSigned} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer Name" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Project Address" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
+              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone" disabled={isLocked} className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm disabled:opacity-60 print:border-0 print:p-0 print:bg-transparent" />
               <p className="px-3 py-1.5 text-sm text-muted-foreground print:p-0">
                 Contract Date: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
               </p>
@@ -425,7 +524,7 @@ export default function ContractPage() {
                   type="checkbox"
                   checked={item.checked}
                   onChange={() => toggleScopeItem(i)}
-                  disabled={isSigned}
+                  disabled={isLocked}
                   className="mt-1 h-4 w-4 rounded border-border accent-primary"
                 />
                 {isSigned ? (
@@ -443,13 +542,13 @@ export default function ContractPage() {
                 )}
               </div>
             ))}
-            {!isSigned && (
+            {!isLocked && (
               <button onClick={addScopeItem} className="text-xs text-primary hover:text-primary/80 font-medium">
                 + Add item
               </button>
             )}
           </div>
-          {!isSigned ? (
+          {!isLocked ? (
             <textarea
               value={terms.scope_custom_text}
               onChange={(e) => updateTerm("scope_custom_text", e.target.value)}
@@ -468,7 +567,7 @@ export default function ContractPage() {
         {/* Contract Price */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Contract Price</h3>
-          {!isSigned ? (
+          {!isLocked ? (
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-foreground">$</span>
               <input
@@ -487,7 +586,7 @@ export default function ContractPage() {
         {/* Work Start Date */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Work Start Date</h3>
-          {!isSigned ? (
+          {!isLocked ? (
             <input
               type="date"
               value={terms.work_start_date || ""}
@@ -507,7 +606,7 @@ export default function ContractPage() {
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground">Deposit:</span>
-              {!isSigned ? (
+              {!isLocked ? (
                 <input
                   type="number"
                   value={depositPercent}
@@ -527,7 +626,7 @@ export default function ContractPage() {
               <span className="text-xs font-semibold text-foreground">(${finalAmount.toLocaleString()})</span>
             </div>
           </div>
-          {!isSigned ? (
+          {!isLocked ? (
             <textarea
               value={terms.payment_terms_text}
               onChange={(e) => updateTerm("payment_terms_text", e.target.value)}
@@ -542,11 +641,11 @@ export default function ContractPage() {
         {/* Legal Clauses */}
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-bold text-foreground print:text-black">Terms & Conditions</h3>
-          <Accordion type="multiple" defaultValue={isSigned ? ["scheduling", "hidden-damage", "subcontractors", "warranty", "governing"] : []}>
+          <Accordion type="multiple" defaultValue={isLocked ? ["scheduling", "hidden-damage", "subcontractors", "warranty", "governing"] : []}>
             <AccordionItem value="scheduling">
               <AccordionTrigger className="text-sm">Scheduling & Delays</AccordionTrigger>
               <AccordionContent>
-                {!isSigned ? (
+                {!isLocked ? (
                   <textarea value={terms.scheduling_text} onChange={(e) => updateTerm("scheduling_text", e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">{terms.scheduling_text}</p>
@@ -557,7 +656,7 @@ export default function ContractPage() {
             <AccordionItem value="hidden-damage">
               <AccordionTrigger className="text-sm">Hidden Damage</AccordionTrigger>
               <AccordionContent>
-                {!isSigned ? (
+                {!isLocked ? (
                   <textarea value={terms.hidden_damage_text} onChange={(e) => updateTerm("hidden_damage_text", e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">{terms.hidden_damage_text}</p>
@@ -568,7 +667,7 @@ export default function ContractPage() {
             <AccordionItem value="subcontractors">
               <AccordionTrigger className="text-sm">Subcontractors</AccordionTrigger>
               <AccordionContent>
-                {!isSigned ? (
+                {!isLocked ? (
                   <textarea value={terms.subcontractors_text} onChange={(e) => updateTerm("subcontractors_text", e.target.value)} rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">{terms.subcontractors_text}</p>
@@ -581,14 +680,14 @@ export default function ContractPage() {
               <AccordionContent>
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Workmanship warranty:</span>
-                  {!isSigned ? (
+                  {!isLocked ? (
                     <input type="number" value={terms.warranty_years} onChange={(e) => updateTerm("warranty_years", Number(e.target.value))} className="w-16 rounded border border-border bg-background px-2 py-1 text-sm text-center" />
                   ) : (
                     <span className="text-sm font-semibold">{terms.warranty_years}</span>
                   )}
                   <span className="text-xs text-muted-foreground">years</span>
                 </div>
-                {!isSigned ? (
+                {!isLocked ? (
                   <textarea value={terms.warranty_text} onChange={(e) => updateTerm("warranty_text", e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs resize-none" />
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">{terms.warranty_text}</p>
@@ -601,7 +700,7 @@ export default function ContractPage() {
               <AccordionContent>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   This agreement shall be governed by and construed in accordance with the laws of the State of{" "}
-                  {!isSigned ? (
+                  {!isLocked ? (
                     <input value={terms.governing_state} onChange={(e) => updateTerm("governing_state", e.target.value)} className="w-28 rounded border border-border bg-background px-2 py-0.5 text-xs inline" />
                   ) : (
                     <strong>{terms.governing_state}</strong>
@@ -627,7 +726,7 @@ export default function ContractPage() {
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Contractor Signature
             </h4>
-            {isSigned && contract?.contractor_signature_url ? (
+            {(isLocked || contract?.contractor_signature_url) && contract?.contractor_signature_url ? (
               <div>
                 <img src={contract.contractor_signature_url} alt="Contractor signature" className="h-24 w-full rounded-lg border border-border bg-white object-contain" />
                 <p className="mt-1 text-[10px] text-muted-foreground">
@@ -655,14 +754,20 @@ export default function ContractPage() {
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Customer Signature
             </h4>
-            {isSigned && contract?.customer_signature_url ? (
+            {contract?.customer_signature_url ? (
               <div>
                 <img src={contract.customer_signature_url} alt="Customer signature" className="h-24 w-full rounded-lg border border-border bg-white object-contain" />
                 <p className="mt-1 text-[10px] text-muted-foreground">
                   Signed {contract.customer_signed_at && new Date(contract.customer_signed_at).toLocaleDateString()}
                 </p>
               </div>
-            ) : (
+            ) : isPendingCustomer ? (
+              <div className="flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-500/30 bg-amber-900/10">
+                <Mail className="mb-1 h-5 w-5 text-amber-400" />
+                <p className="text-xs text-amber-400 font-medium">Sent to customer</p>
+                <p className="text-[10px] text-muted-foreground">Awaiting signature</p>
+              </div>
+            ) : signingMode === "in-person" && contract?.contractor_signature_url ? (
               <div>
                 <canvas
                   ref={customerCanvasRef}
@@ -676,14 +781,97 @@ export default function ContractPage() {
                   Clear
                 </button>
               </div>
+            ) : (
+              <div className="flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary/20">
+                <p className="text-xs text-muted-foreground">
+                  {signingMode === "email" ? "Customer signs via email" : "Sign contract first"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {signingMode === "email" ? "Send signing link below" : "Then customer can sign here"}
+                </p>
+              </div>
             )}
           </div>
         </div>
+
+        {/* Signing Mode Toggle + Email/In-Person Options */}
+        {!isSigned && !isPendingCustomer && (
+          <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
+            <label className="mb-2 block text-xs font-semibold text-muted-foreground">How will the customer sign?</label>
+            <div className="mb-3 flex gap-1 rounded-lg bg-secondary/50 p-1">
+              <button
+                onClick={() => setSigningMode("in-person")}
+                className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                  signingMode === "in-person"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <PenTool className="mr-1.5 inline h-3.5 w-3.5" />
+                In Person
+              </button>
+              <button
+                onClick={() => setSigningMode("email")}
+                className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                  signingMode === "email"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Mail className="mr-1.5 inline h-3.5 w-3.5" />
+                Via Email
+              </button>
+            </div>
+            {signingMode === "email" && (
+              <div>
+                <input
+                  type="email"
+                  value={customerEmailAddr}
+                  onChange={(e) => setCustomerEmailAddr(e.target.value)}
+                  placeholder="customer@email.com"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+            {signingMode === "in-person" && (
+              <p className="text-xs text-muted-foreground">
+                Hand the device to the customer to sign directly on screen after you sign.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Email input when pending customer (for resending) */}
+        {isPendingCustomer && (
+          <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
+            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Customer Email (for signing link)</label>
+            <input
+              type="email"
+              value={customerEmailAddr}
+              onChange={(e) => setCustomerEmailAddr(e.target.value)}
+              placeholder="customer@email.com"
+              disabled
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Status Badge */}
+      {(isPendingCustomer || isSigned) && (
+        <div className={`mt-4 rounded-xl p-3 text-center text-sm font-semibold print:hidden ${
+          isSigned
+            ? "bg-emerald-900/20 text-emerald-400 border border-emerald-800/30"
+            : "bg-amber-900/20 text-amber-400 border border-amber-800/30"
+        }`}>
+          {isSigned ? "Contract fully signed by both parties" : "Awaiting customer signature — signing link sent via email"}
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="mt-4 flex flex-wrap gap-2 print:hidden">
-        {!isSigned && (
+        {/* Draft state: Save + Sign + Send */}
+        {!isLocked && (
           <>
             <button
               onClick={handleSaveDraft}
@@ -693,16 +881,59 @@ export default function ContractPage() {
               <Save className="h-4 w-4" />
               {saving ? "Saving..." : "Save Draft"}
             </button>
+            {!contract?.contractor_signature_url ? (
+              <button
+                onClick={handleSign}
+                disabled={signing || contractorSigEmpty}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <PenTool className="h-4 w-4" />
+                {signing ? "Signing..." : "Sign & Save"}
+              </button>
+            ) : signingMode === "email" ? (
+              <button
+                onClick={handleSendToCustomer}
+                disabled={sendingToCustomer || !customerEmailAddr.trim()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                {sendingToCustomer ? "Sending..." : "Send to Customer"}
+              </button>
+            ) : (
+              <button
+                onClick={handleCustomerSignInPerson}
+                disabled={customerSigning || customerSigEmpty}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <PenTool className="h-4 w-4" />
+                {customerSigning ? "Saving..." : "Customer Sign & Complete"}
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Pending customer state */}
+        {isPendingCustomer && (
+          <>
             <button
-              onClick={handleSign}
-              disabled={signing || contractorSigEmpty || customerSigEmpty}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              onClick={handleEditSigned}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
             >
-              <PenTool className="h-4 w-4" />
-              {signing ? "Signing..." : "Sign & Submit"}
+              <RotateCcw className="h-4 w-4" />
+              Edit Contract
+            </button>
+            <button
+              onClick={handleSendToCustomer}
+              disabled={sendingToCustomer || sentToCustomer}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
+            >
+              {sentToCustomer ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+              {sendingToCustomer ? "Resending..." : sentToCustomer ? "Link Resent" : "Resend Signing Link"}
             </button>
           </>
         )}
+
+        {/* Signed state */}
         {isSigned && (
           <>
             <button
@@ -730,6 +961,37 @@ export default function ContractPage() {
           </>
         )}
       </div>
+
+      {/* Document Activity */}
+      {docEvents.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
+          <h3 className="mb-3 text-sm font-bold text-foreground">Document Activity</h3>
+          <div className="space-y-2">
+            {docEvents.map((ev) => {
+              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-400" />
+                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-400" />
+                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-400" />
+                : <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              const label = ev.event_type === "sent" ? "Contract sent"
+                : ev.event_type === "opened" ? "Email opened"
+                : ev.event_type === "signed" ? "Contract signed"
+                : ev.event_type === "viewed" ? "Link clicked"
+                : ev.event_type
+              return (
+                <div key={ev.id} className="flex items-center gap-3 text-sm">
+                  {icon}
+                  <span className="font-medium text-foreground">{label}</span>
+                  {ev.recipient_email && <span className="text-xs text-muted-foreground">({ev.recipient_email})</span>}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                    {new Date(ev.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @media print {

@@ -4,11 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { FileText, DollarSign, MapPin, Plus } from "lucide-react"
+import { FileText, DollarSign, MapPin, Plus, Phone, Briefcase, StickyNote, User, Mail } from "lucide-react"
 
 type AssignedJob = {
   id: string
   customer_name: string
+  customer_phone: string
   address: string
   zip_code: string
   job_type: string
@@ -23,9 +24,14 @@ export default function ContractorReportPage() {
 
   const [selectedJobId, setSelectedJobId] = useState("")
   const [customerName, setCustomerName] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
   const [customerAddress, setCustomerAddress] = useState("")
+  const [jobType, setJobType] = useState("")
   const [priceQuote, setPriceQuote] = useState("")
   const [scopeOfWork, setScopeOfWork] = useState("")
+  const [extraNotes, setExtraNotes] = useState("")
+  const [contractorName, setContractorName] = useState("")
+  const [contractorEmail, setContractorEmail] = useState("")
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -36,11 +42,16 @@ export default function ContractorReportPage() {
 
       const { data } = await supabase
         .from("jobs")
-        .select("id, customer_name, address, zip_code, job_type")
+        .select("id, customer_name, customer_phone, address, zip_code, job_type")
         .eq("contractor_id", user.id)
         .in("status", ["Assigned", "Accepted"])
 
       setJobs(data || [])
+
+      // Pre-fill contractor info from account
+      setContractorName(user.user_metadata?.username || user.email?.split("@")[0] || "")
+      setContractorEmail(user.email || "")
+
       setLoading(false)
     }
 
@@ -52,12 +63,14 @@ export default function ContractorReportPage() {
     const job = jobs.find((j) => j.id === jobId)
     if (job) {
       setCustomerName(job.customer_name || "")
+      setCustomerPhone(job.customer_phone || "")
       setCustomerAddress(`${job.address}, ${job.zip_code}`)
+      setJobType(job.job_type || "")
     }
   }
 
   const handleSubmit = async () => {
-    if (!selectedJobId || !customerName || !customerAddress || !scopeOfWork) {
+    if (!selectedJobId || !customerName || !customerPhone || !customerAddress || !jobType || !scopeOfWork || !priceQuote) {
       alert("Please fill in all required fields")
       return
     }
@@ -66,19 +79,20 @@ export default function ContractorReportPage() {
     if (!session) return
     const user = session.user
 
-    const job = jobs.find((j) => j.id === selectedJobId)
-
     setSaving(true)
     const res = await fetch("/api/send-report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contractorName: user.user_metadata?.username || user.email?.split("@")[0] || "Contractor",
+        contractorName: contractorName || user.user_metadata?.username || user.email?.split("@")[0] || "Contractor",
+        contractorEmail: contractorEmail || user.email || "",
         customerName,
+        customerPhone,
         customerAddress,
-        jobType: job?.job_type || "",
+        jobType,
         priceQuote,
         scopeOfWork,
+        extraNotes,
       }),
     })
 
@@ -139,6 +153,38 @@ export default function ContractorReportPage() {
             )}
           </div>
 
+          {/* Contractor Info */}
+          <div className="rounded-xl border border-border/50 bg-secondary/30 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contractor Info (pre-filled from account)</p>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  <User className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+                  Contractor Name
+                </label>
+                <input
+                  value={contractorName}
+                  onChange={(e) => setContractorName(e.target.value)}
+                  placeholder="Contractor name"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  <Mail className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+                  Contractor Email
+                </label>
+                <input
+                  type="email"
+                  value={contractorEmail}
+                  onChange={(e) => setContractorEmail(e.target.value)}
+                  placeholder="contractor@email.com"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Customer Name */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Customer Name *</label>
@@ -146,6 +192,20 @@ export default function ContractorReportPage() {
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Customer name"
+              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          {/* Customer Phone */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <Phone className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+              Customer Number *
+            </label>
+            <input
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="(555) 000-0000"
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -164,17 +224,16 @@ export default function ContractorReportPage() {
             />
           </div>
 
-          {/* Price Quote */}
+          {/* Job Type */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">
-              <DollarSign className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
-              Price / Quote
+              <Briefcase className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+              Job Type *
             </label>
             <input
-              type="number"
-              value={priceQuote}
-              onChange={(e) => setPriceQuote(e.target.value)}
-              placeholder="5000"
+              value={jobType}
+              onChange={(e) => setJobType(e.target.value)}
+              placeholder="Roof Replacement, Repair, etc."
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -187,6 +246,36 @@ export default function ContractorReportPage() {
               onChange={(e) => setScopeOfWork(e.target.value)}
               placeholder="Describe what will be done on the job..."
               rows={4}
+              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+          </div>
+
+          {/* Estimated Cost */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <DollarSign className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+              Estimated Cost *
+            </label>
+            <input
+              type="number"
+              value={priceQuote}
+              onChange={(e) => setPriceQuote(e.target.value)}
+              placeholder="5000"
+              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          {/* Extra Notes */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <StickyNote className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+              Extra Notes *
+            </label>
+            <textarea
+              value={extraNotes}
+              onChange={(e) => setExtraNotes(e.target.value)}
+              placeholder="Additional notes, special instructions..."
+              rows={3}
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             />
           </div>

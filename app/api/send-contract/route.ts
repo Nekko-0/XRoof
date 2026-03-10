@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } }
   )
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
   const { data: contract, error } = await supabase
     .from("contracts")
@@ -121,15 +123,44 @@ export async function POST(req: Request) {
     </div>
   `
 
+  // Insert "sent" event for tracking
+  const { data: sentEvent } = await supabase
+    .from("document_events")
+    .insert({
+      job_id: contract.job_id,
+      document_type: "contract",
+      document_id: contract.id,
+      event_type: "sent",
+      recipient_email: "contact@leons-roofing.com",
+    })
+    .select("id")
+    .single()
+
+  // Add tracking pixel to email
+  const trackingPixel = sentEvent
+    ? `<img src="${appUrl}/api/track/open?eid=${sentEvent.id}" width="1" height="1" style="display:none;" />`
+    : ""
+
   const { error: sendError } = await resend.emails.send({
-    from: "XRoof Contracts <onboarding@resend.dev>",
+    from: "XRoof Contracts <contracts@xroof.io>",
     to: "contact@leons-roofing.com",
     subject: `Signed Contract — ${contract.customer_name} | ${contract.project_address}`,
-    html,
+    html: html + trackingPixel,
   })
 
   if (sendError) {
     return NextResponse.json({ error: sendError.message }, { status: 500 })
+  }
+
+  // Notify contractor
+  if (contract.contractor_id) {
+    await supabase.from("notifications").insert({
+      user_id: contract.contractor_id,
+      type: "contract_sent",
+      title: "Contract Emailed",
+      body: `Contract for ${contract.customer_name} sent to admin`,
+      read: false,
+    })
   }
 
   return NextResponse.json({ success: true })

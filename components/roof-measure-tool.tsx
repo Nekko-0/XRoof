@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye } from "lucide-react"
+import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Compass } from "lucide-react"
 
 // Pitch factor lookup table
 const PITCH_DATA: { pitch: string; rise: number; factor: number; degrees: number }[] = [
@@ -37,16 +37,16 @@ type EdgeType =
   | "rakes" | "wall_flashing" | "step_flashing" | "parapet_wall" | "transition"
 
 const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; dashed: boolean }> = {
-  unspecified:   { label: "Unspecified",   color: "#38bdf8", dashed: false },
-  eaves:         { label: "Eaves",         color: "#34d399", dashed: false },
-  valleys:       { label: "Valleys",       color: "#f87171", dashed: false },
-  hips:          { label: "Hips",          color: "#a78bfa", dashed: false },
-  ridges:        { label: "Ridges",        color: "#a3e635", dashed: false },
-  rakes:         { label: "Rakes",         color: "#fbbf24", dashed: false },
-  wall_flashing: { label: "Wall Flashing", color: "#22d3ee", dashed: true  },
-  step_flashing: { label: "Step Flashing", color: "#fb7185", dashed: true  },
-  parapet_wall:  { label: "Parapet Wall",  color: "#fb923c", dashed: false },
-  transition:    { label: "Transition",    color: "#e879f9", dashed: false },
+  unspecified:   { label: "Unspecified",   color: "#94a3b8", dashed: false },
+  eaves:         { label: "Eaves",         color: "#22c55e", dashed: false },
+  valleys:       { label: "Valleys",       color: "#ef4444", dashed: false },
+  hips:          { label: "Hips",          color: "#7c3aed", dashed: false },
+  ridges:        { label: "Ridges",        color: "#facc15", dashed: false },
+  rakes:         { label: "Rakes",         color: "#f97316", dashed: false },
+  wall_flashing: { label: "Wall Flashing", color: "#06b6d4", dashed: true  },
+  step_flashing: { label: "Step Flashing", color: "#be185d", dashed: true  },
+  parapet_wall:  { label: "Parapet Wall",  color: "#ea580c", dashed: false },
+  transition:    { label: "Transition",    color: "#d946ef", dashed: false },
 }
 
 
@@ -55,6 +55,7 @@ type RoofPlane = {
   points: { lat: number; lng: number }[]
   area_sqft: number
   edgeTypes: EdgeType[]
+  edge_lengths?: number[]
 }
 
 export type RoofMeasurement = {
@@ -67,6 +68,7 @@ export type RoofMeasurement = {
   total_squares: number
   waste_percent: number
   order_squares: number
+  edge_totals?: Partial<Record<EdgeType, number>>
 }
 
 interface RoofMeasureToolProps {
@@ -122,6 +124,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const satPitchActiveRef = useRef(false)
   const satCanvasRef = useRef<HTMLCanvasElement>(null)
   const [satPitchPoints, setSatPitchPoints] = useState<{ x: number; y: number }[]>([])
+  const [alignmentGuide, setAlignmentGuide] = useState(true)
 
   // Keep refs in sync
   useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
@@ -291,6 +294,19 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     })
   }
 
+  // Check how well an edge aligns to cardinal/diagonal directions
+  const getAlignmentLevel = (p1: { lat: number; lng: number }, p2: { lat: number; lng: number }): "perfect" | "near" | "none" => {
+    const dy = p2.lat - p1.lat
+    const dx = p2.lng - p1.lng
+    const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI) % 45
+    const deviation = Math.min(angle, 45 - angle)
+    if (deviation <= 3) return "perfect"
+    if (deviation <= 10) return "near"
+    return "none"
+  }
+
+  const ALIGNMENT_COLORS = { perfect: "#22c55e", near: "#eab308", none: "#3b82f6" }
+
   // Calculate polygon area using Google Maps geometry
   const calculatePolygonArea = (points: { lat: number; lng: number }[]): number => {
     if (!window.google?.maps?.geometry || points.length < 3) return 0
@@ -340,19 +356,29 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         const edgeType = (plane.edgeTypes || [])[i] || "unspecified"
         const config = EDGE_TYPE_CONFIG[edgeType]
 
+        // Determine edge color — use alignment guide colors while drawing active plane
+        const isDrawingThisPlane = drawingActive && planeIdx === activePlaneIndex
+        let edgeStrokeColor = config.color
+        if (isDrawingThisPlane && alignmentGuide) {
+          const level = getAlignmentLevel(p1, p2)
+          edgeStrokeColor = ALIGNMENT_COLORS[level]
+        }
+
         // Edge polyline
+        const edgeClickable = !drawingActiveRef.current && activeEdgeToolRef.current !== null
         const polylineOpts: any = {
           path: [{ lat: p1.lat, lng: p1.lng }, { lat: p2.lat, lng: p2.lng }],
-          strokeColor: config.color,
+          strokeColor: edgeStrokeColor,
           strokeOpacity: config.dashed ? 0 : 1,
           strokeWeight: 3,
           map: mapInstanceRef.current,
-          clickable: !drawingActiveRef.current && activeEdgeToolRef.current !== null,
+          clickable: edgeClickable,
+          zIndex: 5,
         }
         // Dashed line effect
         if (config.dashed) {
           polylineOpts.icons = [{
-            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: config.color, scale: 3 },
+            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: edgeStrokeColor, scale: 3 },
             offset: "0",
             repeat: "12px",
           }]
@@ -362,7 +388,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         // Click listener for edge type assignment
         const ePlaneIdx = planeIdx
         const eEdgeIdx = i
-        edgeLine.addListener("click", () => {
+        const edgeClickHandler = () => {
           const tool = activeEdgeToolRef.current
           if (!tool) return
           setPlanes((prev) => {
@@ -372,8 +398,23 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
             updated[ePlaneIdx] = { ...updated[ePlaneIdx], edgeTypes }
             return updated
           })
-        })
+        }
+        edgeLine.addListener("click", edgeClickHandler)
         edgeLinesRef.current.push(edgeLine)
+
+        // Invisible wider hit-target polyline for easier clicking
+        if (edgeClickable) {
+          const hitTarget = new window.google.maps.Polyline({
+            path: [{ lat: p1.lat, lng: p1.lng }, { lat: p2.lat, lng: p2.lng }],
+            strokeWeight: 20,
+            strokeOpacity: 0,
+            map: mapInstanceRef.current,
+            clickable: true,
+            zIndex: 6,
+          })
+          hitTarget.addListener("click", edgeClickHandler)
+          edgeLinesRef.current.push(hitTarget)
+        }
       }
 
       // Draw vertex markers (plain dots, draggable only when not drawing)
@@ -381,8 +422,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         const marker = new window.google.maps.Marker({
           position: { lat: pt.lat, lng: pt.lng },
           map: mapInstanceRef.current,
-          draggable: !drawingActiveRef.current,
-          clickable: !drawingActiveRef.current,
+          draggable: !drawingActiveRef.current && !activeEdgeToolRef.current,
+          clickable: !drawingActiveRef.current && !activeEdgeToolRef.current,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 6,
@@ -425,8 +466,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           label: {
             text: `${selectedPitch}\n${plane.area_sqft.toLocaleString()} sqft`,
             color: "#fff",
-            fontSize: "13px",
-            fontWeight: "bold",
+            fontSize: "10px",
+            fontWeight: "600",
             className: "edge-measurement-label",
           },
           clickable: false,
@@ -436,7 +477,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         planeLabelsRef.current.push(planeLabel)
       }
     })
-  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool, mapZoom, selectedPitch])
+  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool, mapZoom, selectedPitch, alignmentGuide])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
@@ -726,9 +767,32 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   // Export data
   const handleExport = () => {
     if (!onExportToReport) return
+
+    // Compute edge lengths and totals
+    const edgeTotals: Partial<Record<EdgeType, number>> = {}
+    const planesWithLengths = planes.map((plane) => {
+      const pts = plane.points
+      const lengths: number[] = []
+      for (let i = 0; i < pts.length; i++) {
+        const a = new window.google.maps.LatLng(pts[i].lat, pts[i].lng)
+        const b = new window.google.maps.LatLng(pts[(i + 1) % pts.length].lat, pts[(i + 1) % pts.length].lng)
+        const meters = window.google.maps.geometry.spherical.computeDistanceBetween(a, b)
+        const feet = meters * 3.28084
+        lengths.push(Math.round(feet * 10) / 10)
+        const edgeType = plane.edgeTypes[i] || "unspecified"
+        edgeTotals[edgeType] = (edgeTotals[edgeType] || 0) + feet
+      }
+      return { ...plane, edge_lengths: lengths }
+    })
+
+    // Round totals
+    for (const key of Object.keys(edgeTotals) as EdgeType[]) {
+      edgeTotals[key] = Math.round(edgeTotals[key]! * 10) / 10
+    }
+
     const data: RoofMeasurement = {
       address,
-      planes,
+      planes: planesWithLengths,
       pitch: selectedPitch,
       pitch_factor: pitchFactor,
       total_flat_area: totalFlatArea,
@@ -736,6 +800,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       total_squares: totalSquares,
       waste_percent: wastePercent,
       order_squares: orderSquares,
+      edge_totals: edgeTotals,
     }
     onExportToReport(data)
   }
@@ -874,30 +939,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     {drawingActive ? "Stop Drawing" : "Start Drawing"}
                   </button>
                   <button
-                    onClick={() => {
-                      const activating = !satPitchActive
-                      setSatPitchActive(activating)
-                      if (activating) {
-                        setDrawingActive(false)
-                        setActiveEdgeTool(null)
-                        setSatPitchPoints([])
-                        const canvas = satCanvasRef.current
-                        if (canvas?.parentElement) {
-                          canvas.width = canvas.parentElement.clientWidth
-                          canvas.height = canvas.parentElement.clientHeight
-                        }
-                      }
-                    }}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                      satPitchActive
-                        ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
-                        : "border border-border bg-background text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <Ruler className="h-3.5 w-3.5" />
-                    {satPitchActive ? "Measuring Pitch" : "Measure Pitch"}
-                  </button>
-                  <button
                     onClick={addPlane}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                   >
@@ -910,6 +951,17 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     Undo
+                  </button>
+                  <button
+                    onClick={() => setAlignmentGuide(!alignmentGuide)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      alignmentGuide
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Compass className="h-3 w-3" />
+                    Align
                   </button>
                   {satPitchActive && (
                     <span className="text-xs text-muted-foreground">
@@ -1082,7 +1134,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   </p>
                 )}
                 <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-amber-400">
-                  Estimated pitch — verify with physical measurement for exact accuracy (~85-90% accurate)
+                  Estimated pitch (~70-75% accurate) — measure on site to confirm
                 </p>
               </div>
             </div>
