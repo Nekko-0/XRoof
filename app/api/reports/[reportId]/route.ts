@@ -32,16 +32,22 @@ export async function GET(
     }
 
     let contractorName = "Unknown"
+    let brandColor = "#059669"
+    let logoUrl = ""
     if (report.contractor_id) {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("username")
+        .select("username, widget_color, logo_url")
         .eq("id", report.contractor_id)
         .single()
-      if (profile) contractorName = profile.username
+      if (profile) {
+        contractorName = profile.username
+        brandColor = profile.widget_color || brandColor
+        logoUrl = profile.logo_url || ""
+      }
     }
 
-    return NextResponse.json({ ...report, contractor_name: contractorName })
+    return NextResponse.json({ ...report, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl })
   }
 
   // Standard ID-based lookup
@@ -56,14 +62,20 @@ export async function GET(
   }
 
   let contractorName = "Unknown"
+  let brandColor = "#059669"
+  let logoUrl = ""
   if (data.contractor_id) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("username")
+      .select("username, widget_color, logo_url")
       .eq("id", data.contractor_id)
       .single()
-    if (profile) contractorName = profile.username
+    if (profile) {
+      contractorName = profile.username
+      brandColor = profile.widget_color || brandColor
+      logoUrl = profile.logo_url || ""
+    }
   }
 
-  return NextResponse.json({ ...data, contractor_name: contractorName })
+  return NextResponse.json({ ...data, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl })
 }

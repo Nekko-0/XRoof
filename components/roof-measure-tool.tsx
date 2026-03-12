@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Compass } from "lucide-react"
+import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Search, Save, FolderOpen, HelpCircle } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 // Pitch factor lookup table
 const PITCH_DATA: { pitch: string; rise: number; factor: number; degrees: number }[] = [
@@ -124,13 +125,61 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const satPitchActiveRef = useRef(false)
   const satCanvasRef = useRef<HTMLCanvasElement>(null)
   const [satPitchPoints, setSatPitchPoints] = useState<{ x: number; y: number }[]>([])
-  const [alignmentGuide, setAlignmentGuide] = useState(true)
+  // Straight-line preview + magnifier
+  const planesRef = useRef<RoofPlane[]>([])
+  const previewLineRef = useRef<any>(null)
+  const magnifierMapRef = useRef<HTMLDivElement>(null)
+  const magnifierInstanceRef = useRef<any>(null)
+  const [magnifierVisible, setMagnifierVisible] = useState(true)
+  const angleIndicatorRef = useRef<{ angle: number; snapped: boolean } | null>(null)
+  const [angleIndicator, setAngleIndicator] = useState<{ angle: number; snapped: boolean } | null>(null)
+
+  // Save/Load measurements
+  const [savedMeasurements, setSavedMeasurements] = useState<any[]>([])
+  const [showLoadModal, setShowLoadModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState<string | null>(null)
+
+  // First-use instruction hints
+  const [showHints, setShowHints] = useState(false)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissed = localStorage.getItem("xroof_measure_hints_dismissed")
+      if (!dismissed) {
+        setShowHints(true)
+      }
+    }
+  }, [])
+  const dismissHints = useCallback(() => {
+    setShowHints(false)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("xroof_measure_hints_dismissed", "1")
+    }
+  }, [])
 
   // Keep refs in sync
-  useEffect(() => { drawingActiveRef.current = drawingActive }, [drawingActive])
+  useEffect(() => {
+    drawingActiveRef.current = drawingActive
+    // Crosshair cursor while drawing
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({ draggableCursor: drawingActive ? "crosshair" : null })
+    }
+    // Remove preview line when drawing stops
+    if (!drawingActive && previewLineRef.current) {
+      previewLineRef.current.setMap(null)
+      previewLineRef.current = null
+    }
+    // Reset magnifier instance when drawing stops so it re-inits next time
+    if (!drawingActive) {
+      magnifierInstanceRef.current = null
+      angleIndicatorRef.current = null
+      setAngleIndicator(null)
+    }
+  }, [drawingActive])
   useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
   useEffect(() => { activeEdgeToolRef.current = activeEdgeTool }, [activeEdgeTool])
   useEffect(() => { satPitchActiveRef.current = satPitchActive }, [satPitchActive])
+  useEffect(() => { planesRef.current = planes }, [planes])
 
   // Load Google Maps script
   useEffect(() => {
@@ -198,7 +247,84 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         addressMarkerRef.current = null
       }
       const latLng = e.latLng
-      addPointToPlane(latLng.lat(), latLng.lng())
+      const lat = latLng.lat()
+      const lng = latLng.lng()
+
+      addPointToPlane(lat, lng)
+    })
+
+    // Mousemove handler for preview line + magnifier
+    map.addListener("mousemove", (e: any) => {
+      // Update magnifier center
+      if (magnifierInstanceRef.current) {
+        magnifierInstanceRef.current.setCenter(e.latLng)
+        const mainZoom = map.getZoom() || 20
+        const magZoom = magnifierInstanceRef.current.getZoom()
+        if (magZoom !== mainZoom + 3) {
+          magnifierInstanceRef.current.setZoom(mainZoom + 3)
+        }
+      }
+
+      // Preview line
+      if (!drawingActiveRef.current || satPitchActiveRef.current) {
+        if (previewLineRef.current) {
+          previewLineRef.current.setMap(null)
+          previewLineRef.current = null
+        }
+        return
+      }
+
+      const currentPlane = planesRef.current[activePlaneIndexRef.current]
+      if (!currentPlane || currentPlane.points.length === 0) {
+        if (previewLineRef.current) {
+          previewLineRef.current.setMap(null)
+          previewLineRef.current = null
+        }
+        return
+      }
+
+      const lastPt = currentPlane.points[currentPlane.points.length - 1]
+      const cursor = { lat: e.latLng.lat(), lng: e.latLng.lng() }
+
+      const color = "#22c55e"
+
+      if (previewLineRef.current) {
+        previewLineRef.current.setPath([lastPt, cursor])
+        previewLineRef.current.setOptions({ strokeColor: color })
+      } else {
+        previewLineRef.current = new window.google.maps.Polyline({
+          path: [lastPt, cursor],
+          strokeColor: color,
+          strokeOpacity: 0,
+          strokeWeight: 2,
+          map,
+          clickable: false,
+          zIndex: 20,
+          icons: [{
+            icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: color, scale: 2 },
+            offset: "0",
+            repeat: "8px",
+          }],
+        })
+      }
+
+      // Angle indicator
+      const dy = cursor.lat - lastPt.lat
+      const dx = cursor.lng - lastPt.lng
+      const rawAngle = Math.atan2(dy, dx) * 180 / Math.PI
+      const displayAngle = ((90 - rawAngle) % 360 + 360) % 360
+
+      const nearestSnap = Math.round(rawAngle / 45) * 45
+      let snapDiff = Math.abs(rawAngle - nearestSnap)
+      if (snapDiff > 180) snapDiff = 360 - snapDiff
+      const isSnapped = snapDiff <= 5
+
+      const newIndicator = { angle: Math.round(displayAngle * 10) / 10, snapped: isSnapped }
+      const prev = angleIndicatorRef.current
+      if (!prev || prev.snapped !== newIndicator.snapped || Math.abs(prev.angle - newIndicator.angle) > 0.5) {
+        angleIndicatorRef.current = newIndicator
+        setAngleIndicator(newIndicator)
+      }
     })
   }, [])
 
@@ -294,19 +420,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     })
   }
 
-  // Check how well an edge aligns to cardinal/diagonal directions
-  const getAlignmentLevel = (p1: { lat: number; lng: number }, p2: { lat: number; lng: number }): "perfect" | "near" | "none" => {
-    const dy = p2.lat - p1.lat
-    const dx = p2.lng - p1.lng
-    const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI) % 45
-    const deviation = Math.min(angle, 45 - angle)
-    if (deviation <= 3) return "perfect"
-    if (deviation <= 10) return "near"
-    return "none"
-  }
-
-  const ALIGNMENT_COLORS = { perfect: "#22c55e", near: "#eab308", none: "#3b82f6" }
-
   // Calculate polygon area using Google Maps geometry
   const calculatePolygonArea = (points: { lat: number; lng: number }[]): number => {
     if (!window.google?.maps?.geometry || points.length < 3) return 0
@@ -356,12 +469,13 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         const edgeType = (plane.edgeTypes || [])[i] || "unspecified"
         const config = EDGE_TYPE_CONFIG[edgeType]
 
-        // Determine edge color — use alignment guide colors while drawing active plane
+        // Edge color: bright green while drawing, blue when closed (unless edge type assigned)
         const isDrawingThisPlane = drawingActive && planeIdx === activePlaneIndex
         let edgeStrokeColor = config.color
-        if (isDrawingThisPlane && alignmentGuide) {
-          const level = getAlignmentLevel(p1, p2)
-          edgeStrokeColor = ALIGNMENT_COLORS[level]
+        if (isDrawingThisPlane) {
+          edgeStrokeColor = "#22c55e"
+        } else if (edgeType === "unspecified") {
+          edgeStrokeColor = "#3b82f6"
         }
 
         // Edge polyline
@@ -477,7 +591,28 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         planeLabelsRef.current.push(planeLabel)
       }
     })
-  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool, mapZoom, selectedPitch, alignmentGuide])
+  }, [planes, activePlaneIndex, drawingActive, activeEdgeTool, mapZoom, selectedPitch])
+
+  // Initialize magnifier map when drawing becomes active
+  useEffect(() => {
+    if (!drawingActive || !magnifierVisible || !mapInstanceRef.current || !window.google) {
+      return
+    }
+    if (!magnifierMapRef.current) return
+    if (magnifierInstanceRef.current) return // Already initialized
+
+    const mainMap = mapInstanceRef.current
+    magnifierInstanceRef.current = new window.google.maps.Map(magnifierMapRef.current, {
+      center: mainMap.getCenter(),
+      zoom: (mainMap.getZoom() || 20) + 3,
+      mapTypeId: "satellite",
+      tilt: 0,
+      disableDefaultUI: true,
+      gestureHandling: "none",
+      keyboardShortcuts: false,
+      clickableIcons: false,
+    })
+  }, [drawingActive, magnifierVisible])
 
   // Street View canvas for 3-point pitch
   useEffect(() => {
@@ -757,6 +892,97 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const wasteSquares = +(totalSquares * (wastePercent / 100)).toFixed(1)
   const orderSquares = +(totalSquares + wasteSquares).toFixed(1)
 
+  // Live edge totals by type
+  const edgeTotals: Partial<Record<EdgeType, number>> = {}
+  if (window.google?.maps?.geometry) {
+    planes.forEach((plane) => {
+      const pts = plane.points
+      if (pts.length < 2) return
+      const edgeCount = pts.length >= 3 ? pts.length : pts.length - 1
+      for (let i = 0; i < edgeCount; i++) {
+        const j = (i + 1) % pts.length
+        const a = new window.google.maps.LatLng(pts[i].lat, pts[i].lng)
+        const b = new window.google.maps.LatLng(pts[j].lat, pts[j].lng)
+        const feet = window.google.maps.geometry.spherical.computeDistanceBetween(a, b) * 3.28084
+        const edgeType = plane.edgeTypes[i] || "unspecified"
+        edgeTotals[edgeType] = (edgeTotals[edgeType] || 0) + feet
+      }
+    })
+    for (const key of Object.keys(edgeTotals) as EdgeType[]) {
+      edgeTotals[key] = Math.round(edgeTotals[key]! * 10) / 10
+    }
+  }
+  const hasEdges = Object.keys(edgeTotals).length > 0
+
+  // Save measurement to database
+  const handleSaveMeasurement = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return alert("Please log in to save measurements")
+    setSaving(true)
+
+    const payload = {
+      contractor_id: session.user.id,
+      address,
+      planes: planes.map((p) => ({ ...p })),
+      pitch: selectedPitch,
+      pitch_factor: pitchFactor,
+      waste_percent: wastePercent,
+      edge_totals: edgeTotals,
+      total_flat_area: totalFlatArea,
+      adjusted_area: adjustedArea,
+      total_squares: totalSquares,
+    }
+
+    if (savedId) {
+      const { error } = await supabase.from("measurements").update(payload).eq("id", savedId)
+      if (error) alert("Error saving: " + error.message)
+    } else {
+      const { data, error } = await supabase.from("measurements").insert(payload).select("id").single()
+      if (error) alert("Error saving: " + error.message)
+      else if (data) setSavedId(data.id)
+    }
+    setSaving(false)
+  }
+
+  // Load saved measurements list
+  const handleLoadList = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const { data } = await supabase
+      .from("measurements")
+      .select("id, address, total_squares, created_at")
+      .eq("contractor_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+    setSavedMeasurements(data || [])
+    setShowLoadModal(true)
+  }
+
+  // Load a specific measurement
+  const handleLoadMeasurement = async (id: string) => {
+    const { data, error } = await supabase.from("measurements").select("*").eq("id", id).single()
+    if (error || !data) return alert("Error loading measurement")
+
+    setPlanes(data.planes || [])
+    setAddress(data.address || "")
+    setSelectedPitch(data.pitch || "6/12")
+    const found = PITCH_DATA.find((p) => p.pitch === data.pitch)
+    if (found) setPitchFactor(found.factor)
+    if (data.waste_percent) setWastePercent(data.waste_percent)
+    setSavedId(id)
+    setShowLoadModal(false)
+
+    // Re-center map on loaded address
+    if (data.address && geocoderRef.current && mapInstanceRef.current) {
+      geocoderRef.current.geocode({ address: data.address }, (results: any, status: any) => {
+        if (status === "OK" && results[0]) {
+          const loc = results[0].geometry.location
+          mapInstanceRef.current.setCenter(loc)
+        }
+      })
+    }
+  }
+
   // Manual pitch selection
   const handlePitchChange = (pitch: string) => {
     setSelectedPitch(pitch)
@@ -818,9 +1044,60 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4">
       {/* Edge label text shadow for readability on satellite */}
       <style>{`.edge-measurement-label { text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7); }`}</style>
+
+      {/* Help button — always visible in top-right */}
+      <button
+        onClick={() => setShowHints(true)}
+        className="absolute right-2 top-2 z-[100] rounded-full bg-secondary/80 p-1.5 text-muted-foreground shadow-md backdrop-blur transition-colors hover:bg-secondary hover:text-foreground"
+        title="Show instruction hints"
+      >
+        <HelpCircle className="h-4 w-4" />
+      </button>
+
+      {/* First-use instruction hints overlay */}
+      {showHints && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70"
+          onClick={dismissHints}
+        >
+          <div
+            className="mx-4 w-full max-w-md rounded-2xl bg-gray-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-center text-lg font-semibold text-white">
+              Roof Measurement Tool
+            </h3>
+            <ol className="space-y-3 text-sm leading-relaxed text-gray-200">
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
+                <span>Click on the map to place vertices and draw roof planes</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
+                <span>Double-click or click the first point to close a polygon</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
+                <span>Use the pitch tool to measure roof pitch from Street View</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">4</span>
+                <span>Switch to Edge mode to classify eaves, valleys, hips, and ridges</span>
+              </li>
+            </ol>
+            <button
+              onClick={dismissHints}
+              className="mt-6 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Address Search */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-end">
         <div className="flex-1">
@@ -918,6 +1195,38 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     Click {3 - satPitchPoints.length} point{3 - satPitchPoints.length !== 1 ? "s" : ""} on the roof edge
                   </div>
                 )}
+
+                {/* Angle Indicator */}
+                {drawingActive && angleIndicator && (
+                  <div
+                    className="absolute bottom-3 left-3 rounded-lg px-3 py-1.5 text-xs font-mono font-bold shadow-lg"
+                    style={{
+                      zIndex: 40,
+                      backgroundColor: "rgba(0,0,0,0.75)",
+                      color: angleIndicator.snapped ? "#22c55e" : "#ffffff",
+                      border: angleIndicator.snapped ? "1px solid rgba(34,197,94,0.5)" : "1px solid rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    {angleIndicator.angle.toFixed(1)}°
+                    {angleIndicator.snapped && <span className="ml-1.5 text-emerald-400/80">SNAP</span>}
+                  </div>
+                )}
+
+                {/* Mini Magnifier */}
+                {drawingActive && magnifierVisible && (
+                  <div
+                    className="absolute top-3 right-3 rounded-lg border-2 border-white/50 shadow-lg overflow-hidden"
+                    style={{ width: 180, height: 180, zIndex: 40 }}
+                  >
+                    <div ref={magnifierMapRef} style={{ width: 180, height: 180 }} />
+                    {/* Crosshair overlay */}
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      <div className="absolute h-full w-px bg-red-500/60" />
+                      <div className="absolute w-full h-px bg-red-500/60" />
+                      <div className="absolute h-3 w-3 rounded-full border-2 border-red-500/80" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Drawing Controls */}
@@ -953,15 +1262,15 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     Undo
                   </button>
                   <button
-                    onClick={() => setAlignmentGuide(!alignmentGuide)}
+                    onClick={() => setMagnifierVisible(!magnifierVisible)}
                     className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      alignmentGuide
+                      magnifierVisible
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                         : "border-border bg-background text-muted-foreground hover:bg-secondary"
                     }`}
                   >
-                    <Compass className="h-3 w-3" />
-                    Align
+                    <Search className="h-3 w-3" />
+                    Magnifier
                   </button>
                   {satPitchActive && (
                     <span className="text-xs text-muted-foreground">
@@ -1133,8 +1442,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     Click on the roof rake (sloped edge): P1 at the bottom (eave), P2 midway, P3 at the top (ridge). The angle will be calculated automatically.
                   </p>
                 )}
-                <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-amber-400">
-                  Estimated pitch (~70-75% accurate) — measure on site to confirm
+                <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-emerald-400">
+                  Estimated pitch (~70-80% accurate) — measure on site to confirm
                 </p>
               </div>
             </div>
@@ -1207,14 +1516,104 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
               ))}
             </div>
 
-            {/* Export Button */}
-            {onExportToReport && totalFlatArea > 0 && (
-              <button
-                onClick={handleExport}
-                className="mt-4 w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Export to Report
-              </button>
+            {/* Edge Totals Summary */}
+            {hasEdges && (
+              <div className="rounded-xl border border-border bg-secondary/20 p-3">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Edge Totals</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {(Object.entries(edgeTotals) as [EdgeType, number][]).map(([type, lf]) => (
+                    <div key={type} className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{ backgroundColor: EDGE_TYPE_CONFIG[type]?.color || "#94a3b8" }}
+                        />
+                        {EDGE_TYPE_CONFIG[type]?.label || type}
+                      </span>
+                      <span className="font-medium text-foreground">{lf} LF</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Save / Load / Export Buttons */}
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveMeasurement}
+                  disabled={saving || totalFlatArea === 0}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50 transition-colors"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {saving ? "Saving..." : savedId ? "Update" : "Save"}
+                </button>
+                <button
+                  onClick={handleLoadList}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Load
+                </button>
+              </div>
+              {onExportToReport && totalFlatArea > 0 && (
+                <button
+                  onClick={handleExport}
+                  className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Export to Report
+                </button>
+              )}
+            </div>
+
+            {/* Load Measurements Modal */}
+            {showLoadModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowLoadModal(false)}>
+                <div className="mx-4 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="mb-4 text-sm font-bold text-foreground">Saved Measurements</h3>
+                  {savedMeasurements.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No saved measurements yet.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
+                      {savedMeasurements.map((m) => (
+                        <div
+                          key={m.id}
+                          className="flex items-center justify-between rounded-xl border border-border bg-background p-3 hover:bg-secondary transition-colors"
+                        >
+                          <button
+                            onClick={() => handleLoadMeasurement(m.id)}
+                            className="flex-1 text-left"
+                          >
+                            <p className="text-sm font-medium text-foreground">{m.address || "No address"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {m.total_squares ? `${m.total_squares} squares` : ""} — {new Date(m.created_at).toLocaleDateString()}
+                            </p>
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              if (!confirm("Delete this measurement?")) return
+                              await supabase.from("measurements").delete().eq("id", m.id)
+                              setSavedMeasurements((prev) => prev.filter((x) => x.id !== m.id))
+                              if (savedId === m.id) setSavedId(null)
+                            }}
+                            className="ml-2 flex-shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                            title="Delete measurement"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowLoadModal(false)}
+                    className="mt-4 w-full rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </>

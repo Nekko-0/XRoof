@@ -71,12 +71,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to update contract: " + updateError.message }, { status: 500 })
   }
 
-  // Update job record
+  // Update job record + auto-advance pipeline: Scheduled
   await supabase
     .from("jobs")
     .update({
       signature_url: customerSigUrl,
       signed_at: now,
+      status: "Scheduled",
     })
     .eq("id", contract.job_id)
 
@@ -88,6 +89,20 @@ export async function POST(req: Request) {
     event_type: "signed",
     recipient_email: contract.customer_email,
   })
+
+  // Fire contract_signed automation trigger
+  if (contract.job_id && contract.contractor_id) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    fetch(`${appUrl}/api/automations/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trigger: "contract_signed",
+        job_id: contract.job_id,
+        contractor_id: contract.contractor_id,
+      }),
+    }).catch(() => {})
+  }
 
   // Send completion email to contractor + admin
   const terms = contract.terms || {}
@@ -157,11 +172,11 @@ export async function POST(req: Request) {
   `
 
   // Send to contractor email and admin
-  const recipients = [contract.contractor_email, "contact@leons-roofing.com"].filter(Boolean) as string[]
+  const recipients = [contract.contractor_email].filter(Boolean) as string[]
   if (contract.customer_email) recipients.push(contract.customer_email)
 
   await resend.emails.send({
-    from: "XRoof Contracts <contracts@xroof.io>",
+    from: `${contract.contractor_company || contract.contractor_name || "XRoof"} via XRoof <contracts@xroof.io>`,
     to: recipients,
     subject: `Contract Signed — ${contract.customer_name} | ${contract.project_address}`,
     html,

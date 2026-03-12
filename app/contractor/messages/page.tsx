@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { ChatInterface } from "@/components/chat-interface"
+import { useToast } from "@/lib/toast-context"
 
 const ADMIN_EMAIL = "contact@leons-roofing.com"
 
@@ -24,6 +25,7 @@ type Message = {
 }
 
 export default function ContractorMessagesPage() {
+  const toast = useToast()
   const [userId, setUserId] = useState("")
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -124,7 +126,7 @@ export default function ContractorMessagesPage() {
       .single()
 
     if (error) {
-      alert("Error sending message: " + error.message)
+      toast.error("Error sending message: " + error.message)
     } else if (data) {
       setMessages([...messages, data])
     }
@@ -139,7 +141,7 @@ export default function ContractorMessagesPage() {
       .upload(fileName, file, { contentType: file.type })
 
     if (uploadError) {
-      alert("Error uploading file: " + uploadError.message)
+      toast.error("Error uploading file: " + uploadError.message)
       return
     }
 
@@ -160,7 +162,7 @@ export default function ContractorMessagesPage() {
       .single()
 
     if (error) {
-      alert("Error sending image: " + error.message)
+      toast.error("Error sending image: " + error.message)
     } else if (data) {
       setMessages([...messages, data])
     }

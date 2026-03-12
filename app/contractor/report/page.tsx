@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { FileText, DollarSign, MapPin, Plus, Phone, Briefcase, StickyNote, User, Mail } from "lucide-react"
+import { authFetch } from "@/lib/auth-fetch"
+import { FileText, DollarSign, MapPin, Plus, Phone, Briefcase, StickyNote, User, Mail, CheckCircle, Sparkles } from "lucide-react"
+import { useToast } from "@/lib/toast-context"
 
 type AssignedJob = {
   id: string
@@ -17,10 +19,14 @@ type AssignedJob = {
 
 export default function ContractorReportPage() {
   const router = useRouter()
+  const toast = useToast()
+  const searchParams = useSearchParams()
 
   const [jobs, setJobs] = useState<AssignedJob[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [userId, setUserId] = useState("")
 
   const [selectedJobId, setSelectedJobId] = useState("")
   const [customerName, setCustomerName] = useState("")
@@ -28,10 +34,43 @@ export default function ContractorReportPage() {
   const [customerAddress, setCustomerAddress] = useState("")
   const [jobType, setJobType] = useState("")
   const [priceQuote, setPriceQuote] = useState("")
+  const [pricingMode, setPricingMode] = useState<"flat" | "per_sqft">("flat")
   const [scopeOfWork, setScopeOfWork] = useState("")
   const [extraNotes, setExtraNotes] = useState("")
   const [contractorName, setContractorName] = useState("")
   const [contractorEmail, setContractorEmail] = useState("")
+
+  // Handle Stripe success redirect — create the measurement request
+  useEffect(() => {
+    if (searchParams.get("success") === "true" && !paymentSuccess) {
+      const createOrder = async () => {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        const address = searchParams.get("address") || ""
+        const notes = searchParams.get("notes") || ""
+        const roofType = searchParams.get("roof_type") || "Residential"
+
+        await authFetch("/api/measurement-requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contractor_id: session.user.id,
+            address,
+            roof_type: roofType,
+            urgency: "standard",
+            notes,
+            report_type: "full",
+          }),
+        })
+
+        setPaymentSuccess(true)
+        // Clean URL
+        router.replace("/contractor/report")
+      }
+      createOrder()
+    }
+  }, [searchParams, paymentSuccess, router])
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -39,6 +78,7 @@ export default function ContractorReportPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { window.location.href = "/auth"; return }
       const user = session.user
+      setUserId(user.id)
 
       const { data } = await supabase
         .from("jobs")
@@ -71,39 +111,34 @@ export default function ContractorReportPage() {
 
   const handleSubmit = async () => {
     if (!selectedJobId || !customerName || !customerPhone || !customerAddress || !jobType || !scopeOfWork || !priceQuote) {
-      alert("Please fill in all required fields")
+      toast.error("Please fill in all required fields")
       return
     }
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const user = session.user
+    if (!userId) return
 
     setSaving(true)
-    const res = await fetch("/api/send-report", {
+
+    // Redirect to Stripe Checkout for $30 payment
+    const res = await authFetch("/api/stripe/create-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contractorName: contractorName || user.user_metadata?.username || user.email?.split("@")[0] || "Contractor",
-        contractorEmail: contractorEmail || user.email || "",
-        customerName,
-        customerPhone,
-        customerAddress,
-        jobType,
-        priceQuote,
-        scopeOfWork,
-        extraNotes,
+        user_id: userId,
+        plan: "report_full",
+        address: customerAddress,
+        notes: extraNotes,
+        roof_type: jobType,
       }),
     })
 
     const data = await res.json()
-    if (!res.ok) {
-      alert("Error sending report: " + (data.error || "Unknown error"))
+    if (data.url) {
+      window.location.href = data.url
     } else {
-      alert("Report sent successfully!")
-      router.push("/contractor/dashboard")
+      toast.error("Error starting checkout: " + (data.error || "Unknown error"))
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) return <p className="p-6">Loading...</p>
@@ -117,6 +152,31 @@ export default function ContractorReportPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Request a job report with your pricing and scope of work. A detailed report will be generated and sent to your email.
         </p>
+      </div>
+
+      {/* Payment success banner */}
+      {paymentSuccess && (
+        <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-3">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <div>
+            <p className="text-sm font-bold text-green-700">Report ordered successfully!</p>
+            <p className="text-xs text-green-600">Your professional report is being prepared. You'll receive it via email.</p>
+          </div>
+        </div>
+      )}
+
+      {/* $30 Full Package pricing banner */}
+      <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Professional Roof Report</p>
+            <p className="text-xs text-muted-foreground">Aerial imagery, full measurements & materials for a personalized report — save time, reduce waste</p>
+          </div>
+        </div>
+        <span className="rounded-lg bg-primary px-3 py-1.5 text-sm font-bold text-primary-foreground">
+          $30
+        </span>
       </div>
 
       <Link
@@ -252,17 +312,32 @@ export default function ContractorReportPage() {
 
           {/* Estimated Cost */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
-              <DollarSign className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
-              Estimated Cost *
-            </label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-sm font-medium text-foreground">
+                <DollarSign className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
+                {pricingMode === "flat" ? "Estimated Cost *" : "Price per Sq Ft *"}
+              </label>
+              <button
+                type="button"
+                onClick={() => setPricingMode(pricingMode === "flat" ? "per_sqft" : "flat")}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {pricingMode === "flat" ? "Switch to $/sq ft" : "Switch to flat price"}
+              </button>
+            </div>
             <input
               type="number"
               value={priceQuote}
               onChange={(e) => setPriceQuote(e.target.value)}
-              placeholder="5000"
+              placeholder={pricingMode === "flat" ? "5000" : "4.50"}
+              step={pricingMode === "per_sqft" ? "0.01" : "1"}
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
+            {pricingMode === "per_sqft" && priceQuote && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                This rate will be multiplied by total sq ft in the report to calculate the final estimate.
+              </p>
+            )}
           </div>
 
           {/* Extra Notes */}
@@ -285,7 +360,7 @@ export default function ContractorReportPage() {
             disabled={saving || !selectedJobId}
             className="mt-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {saving ? "Submitting..." : "Request Report"}
+            {saving ? "Redirecting to checkout..." : "Request Report — $30"}
           </button>
         </div>
       </div>

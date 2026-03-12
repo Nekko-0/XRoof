@@ -1,6 +1,7 @@
 import { getStripe } from "@/lib/stripe"
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { getQBClient, syncCustomerToQB, syncInvoiceToQB, syncPaymentToQB } from "@/lib/quickbooks"
 
 export async function POST(req: Request) {
   const stripe = getStripe()
@@ -52,6 +53,79 @@ export async function POST(req: Request) {
           amount: session.amount_total,
           status: "paid",
         })
+      }
+
+      // Handle invoice payments via Stripe Connect
+      if (session.metadata?.type === "invoice_payment") {
+        const invoiceId = session.metadata.invoice_id
+        if (invoiceId) {
+          await supabase
+            .from("invoices")
+            .update({
+              status: "paid",
+              stripe_payment_intent_id: session.payment_intent,
+              paid_at: new Date().toISOString(),
+            })
+            .eq("id", invoiceId)
+
+          // Auto-advance pipeline: Completed (only when ALL invoices for this job are paid)
+          const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id").eq("id", invoiceId).single()
+          if (inv?.job_id) {
+            const { data: allInvoices } = await supabase.from("invoices").select("status").eq("job_id", inv.job_id)
+            if (allInvoices?.every((i: any) => i.status === "paid")) {
+              await supabase.from("jobs").update({ status: "Completed", completed_at: new Date().toISOString() }).eq("id", inv.job_id)
+            }
+
+            // Fire payment_received automation trigger
+            if (inv.contractor_id) {
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+              fetch(`${appUrl}/api/automations/trigger`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  trigger: "payment_received",
+                  job_id: inv.job_id,
+                  contractor_id: inv.contractor_id,
+                }),
+              }).catch(() => {})
+
+              // Auto-sync paid invoice to QuickBooks if connected
+              try {
+                const qbClient = await getQBClient(inv.contractor_id, supabase as any)
+                if (qbClient) {
+                  const { data: paidInv } = await supabase
+                    .from("invoices")
+                    .select("*, jobs(customer_name, customer_email, customer_phone, address)")
+                    .eq("id", invoiceId)
+                    .single()
+
+                  if (paidInv && !paidInv.quickbooks_invoice_id) {
+                    const job = paidInv.jobs as any
+                    const customerName = paidInv.customer_name || job?.customer_name || "Unknown"
+                    const qbCustomer = await syncCustomerToQB(qbClient, {
+                      name: customerName,
+                      email: job?.customer_email,
+                      phone: job?.customer_phone,
+                      address: job?.address,
+                    })
+                    const qbInvoice = await syncInvoiceToQB(qbClient, {
+                      invoice_number: paidInv.invoice_number || `INV-${paidInv.id.slice(0, 8)}`,
+                      amount: paidInv.amount,
+                      line_items: paidInv.line_items,
+                      customer_name: customerName,
+                    }, { Id: qbCustomer.Id, DisplayName: qbCustomer.DisplayName })
+
+                    await syncPaymentToQB(qbClient, paidInv.amount, { Id: qbCustomer.Id }, { Id: qbInvoice.Id })
+                    await supabase.from("invoices").update({ quickbooks_invoice_id: qbInvoice.Id }).eq("id", invoiceId)
+                    await supabase.from("profiles").update({ quickbooks_last_sync: new Date().toISOString() }).eq("id", inv.contractor_id)
+                  }
+                }
+              } catch (qbErr) {
+                console.error("QuickBooks auto-sync failed:", qbErr)
+              }
+            }
+          }
+        }
       }
       break
     }

@@ -137,7 +137,7 @@ export default function AdminLeadsPage() {
     setAssigning(jobId)
     const { error } = await supabase
       .from("jobs")
-      .update({ contractor_id: contractorId, status: "Assigned" })
+      .update({ contractor_id: contractorId, status: "Assigned", accepted_at: new Date().toISOString() })
       .eq("id", jobId)
 
     if (error) {
@@ -183,7 +183,7 @@ export default function AdminLeadsPage() {
     // Clear job assignment, signature, and status
     const { error } = await supabase
       .from("jobs")
-      .update({ contractor_id: null, status: "Pending", signature_url: null, signed_at: null })
+      .update({ contractor_id: null, status: "Pending", signature_url: null, signed_at: null, accepted_at: null, estimate_sent_at: null, completed_at: null })
       .eq("id", jobId)
 
     if (error) {

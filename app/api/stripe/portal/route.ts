@@ -1,24 +1,19 @@
 import { getStripe } from "@/lib/stripe"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 export async function POST(req: Request) {
-  const stripe = getStripe()
-  const { user_id } = await req.json()
-  if (!user_id) {
-    return NextResponse.json({ error: "Missing user_id" }, { status: 400 })
-  }
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const stripe = getStripe()
+  const supabase = getServiceSupabase()
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
-    .eq("id", user_id)
+    .eq("id", userId)
     .single()
 
   if (!profile?.stripe_customer_id) {

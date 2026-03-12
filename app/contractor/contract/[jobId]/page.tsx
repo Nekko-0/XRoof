@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import SignaturePadLib from "signature_pad"
 import { supabase } from "@/lib/supabaseClient"
+import { authFetch } from "@/lib/auth-fetch"
 import { ArrowLeft, Save, PenTool, Printer, Mail, Check, RotateCcw, Send, Clock, Eye as EyeIcon } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { useToast } from "@/lib/toast-context"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 
 type Job = {
@@ -46,6 +48,7 @@ type Contract = {
 export default function ContractPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const jobId = params.jobId as string
 
   const [job, setJob] = useState<Job | null>(null)
@@ -311,12 +314,12 @@ export default function ContractPage() {
 
     if (contract?.id) {
       const { data, error } = await supabase.from("contracts").update(contractData).eq("id", contract.id).select().single()
-      if (error) alert("Error saving: " + error.message)
-      else { setContract(data); alert("Draft saved!") }
+      if (error) toast.error("Error saving: " + error.message)
+      else { setContract(data); toast.success("Draft saved!") }
     } else {
       const { data, error } = await supabase.from("contracts").insert(contractData).select().single()
-      if (error) alert("Error saving: " + error.message)
-      else { setContract(data); alert("Draft saved!") }
+      if (error) toast.error("Error saving: " + error.message)
+      else { setContract(data); toast.success("Draft saved!") }
     }
     setSaving(false)
   }
@@ -331,7 +334,7 @@ export default function ContractPage() {
       .from("contract-signatures")
       .upload(fileName, blob, { contentType: "image/png" })
 
-    if (error) { alert("Error uploading signature: " + error.message); return null }
+    if (error) { toast.error("Error uploading signature: " + error.message); return null }
 
     const { data } = supabase.storage.from("contract-signatures").getPublicUrl(fileName)
     return data.publicUrl
@@ -339,7 +342,7 @@ export default function ContractPage() {
 
   const handleSign = async () => {
     if (!contractorPadRef.current || contractorPadRef.current.isEmpty()) {
-      alert("Please sign before saving"); return
+      toast.error("Please sign before saving"); return
     }
 
     setSigning(true)
@@ -362,17 +365,17 @@ export default function ContractPage() {
     let savedContract: Contract | null = null
     if (contract?.id) {
       const { data, error } = await supabase.from("contracts").update(contractData).eq("id", contract.id).select().single()
-      if (error) alert("Error: " + error.message)
+      if (error) toast.error("Error: " + error.message)
       else savedContract = data
     } else {
       const { data, error } = await supabase.from("contracts").insert(contractData).select().single()
-      if (error) alert("Error: " + error.message)
+      if (error) toast.error("Error: " + error.message)
       else savedContract = data
     }
 
     if (savedContract) {
       setContract(savedContract)
-      alert("Contract signed and saved! You can now send it to the customer.")
+      toast.success("Contract signed and saved! You can now send it to the customer.")
     }
 
     setSigning(false)
@@ -380,9 +383,9 @@ export default function ContractPage() {
 
   const handleCustomerSignInPerson = async () => {
     if (!customerPadRef.current || customerPadRef.current.isEmpty()) {
-      alert("Customer must sign before saving"); return
+      toast.error("Customer must sign before saving"); return
     }
-    if (!contract?.id) { alert("Save the contract first"); return }
+    if (!contract?.id) { toast.error("Save the contract first"); return }
 
     setCustomerSigning(true)
     const customerSigUrl = await uploadSignature(customerPadRef.current, `${jobId}-customer`)
@@ -396,7 +399,7 @@ export default function ContractPage() {
     }).eq("id", contract.id).select().single()
 
     if (error) {
-      alert("Error: " + error.message)
+      toast.error("Error: " + error.message)
     } else if (data) {
       setContract(data)
 
@@ -413,26 +416,26 @@ export default function ContractPage() {
   }
 
   const handleSendToCustomer = async () => {
-    if (!contract?.id) { alert("Save the contract first"); return }
-    if (!contract.contractor_signature_url) { alert("Please sign the contract first"); return }
-    if (!customerEmailAddr.trim()) { alert("Enter the customer's email address"); return }
+    if (!contract?.id) { toast.error("Save the contract first"); return }
+    if (!contract.contractor_signature_url) { toast.error("Please sign the contract first"); return }
+    if (!customerEmailAddr.trim()) { toast.error("Enter the customer's email address"); return }
 
     setSendingToCustomer(true)
     try {
-      const res = await fetch("/api/contracts/send-signing-link", {
+      const res = await authFetch("/api/contracts/send-signing-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contract_id: contract.id, customer_email: customerEmailAddr.trim() }),
       })
       const data = await res.json()
       if (data.error) {
-        alert("Error: " + data.error)
+        toast.error("Error: " + data.error)
       } else {
         setSentToCustomer(true)
         setContract((prev) => prev ? { ...prev, status: "pending_customer" } : null)
       }
     } catch {
-      alert("Failed to send. Please try again.")
+      toast.error("Failed to send. Please try again.")
     }
     setSendingToCustomer(false)
   }
@@ -441,16 +444,16 @@ export default function ContractPage() {
     if (!contract?.id) return
     setEmailing(true)
     try {
-      const res = await fetch("/api/send-contract", {
+      const res = await authFetch("/api/send-contract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contract_id: contract.id }),
       })
       const data = await res.json()
-      if (data.error) alert("Error: " + data.error)
+      if (data.error) toast.error("Error: " + data.error)
       else setEmailSent(true)
     } catch {
-      alert("Failed to send email")
+      toast.error("Failed to send email")
     }
     setEmailing(false)
   }

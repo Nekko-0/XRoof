@@ -1,21 +1,20 @@
 import { Resend } from "resend"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { contract_id } = await req.json()
   if (!contract_id) {
     return NextResponse.json({ error: "Missing contract_id" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
   const { data: contract, error } = await supabase
@@ -131,7 +130,7 @@ export async function POST(req: Request) {
       document_type: "contract",
       document_id: contract.id,
       event_type: "sent",
-      recipient_email: "contact@leons-roofing.com",
+      recipient_email: contract.contractor_email || "noreply@xroof.io",
     })
     .select("id")
     .single()
@@ -142,8 +141,8 @@ export async function POST(req: Request) {
     : ""
 
   const { error: sendError } = await resend.emails.send({
-    from: "XRoof Contracts <contracts@xroof.io>",
-    to: "contact@leons-roofing.com",
+    from: `${contract.contractor_company || contract.contractor_name || "XRoof"} via XRoof <contracts@xroof.io>`,
+    to: contract.contractor_email || "noreply@xroof.io",
     subject: `Signed Contract — ${contract.customer_name} | ${contract.project_address}`,
     html: html + trackingPixel,
   })

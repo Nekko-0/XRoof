@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { CreditCard, Check, Zap, Crown, Settings } from "lucide-react"
+import {
+  CreditCard, Check, Zap, Crown, Settings, LinkIcon, CheckCircle,
+  Sparkles, Shield, BarChart3, Users, FileText, Ruler, MessageSquare,
+  Calendar, Layers, Star,
+} from "lucide-react"
+import { useToast } from "@/lib/toast-context"
+import { authFetch } from "@/lib/auth-fetch"
 
 type Subscription = {
   plan: string
@@ -10,12 +16,21 @@ type Subscription = {
   current_period_end: string
 } | null
 
+type ConnectStatus = {
+  connected: boolean
+  charges_enabled?: boolean
+  payouts_enabled?: boolean
+} | null
+
 export default function BillingPage() {
+  const toast = useToast()
   const [sub, setSub] = useState<Subscription>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [checkingOut, setCheckingOut] = useState<string | null>(null)
   const [managingPortal, setManagingPortal] = useState(false)
+  const [connectStatus, setConnectStatus] = useState<ConnectStatus>(null)
+  const [connectingStripe, setConnectingStripe] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -28,9 +43,20 @@ export default function BillingPage() {
         .select("plan, status, current_period_end")
         .eq("user_id", session.user.id)
         .in("status", ["active", "past_due", "trialing"])
+        .in("plan", ["monthly", "annual"])
         .maybeSingle()
 
       setSub(data || null)
+
+      // Check Stripe Connect status
+      try {
+        const connectRes = await authFetch(`/api/stripe/connect?user_id=${session.user.id}`)
+        const connectData = await connectRes.json()
+        setConnectStatus(connectData)
+      } catch {
+        setConnectStatus({ connected: false })
+      }
+
       setLoading(false)
     }
     load()
@@ -40,78 +66,121 @@ export default function BillingPage() {
     if (!userId) return
     setCheckingOut(plan)
     try {
-      const res = await fetch("/api/stripe/create-checkout", {
+      const res = await authFetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, plan }),
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
-      else alert(data.error || "Failed to create checkout session")
-    } catch (err) {
-      alert("Error creating checkout")
+      else toast.error(data.error || "Failed to create checkout session")
+    } catch {
+      toast.error("Error creating checkout")
     }
     setCheckingOut(null)
   }
 
-  const handleManage = async () => {
+  const handleConnectStripe = async () => {
     if (!userId) return
-    setManagingPortal(true)
+    setConnectingStripe(true)
     try {
-      const res = await fetch("/api/stripe/portal", {
+      const res = await authFetch("/api/stripe/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId }),
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
-      else alert(data.error || "Failed to open portal")
+      else toast.error(data.error || "Failed to start Connect onboarding")
     } catch {
-      alert("Error opening billing portal")
+      toast.error("Error connecting Stripe")
+    }
+    setConnectingStripe(false)
+  }
+
+  const handleManage = async () => {
+    if (!userId) return
+    setManagingPortal(true)
+    try {
+      const res = await authFetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else toast.error(data.error || "Failed to open portal")
+    } catch {
+      toast.error("Error opening billing portal")
     }
     setManagingPortal(false)
   }
 
-  if (loading) return <p className="p-6">Loading billing...</p>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
 
   const features = [
-    "Unlimited DIY reports",
-    "Roof measurement tool",
-    "Contract builder & e-signing",
-    "Lead management & tracking",
-    "Analytics dashboard",
-    "Email notifications",
+    { icon: FileText, label: "Unlimited roof reports" },
+    { icon: Ruler, label: "Satellite measurement tool" },
+    { icon: FileText, label: "Contract builder & e-signing" },
+    { icon: Layers, label: "Lead management & pipeline" },
+    { icon: Sparkles, label: "Instant estimates & proposals" },
+    { icon: Users, label: "Team management (up to 3 members)" },
+    { icon: MessageSquare, label: "SMS & email notifications" },
+    { icon: BarChart3, label: "Analytics dashboard" },
+    { icon: Calendar, label: "Calendar & scheduling" },
+    { icon: CreditCard, label: "Stripe payment collection" },
   ]
 
+  const hasActiveSub = sub && (sub.status === "active" || sub.status === "trialing")
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-          Billing
+    <div className="flex flex-col gap-8">
+      {/* Hero */}
+      <div className="text-center">
+        <h2
+          className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Everything you need to close more roofing jobs
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your subscription and payment methods.
+        <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
+          One platform. Reports, measurements, contracts, invoices, pipeline, team management, and more — all included.
         </p>
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <Shield className="h-3.5 w-3.5 text-primary" />
+          <span>Trusted by roofing contractors nationwide</span>
+        </div>
       </div>
 
-      {sub && sub.status === "active" ? (
-        /* Active subscription */
-        <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-sm">
+      {hasActiveSub ? (
+        /* ─── Active Subscription ─── */
+        <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-2 flex items-center gap-2">
                 <Crown className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-bold text-foreground">Active Subscription</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Plan: <span className="font-semibold text-foreground capitalize">{sub.plan}</span>
+                Plan: <span className="font-semibold capitalize text-foreground">{sub!.plan}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                {sub.plan === "annual" ? "$100/month (billed annually)" : "$120/month"}
+                {sub!.plan === "annual" ? "$169/month (billed annually)" : "$199/month"}
               </p>
-              {sub.current_period_end && (
+              {sub!.current_period_end && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Next billing: {new Date(sub.current_period_end).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                  Next billing:{" "}
+                  {new Date(sub!.current_period_end).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </p>
               )}
             </div>
@@ -129,89 +198,146 @@ export default function BillingPage() {
           </button>
         </div>
       ) : (
-        /* Pricing cards */
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        /* ─── Pricing Cards ─── */
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {/* Monthly */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <div className="mb-4">
+          <div className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-5">
               <h3 className="text-lg font-bold text-foreground">Monthly</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-foreground">$120</span>
+              <p className="mt-0.5 text-xs text-muted-foreground">No commitment, cancel anytime</p>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$199</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
             </div>
-            <ul className="mb-6 space-y-2">
+
+            <ul className="mb-6 flex-1 space-y-2.5">
               {features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                  {f}
+                <li key={f.label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  {f.label}
                 </li>
               ))}
             </ul>
+
             <button
               onClick={() => handleSubscribe("monthly")}
               disabled={checkingOut === "monthly"}
-              className="w-full rounded-xl border-2 border-primary bg-transparent px-4 py-3 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+              className="w-full rounded-xl border-2 border-primary bg-transparent px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "monthly" ? "Redirecting..." : "Subscribe Monthly"}
+                {checkingOut === "monthly" ? "Redirecting..." : "Get Started"}
               </span>
             </button>
           </div>
 
-          {/* Annual */}
-          <div className="rounded-2xl border-2 border-primary bg-card p-6 shadow-sm relative">
-            <div className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
-              SAVE $240/yr
+          {/* Annual — Recommended */}
+          <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 shadow-lg shadow-primary/5">
+            {/* Badge */}
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground shadow-md">
+                <Star className="h-3 w-3" />
+                SAVE 15%
+              </span>
             </div>
-            <div className="mb-4">
+
+            <div className="mb-5">
               <h3 className="text-lg font-bold text-foreground">Annual</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-foreground">$100</span>
+              <p className="mt-0.5 text-xs text-muted-foreground">Best value — save $360 per year</p>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$169</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
-              <p className="text-xs text-muted-foreground">Billed as $1,200/year</p>
+              <p className="mt-1 text-xs text-muted-foreground">Billed as $2,028/year</p>
             </div>
-            <ul className="mb-6 space-y-2">
+
+            <ul className="mb-6 flex-1 space-y-2.5">
               {features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                  {f}
+                <li key={f.label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  {f.label}
                 </li>
               ))}
-              <li className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <li className="flex items-center gap-2.5 text-sm font-semibold text-primary">
                 <Zap className="h-4 w-4 flex-shrink-0" />
                 Priority support
               </li>
             </ul>
+
             <button
               onClick={() => handleSubscribe("annual")}
               disabled={checkingOut === "annual"}
-              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "annual" ? "Redirecting..." : "Subscribe Annual"}
+                {checkingOut === "annual" ? "Redirecting..." : "Get Started — Best Value"}
               </span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Custom Reports */}
+      {/* ─── Payment Processing — Stripe Connect ─── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="text-base font-bold text-foreground mb-2">Custom Reports</h3>
-        <p className="text-sm text-muted-foreground mb-1">
-          Need a professional report with measurements, materials, and custom formatting?
+        <h3 className="mb-1 text-base font-bold text-foreground">Payment Processing</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Connect your Stripe account to send invoices and collect payments from customers directly.
         </p>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-bold text-foreground">$20 per report</span> — includes full measurements, materials estimate, and custom branding.
-          DIY reports are unlimited with your subscription.
-        </p>
-        <p className="mt-3 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-amber-400">
-          Estimated pitch (~70-75% accurate) — measure on site to confirm
-        </p>
+
+        {connectStatus?.connected && connectStatus.charges_enabled ? (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3">
+            <CheckCircle className="h-5 w-5 text-emerald-500" />
+            <div>
+              <p className="text-sm font-bold text-emerald-400">Payments Connected</p>
+              <p className="text-xs text-muted-foreground">
+                You can send invoices with payment links from My Leads. 1% platform fee + standard Stripe fees (2.9% + $0.30).
+              </p>
+            </div>
+          </div>
+        ) : connectStatus?.connected && !connectStatus.charges_enabled ? (
+          <div>
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <p className="text-sm text-amber-400">
+                Stripe account connected but not fully set up. Complete onboarding to start accepting payments.
+              </p>
+            </div>
+            <button
+              onClick={handleConnectStripe}
+              disabled={connectingStripe}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <LinkIcon className="h-4 w-4" />
+              {connectingStripe ? "Redirecting..." : "Complete Setup"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-4 grid gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                Send professional invoices with a payment link
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                Customers pay with card — money goes to your bank
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                1% platform fee + standard Stripe fees (2.9% + $0.30)
+              </div>
+            </div>
+            <button
+              onClick={handleConnectStripe}
+              disabled={connectingStripe}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <LinkIcon className="h-4 w-4" />
+              {connectingStripe ? "Redirecting..." : "Connect Stripe"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

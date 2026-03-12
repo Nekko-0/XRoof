@@ -1,21 +1,21 @@
 import { Resend } from "resend"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import { getCustomTemplate, renderTemplate } from "@/lib/email-template"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { report_id, customer_email } = await req.json()
   if (!report_id || !customer_email) {
     return NextResponse.json({ error: "Missing report_id or customer_email" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
 
   // Fetch the report
   const { data: report, error } = await supabase
@@ -108,15 +108,54 @@ export async function POST(req: Request) {
     ? `<img src="${appUrl}/api/track/open?eid=${sentEvent.id}" width="1" height="1" style="display:none;" />`
     : ""
 
+  // Get contractor_id from report directly, or from linked job
+  const contractorId = report.contractor_id || (report.job_id
+    ? (await supabase.from("jobs").select("contractor_id").eq("id", report.job_id).single()).data?.contractor_id
+    : null)
+
+  // Check for custom email template
+  let emailSubject = `Roof Estimate from ${report.company_name || "Your Contractor"} — Review Your Quote`
+  let emailHtml = html
+  if (contractorId) {
+    const custom = await getCustomTemplate(contractorId, "estimate_sent")
+    if (custom) {
+      const data: Record<string, string> = {
+        customer_name: report.customer_name || "",
+        company_name: report.company_name || "",
+        job_address: report.customer_address || "",
+        estimate_link: viewUrl,
+        invoice_link: "",
+        portal_link: `${appUrl}/portal`,
+        price: report.price_quote ? `$${Number(report.price_quote).toLocaleString()}` : "",
+      }
+      emailSubject = renderTemplate(custom.subject, data)
+      emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">${renderTemplate(custom.body_html, data)}</div>`
+    }
+  }
+
   const { error: sendError } = await resend.emails.send({
-    from: "XRoof Estimates <contracts@xroof.io>",
+    from: `${report.company_name || "XRoof"} via XRoof <contracts@xroof.io>`,
     to: customer_email,
-    subject: `Roof Estimate from ${report.company_name || "Your Contractor"} — Review Your Quote`,
-    html: html + trackingPixel,
+    subject: emailSubject,
+    html: emailHtml + trackingPixel,
   })
 
   if (sendError) {
     return NextResponse.json({ error: "Failed to send email: " + sendError.message }, { status: 500 })
+  }
+
+  // Auto-advance pipeline: Estimate Sent
+  if (report.job_id) {
+    await supabase.from("jobs").update({ status: "Estimate Sent", estimate_sent_at: new Date().toISOString() }).eq("id", report.job_id)
+
+    // Fire automation trigger
+    if (contractorId) {
+      fetch(`${appUrl}/api/automations/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trigger: "estimate_sent", job_id: report.job_id, contractor_id: contractorId }),
+      }).catch(() => {})
+    }
   }
 
   return NextResponse.json({ success: true, view_url: viewUrl })

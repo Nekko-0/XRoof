@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { Bell } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
+import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 
 type Notification = {
@@ -46,7 +47,7 @@ export function NotificationBell() {
         if (!session) return
 
         // Save subscription to server
-        await fetch("/api/push/subscribe", {
+        await authFetch("/api/push/subscribe", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

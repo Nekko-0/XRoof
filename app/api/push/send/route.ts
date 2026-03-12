@@ -1,28 +1,27 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const webpush = require("web-push")
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
-    "mailto:contact@leons-roofing.com",
+    `mailto:${process.env.VAPID_CONTACT_EMAIL || "support@xroof.io"}`,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   )
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { user_id, title, body } = await req.json()
 
   if (!user_id || !title) {
     return NextResponse.json({ error: "Missing user_id or title" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
 
   // Get push subscriptions for this user
   const { data: subs } = await supabase
@@ -42,7 +41,6 @@ export async function POST(req: NextRequest) {
       await webpush.sendNotification(sub.subscription, payload)
       sent++
     } catch (err: any) {
-      // If subscription expired, remove it
       if (err.statusCode === 410 || err.statusCode === 404) {
         await supabase
           .from("push_subscriptions")

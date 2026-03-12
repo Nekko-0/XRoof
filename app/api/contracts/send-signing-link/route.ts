@@ -1,21 +1,21 @@
 import { Resend } from "resend"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { getContractorBranding } from "@/lib/branding"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { contract_id, customer_email } = await req.json()
   if (!contract_id || !customer_email) {
     return NextResponse.json({ error: "Missing contract_id or customer_email" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
 
   // Fetch the contract
   const { data: contract, error } = await supabase
@@ -27,6 +27,10 @@ export async function POST(req: Request) {
   if (error || !contract) {
     return NextResponse.json({ error: "Contract not found" }, { status: 404 })
   }
+
+  const branding = contract.contractor_id
+    ? await getContractorBranding(contract.contractor_id)
+    : { company_name: contract.contractor_company || "XRoof", primary_color: "#22c55e" }
 
   // Generate signing token with 30-day expiry
   const token = randomUUID()
@@ -72,7 +76,7 @@ export async function POST(req: Request) {
       </div>
 
       <div style="text-align:center;margin:25px 0;">
-        <a href="${signingUrl}" style="display:inline-block;background:#22c55e;color:white;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:bold;">
+        <a href="${signingUrl}" style="display:inline-block;background:${branding.primary_color};color:white;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:bold;">
           Review & Sign Contract
         </a>
       </div>
@@ -111,7 +115,7 @@ export async function POST(req: Request) {
     : ""
 
   const { error: sendError } = await resend.emails.send({
-    from: "XRoof Contracts <contracts@xroof.io>",
+    from: `${branding.company_name} via XRoof <contracts@xroof.io>`,
     to: customer_email,
     subject: `Contract from ${contract.contractor_company || contract.contractor_name} — Please Review & Sign`,
     html: html + trackingPixel,

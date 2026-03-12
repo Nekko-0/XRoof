@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 export async function GET(req: Request, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params
@@ -7,17 +7,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
     return NextResponse.json({ error: "Missing jobId" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
 
   // Check if this is a token-based lookup (for public signing page)
   const url = new URL(req.url)
   const token = url.searchParams.get("token")
 
   if (token) {
+    // Public access via signing token — no auth required
     const { data: contract, error: contractError } = await supabase
       .from("contracts")
       .select("*")
@@ -28,36 +25,49 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
       return NextResponse.json({ error: "Invalid signing link" }, { status: 404 })
     }
 
-    // Check expiry
     if (contract.signing_token_expires_at && new Date(contract.signing_token_expires_at) < new Date()) {
       return NextResponse.json({ error: "expired" }, { status: 410 })
     }
 
-    // Check if already signed
     if (contract.status === "signed") {
       return NextResponse.json({ error: "already_signed", contract }, { status: 409 })
     }
 
-    // Fetch job for additional info
     const { data: job } = await supabase
       .from("jobs")
       .select("id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
       .eq("id", contract.job_id)
       .maybeSingle()
 
-    return NextResponse.json({ contract, job })
+    // Fetch branding
+    let brand_color = "#059669"
+    let brand_logo_url = ""
+    if (contract.contractor_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("widget_color, logo_url")
+        .eq("id", contract.contractor_id)
+        .single()
+      if (profile) {
+        brand_color = profile.widget_color || brand_color
+        brand_logo_url = profile.logo_url || ""
+      }
+    }
+
+    return NextResponse.json({ contract, job, brand_color, brand_logo_url })
   }
 
-  // Standard jobId-based lookup (for admin/contractor pages)
-  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  // Standard jobId-based lookup — requires auth
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
 
-  const { data: job, error: jobError } = await supabase
+  const { data: job } = await supabase
     .from("jobs")
     .select("id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
     .eq("id", jobId)
     .maybeSingle()
 
-  const { data: contract, error: contractError } = await supabase
+  const { data: contract } = await supabase
     .from("contracts")
     .select("*")
     .eq("job_id", jobId)
@@ -68,10 +78,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
   return NextResponse.json({
     contract: contract || null,
     job: job || null,
-    debug: {
-      hasServiceKey,
-      jobError: jobError?.message || null,
-      contractError: contractError?.message || null,
-    },
   })
 }

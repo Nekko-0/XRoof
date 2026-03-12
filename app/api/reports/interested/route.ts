@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
-  const { token } = await req.json()
+  const { token, selected_tier } = await req.json()
   if (!token) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 })
   }
@@ -27,7 +27,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid link" }, { status: 404 })
   }
 
-  // Insert "interested" event
+  // Mark estimate as accepted
+  await supabase
+    .from("reports")
+    .update({
+      estimate_accepted: true,
+      estimate_accepted_at: new Date().toISOString(),
+      accepted_tier_index: selected_tier ?? null,
+    })
+    .eq("id", report.id)
+
+  // Insert "interested" event (now means "accepted")
   await supabase.from("document_events").insert({
     job_id: report.job_id || null,
     document_type: "report",
@@ -35,6 +45,15 @@ export async function POST(req: Request) {
     event_type: "interested",
     recipient_email: report.customer_email,
   })
+
+  // Auto-advance job to "Contract Sent" if job exists
+  if (report.job_id) {
+    await supabase
+      .from("jobs")
+      .update({ status: "Contract Sent" })
+      .eq("id", report.job_id)
+      .in("status", ["New", "Estimate Sent"])
+  }
 
   // Determine contractor email — use company_email from report, or look up via contractor_id
   let contractorEmail = report.company_email
@@ -53,22 +72,22 @@ export async function POST(req: Request) {
   }
 
   if (!contractorEmail) {
-    // Fallback to admin
-    contractorEmail = "contact@leons-roofing.com"
+    // No contractor email found
+    return NextResponse.json({ error: "No contractor email found" }, { status: 400 })
   }
 
   // Send notification email to contractor
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
       <div style="text-align:center;background:#22c55e;color:white;padding:15px;border-radius:8px 8px 0 0;">
-        <h2 style="margin:0;font-size:18px;">Customer Interested!</h2>
-        <p style="margin:5px 0 0;font-size:12px;opacity:0.9;">${report.customer_name} wants to move forward</p>
+        <h2 style="margin:0;font-size:18px;">Estimate Accepted!</h2>
+        <p style="margin:5px 0 0;font-size:12px;opacity:0.9;">${report.customer_name} accepted your estimate</p>
       </div>
 
       <div style="border:1px solid #e5e5e5;border-top:none;padding:20px;border-radius:0 0 8px 8px;">
         <p style="font-size:14px;margin:0 0 15px;">Hi ${contractorName},</p>
         <p style="font-size:13px;color:#555;margin:0 0 20px;">
-          Great news! <strong>${report.customer_name}</strong> reviewed your estimate and clicked <strong>"I'm Interested"</strong>. Follow up now to close the deal.
+          Great news! <strong>${report.customer_name}</strong> has <strong>accepted your estimate</strong>${selected_tier != null && report.pricing_tiers?.[selected_tier] ? ` (${report.pricing_tiers[selected_tier].name} option)` : ""}. Send them a contract to make it official.
         </p>
 
         <div style="background:#f9f9f9;border-radius:8px;padding:15px;margin-bottom:15px;">
@@ -96,9 +115,9 @@ export async function POST(req: Request) {
   }
 
   await resend.emails.send({
-    from: "XRoof Estimates <contracts@xroof.io>",
+    from: `${report.company_name || "XRoof"} via XRoof <contracts@xroof.io>`,
     to: recipients,
-    subject: `${report.customer_name} is Interested — ${report.customer_address}`,
+    subject: `${report.customer_name} Accepted Your Estimate — ${report.customer_address}`,
     html,
   })
 

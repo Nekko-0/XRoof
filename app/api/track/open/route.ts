@@ -35,6 +35,27 @@ export async function GET(req: Request) {
           recipient_email: sentEvent.recipient_email,
           metadata: { tracking_event_id: eventId },
         })
+
+        // Fire estimate_viewed automation trigger
+        if (sentEvent.document_type === "report" && sentEvent.job_id) {
+          const { data: job } = await supabase
+            .from("jobs")
+            .select("contractor_id")
+            .eq("id", sentEvent.job_id)
+            .single()
+          if (job?.contractor_id) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+            fetch(`${appUrl}/api/automations/trigger`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                trigger: "estimate_viewed",
+                job_id: sentEvent.job_id,
+                contractor_id: job.contractor_id,
+              }),
+            }).catch(() => {})
+          }
+        }
       }
     } catch {
       // Silently fail — tracking should never break the user experience

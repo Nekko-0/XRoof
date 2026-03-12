@@ -1,9 +1,14 @@
 import { Resend } from "resend"
 import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
   const body = await req.json()
   const { contractorName, customerName, customerAddress, jobType, priceQuote, scopeOfWork } = body
 
@@ -11,9 +16,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  // Get contractor email
+  const supabase = getServiceSupabase()
+  const { data: profile } = await supabase.from("profiles").select("email").eq("id", userId).single()
+  const recipientEmail = profile?.email || "noreply@xroof.io"
+
   const { error } = await resend.emails.send({
-    from: "XRoof Reports <contracts@xroof.io>",
-    to: "contact@leons-roofing.com",
+    from: `${contractorName || "XRoof"} via XRoof <contracts@xroof.io>`,
+    to: recipientEmail,
     subject: `New Report from ${contractorName || "Contractor"} — ${customerName}`,
     html: `
       <h2>New Contractor Report</h2>

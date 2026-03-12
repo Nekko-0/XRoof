@@ -1,24 +1,24 @@
 import { getStripe } from "@/lib/stripe"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
   const stripe = getStripe()
-  const { user_id, report_id } = await req.json()
-  if (!user_id || !report_id) {
-    return NextResponse.json({ error: "Missing user_id or report_id" }, { status: 400 })
+  const { report_id } = await req.json()
+  if (!report_id) {
+    return NextResponse.json({ error: "Missing report_id" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id, email, username")
-    .eq("id", user_id)
+    .eq("id", userId)
     .single()
 
   let customerId = profile?.stripe_customer_id
@@ -27,10 +27,10 @@ export async function POST(req: Request) {
     const customer = await stripe.customers.create({
       email: profile?.email || undefined,
       name: profile?.username || undefined,
-      metadata: { supabase_user_id: user_id },
+      metadata: { supabase_user_id: userId },
     })
     customerId = customer.id
-    await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user_id)
+    await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId)
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     line_items: [{ price: process.env.STRIPE_REPORT_PRICE_ID!, quantity: 1 }],
     success_url: `${appUrl}/contractor/billing?report_success=true`,
     cancel_url: `${appUrl}/contractor/billing?canceled=true`,
-    metadata: { supabase_user_id: user_id, report_id, type: "report_purchase" },
+    metadata: { supabase_user_id: userId, report_id, type: "report_purchase" },
   })
 
   return NextResponse.json({ url: session.url })

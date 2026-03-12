@@ -1,0 +1,53 @@
+import { createClient } from "@supabase/supabase-js"
+import { NextResponse } from "next/server"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false } }
+)
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const token = searchParams.get("token")
+
+  if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 })
+
+  // Token is the job ID for simplicity
+  const { data: job, error: jobErr } = await supabase
+    .from("jobs")
+    .select("id, customer_name, customer_phone, address, zip_code, job_type, status, budget, created_at, contractor_id, scheduled_date")
+    .eq("id", token)
+    .single()
+
+  if (jobErr || !job) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+
+  // Get contractor info
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, company_name, phone, email, google_review_url, widget_color, logo_url")
+    .eq("id", job.contractor_id)
+    .single()
+
+  // Get reports for this job
+  const { data: reports } = await supabase
+    .from("reports")
+    .select("id, price_quote, scope_of_work, photo_urls, photo_captions, photo_visible, pricing_tiers, deposit_percent, created_at, report_completed")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  // Get photos
+  const { data: photos } = await supabase
+    .from("job_photos")
+    .select("id, url, category, caption, created_at")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+
+  return NextResponse.json({
+    job,
+    contractor: profile || {},
+    report: reports?.[0] || null,
+    photos: photos || [],
+  })
+}

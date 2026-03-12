@@ -1,9 +1,10 @@
 "use client"
 
+import { darkenColor, lightenColor } from "@/lib/brand-colors"
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import SignaturePadLib from "signature_pad"
-import { CheckCircle, AlertCircle, Clock, PenTool } from "lucide-react"
+import { CheckCircle, AlertCircle, Clock, PenTool, FileText } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
 
@@ -46,6 +47,9 @@ export default function PublicSigningPage() {
   const [signing, setSigning] = useState(false)
   const [signed, setSigned] = useState(false)
   const [sigEmpty, setSigEmpty] = useState(true)
+  const [esignConsent, setEsignConsent] = useState(false)
+  const [brandColor, setBrandColor] = useState("#059669")
+  const [brandLogo, setBrandLogo] = useState("")
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePadLib | null>(null)
@@ -68,6 +72,8 @@ export default function PublicSigningPage() {
           terms: { ...DEFAULT_TERMS, ...data.contract.terms },
         })
         if (data.job) setJob(data.job)
+        if (data.brand_color) setBrandColor(data.brand_color)
+        if (data.brand_logo_url) setBrandLogo(data.brand_logo_url)
       } catch {
         setErrorState("invalid")
       }
@@ -144,7 +150,7 @@ export default function PublicSigningPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
         <div className="max-w-sm text-center">
-          <Clock className="mx-auto mb-4 h-12 w-12 text-amber-500" />
+          <Clock className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
           <h1 className="mb-2 text-xl font-bold text-gray-900">Link Expired</h1>
           <p className="text-sm text-gray-600">
             This signing link has expired. Please contact your contractor to send a new one.
@@ -203,13 +209,16 @@ export default function PublicSigningPage() {
   const depositAmount = (price * depositPercent) / 100
   const finalAmount = price - depositAmount
 
+  const brandDark = darkenColor(brandColor, 30)
+
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
       <div className="mx-auto max-w-2xl">
         {/* Header bar */}
-        <div className="mb-4 rounded-xl bg-emerald-600 p-4 text-center text-white">
+        <div className="mb-4 rounded-xl p-4 text-center text-white" style={{ backgroundColor: brandDark }}>
+          {brandLogo && <img src={brandLogo} alt="Logo" className="mx-auto h-10 mb-2 object-contain" />}
           <p className="text-xs font-semibold uppercase tracking-widest opacity-80">Review & Sign</p>
-          <h1 className="mt-1 text-lg font-bold">Roofing Contract Agreement</h1>
+          <h1 className="mt-1 text-lg font-bold">{contract.contractor_company || contract.contractor_name}</h1>
           <p className="mt-1 text-xs opacity-70">Contract #{contract.id.slice(0, 8).toUpperCase()}</p>
         </div>
 
@@ -252,7 +261,7 @@ export default function PublicSigningPage() {
             <div className="space-y-2">
               {terms.scope_items.map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <input type="checkbox" checked={item.checked} disabled className="mt-1 h-4 w-4 rounded border-gray-300 accent-emerald-600" />
+                  <input type="checkbox" checked={item.checked} disabled className="mt-1 h-4 w-4 rounded border-gray-300 accent-emerald-700" />
                   <span className="text-sm text-gray-900">{item.label}</span>
                 </div>
               ))}
@@ -343,6 +352,44 @@ export default function PublicSigningPage() {
             </Accordion>
           </div>
 
+          {/* Contract Summary / PDF Preview */}
+          <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+            <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Contract Summary</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-[10px] text-gray-400">Contractor</p>
+                <p className="font-medium text-gray-900">{contract.contractor_company || contract.contractor_name}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Customer</p>
+                <p className="font-medium text-gray-900">{contract.customer_name}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Project Address</p>
+                <p className="font-medium text-gray-900">{contract.project_address}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Contract Price</p>
+                <p className="font-medium text-gray-900">${contract.contract_price.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Deposit</p>
+                <p className="font-medium text-gray-900">{contract.deposit_percent}% (${Math.round(contract.contract_price * contract.deposit_percent / 100).toLocaleString()})</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Date</p>
+                <p className="font-medium text-gray-900">{new Date(contract.contract_date).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Print / Save as PDF
+            </button>
+          </div>
+
           {/* Agreement */}
           <div className="mb-6 rounded-lg bg-gray-50 p-3">
             <p className="text-xs font-medium text-gray-900">
@@ -377,7 +424,7 @@ export default function PublicSigningPage() {
             </h4>
             <canvas
               ref={canvasRef}
-              className="w-full rounded-lg border-2 border-dashed border-emerald-300 bg-white"
+              className="w-full rounded-lg border-2 border-dashed border-gray-300 bg-white"
               style={{ height: 140, touchAction: "none" }}
             />
             <div className="mt-1 flex items-center justify-between">
@@ -391,11 +438,25 @@ export default function PublicSigningPage() {
             </div>
           </div>
 
+          {/* E-Sign Consent */}
+          <label className="mb-4 flex items-start gap-2.5 cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <input
+              type="checkbox"
+              checked={esignConsent}
+              onChange={(e) => setEsignConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-emerald-700"
+            />
+            <span className="text-[11px] leading-relaxed text-gray-600">
+              I agree to sign this contract electronically. I understand that my electronic signature has the same legal effect as a handwritten signature under the Electronic Signatures in Global and National Commerce Act (ESIGN Act) and the Uniform Electronic Transactions Act (UETA).
+            </span>
+          </label>
+
           {/* Sign button */}
           <button
             onClick={handleSign}
-            disabled={signing || sigEmpty}
-            className="w-full rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+            disabled={signing || sigEmpty || !esignConsent}
+            className="w-full rounded-xl px-6 py-3.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
+            style={{ backgroundColor: brandDark }}
           >
             <PenTool className="mr-2 inline h-4 w-4" />
             {signing ? "Submitting..." : "Sign Contract"}
