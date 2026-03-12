@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { MapPin, DollarSign, User, Phone, Mail, ArrowRight, CheckCircle } from "lucide-react"
+import { useToast } from "@/lib/toast-context"
 
 type EstimateData = {
   roof_sqft: number
@@ -22,6 +23,7 @@ type Branding = {
 export default function WidgetPage() {
   const params = useParams()
   const contractorId = params.contractorId as string
+  const toast = useToast()
 
   const [step, setStep] = useState<"address" | "estimate" | "lead" | "done">("address")
   const [address, setAddress] = useState("")
@@ -58,13 +60,13 @@ export default function WidgetPage() {
       })
       const data = await res.json()
       if (data.error) {
-        alert(data.error)
+        toast.error(data.error)
       } else {
         setEstimate(data)
         setStep("estimate")
       }
     } catch {
-      alert("Failed to get estimate. Please try again.")
+      toast.error("Failed to get estimate. Please try again.")
     }
     setLoading(false)
   }
@@ -86,7 +88,7 @@ export default function WidgetPage() {
       })
       setStep("done")
     } catch {
-      alert("Failed to submit. Please try again.")
+      toast.error("Failed to submit. Please try again.")
     }
     setSubmittingLead(false)
   }

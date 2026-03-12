@@ -15,7 +15,7 @@ import { OnboardingWizard } from "@/components/onboarding-wizard"
 import {
   CheckCircle, Ruler, TrendingUp, Plus, Calendar,
   AlertTriangle, Bell, Clock, ArrowRight, BarChart3, Target,
-  Send, LayoutDashboard, Circle, X, Zap, FileText,
+  Send, LayoutDashboard, Circle, X, Zap, FileText, Star,
 } from "lucide-react"
 
 type Job = {
@@ -61,6 +61,7 @@ export default function ContractorDashboard() {
     dealVelocity?: { stage: string; avgDays: number; benchmark: number }[];
     zipRevenue?: { zip: string; revenue: number; count: number }[];
     recentActivity?: { text: string; type: string; amount: number; date: string }[];
+    reviewRequestCount?: number;
   } | null>(null)
   const [gettingStarted, setGettingStarted] = useState<{
     profile: boolean; lead: boolean; estimate: boolean; automations: boolean; stripe: boolean
@@ -90,6 +91,15 @@ export default function ContractorDashboard() {
 
   // Weather events for storm correlation
   const [weatherEvents, setWeatherEvents] = useState<{ date: string; type: string; description: string }[]>([])
+
+  // Funnel analytics
+  const [funnelData, setFunnelData] = useState<{
+    funnel: { leads: number; estimates_sent: number; estimates_viewed: number; accepted: number; paid: number }
+    conversion_rates: { lead_to_estimate: number; estimate_to_view: number; view_to_accept: number; accept_to_paid: number; overall: number }
+    by_source: Record<string, { leads: number; accepted: number; rate: number }>
+    by_job_type: Record<string, { leads: number; accepted: number; rate: number; avg_value: number }>
+    revenue: { pipeline: number; closed: number; lost: number }
+  } | null>(null)
 
 
   useEffect(() => {
@@ -224,6 +234,12 @@ export default function ContractorDashboard() {
       })
 
       setLoading(false)
+
+      // Fetch funnel analytics (non-blocking)
+      authFetch("/api/analytics/funnel?period=30")
+        .then((r) => r.json())
+        .then((data) => { if (data.funnel) setFunnelData(data) })
+        .catch(() => {})
     }
     load()
   }, [accountId])
@@ -468,6 +484,68 @@ export default function ContractorDashboard() {
         </div>
       </div>
 
+      {/* Conversion Funnel Analytics (30-day) */}
+      {funnelData && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Conversion Rates */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <TrendingUp className="h-3.5 w-3.5" /> Conversion Rates (30 days)
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Lead → Estimate", value: funnelData.conversion_rates.lead_to_estimate },
+                { label: "Estimate → Viewed", value: funnelData.conversion_rates.estimate_to_view },
+                { label: "Viewed → Accepted", value: funnelData.conversion_rates.view_to_accept },
+                { label: "Accepted → Paid", value: funnelData.conversion_rates.accept_to_paid },
+              ].map((metric) => (
+                <div key={metric.label} className="rounded-xl border border-border/50 bg-background/50 p-3 text-center">
+                  <p className={`text-xl font-bold ${metric.value >= 50 ? "text-emerald-500" : metric.value >= 25 ? "text-amber-500" : "text-red-400"}`}>
+                    {metric.value}%
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">{metric.label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/20 p-3 text-center">
+              <p className="text-2xl font-bold text-primary">{funnelData.conversion_rates.overall}%</p>
+              <p className="text-[10px] font-semibold text-muted-foreground">Overall Lead-to-Paid Rate</p>
+            </div>
+          </div>
+
+          {/* Close Rate by Source */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <BarChart3 className="h-3.5 w-3.5" /> Close Rate by Source (30 days)
+            </h3>
+            {Object.keys(funnelData.by_source).length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">No data yet</p>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(funnelData.by_source)
+                  .sort((a, b) => b[1].leads - a[1].leads)
+                  .map(([source, data]) => (
+                    <div key={source} className="flex items-center gap-3">
+                      <span className="w-20 text-[11px] font-medium text-muted-foreground truncate capitalize">{source}</span>
+                      <div className="flex-1 h-5 rounded-lg bg-secondary/50 overflow-hidden">
+                        <div
+                          className="h-full bg-primary/60 rounded-lg flex items-center justify-end pr-2"
+                          style={{ width: `${Math.max(data.rate, data.leads > 0 ? 5 : 0)}%` }}
+                        >
+                          {data.rate > 15 && (
+                            <span className="text-[9px] font-bold text-white">{data.rate}%</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground w-16 text-right">{data.accepted}/{data.leads} leads</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Needs Attention */}
       {attentionCount > 0 && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 shadow-sm">
@@ -564,6 +642,11 @@ export default function ContractorDashboard() {
               label="Outstanding"
               value={`$${outstandingTotal.toLocaleString()}`}
               trend={outstandingTotal > 0 ? "down" : "flat"}
+            />
+            <MiniStatCard
+              label="Reviews Requested"
+              value={String(analytics.reviewRequestCount || 0)}
+              trend={(analytics.reviewRequestCount || 0) > 0 ? "up" : "flat"}
             />
             {(analytics.totalCosts || 0) > 0 && (
               <>

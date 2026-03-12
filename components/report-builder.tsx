@@ -8,7 +8,7 @@ import {
   Save, Eye, Upload, EyeOff, Trash2, ImageIcon, Building2,
   User, MapPin, Phone, Mail, FileText, DollarSign, Wrench,
   MessageSquare, Calendar, Hash, Ruler, Calculator, EyeOff as EyeOffIcon,
-  ChevronDown, ChevronUp, BookTemplate, FolderOpen, Printer,
+  ChevronDown, ChevronUp, BookTemplate, FolderOpen, Printer, Download,
 } from "lucide-react"
 
 interface PricingTier {
@@ -116,6 +116,9 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
   const [sending, setSending] = useState(false)
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null])
   const logoInputRef = useRef<HTMLInputElement>(null)
+
+  // PDF download state
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
   // Line items state
   const [showLineItems, setShowLineItems] = useState(false)
@@ -508,6 +511,31 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
             >
               <Eye className="h-4 w-4" />
               Preview / Print
+            </button>
+            <button
+              onClick={async () => {
+                setDownloadingPdf(true)
+                try {
+                  const res = await authFetch(`/api/reports/${savedId}/pdf`)
+                  if (!res.ok) throw new Error("PDF generation failed")
+                  const blob = await res.blob()
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `Proposal-${report.customer_name || "estimate"}.pdf`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                  toast.success("PDF downloaded!")
+                } catch {
+                  toast.error("Failed to generate PDF. Please try again.")
+                }
+                setDownloadingPdf(false)
+              }}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              {downloadingPdf ? "Generating..." : "Download PDF"}
             </button>
             <button
               onClick={() => setShowSendForm(!showSendForm)}

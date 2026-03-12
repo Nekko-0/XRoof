@@ -1,24 +1,25 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { sendSMS } from "@/lib/twilio"
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
-}
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 // POST — fire an automation trigger for a job
+// Accepts either Bearer token (from client) or internal_secret (from server-to-server)
 export async function POST(req: Request) {
-  const { trigger, job_id, contractor_id } = await req.json()
+  const body = await req.json()
+  const { trigger, job_id, contractor_id, internal_secret } = body
+
+  // Verify caller: either authenticated user or internal API call
+  const isInternalCall = internal_secret && internal_secret === process.env.CRON_SECRET
+  if (!isInternalCall) {
+    const auth = await requireAuth(req)
+    if (auth instanceof NextResponse) return auth
+  }
 
   if (!trigger || !job_id || !contractor_id) {
     return NextResponse.json({ error: "Missing trigger, job_id, or contractor_id" }, { status: 400 })
   }
 
-  const supabase = getSupabase()
+  const supabase = getServiceSupabase()
 
   // Find active templates matching this trigger for this contractor
   const { data: templates } = await supabase

@@ -7,6 +7,7 @@ import SignaturePadLib from "signature_pad"
 import { CheckCircle, AlertCircle, Clock, PenTool, FileText } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { DEFAULT_TERMS, type ContractTerms } from "@/components/contract-terms-defaults"
+import { useToast } from "@/lib/toast-context"
 
 type Contract = {
   id: string
@@ -39,6 +40,7 @@ type Job = {
 export default function PublicSigningPage() {
   const params = useParams()
   const token = params.token as string
+  const toast = useToast()
 
   const [contract, setContract] = useState<Contract | null>(null)
   const [job, setJob] = useState<Job | null>(null)
@@ -113,7 +115,7 @@ export default function PublicSigningPage() {
 
   const handleSign = async () => {
     if (!padRef.current || padRef.current.isEmpty()) {
-      alert("Please sign before submitting"); return
+      toast.error("Please sign before submitting"); return
     }
 
     setSigning(true)
@@ -127,12 +129,12 @@ export default function PublicSigningPage() {
       })
       const data = await res.json()
       if (data.error) {
-        alert(data.error)
+        toast.error(data.error)
       } else {
         setSigned(true)
       }
     } catch {
-      alert("Failed to submit signature. Please try again.")
+      toast.error("Failed to submit signature. Please try again.")
     }
     setSigning(false)
   }

@@ -68,6 +68,10 @@ export default function FieldModePage() {
   // Status update
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
 
+  // Time tracking
+  const [activeTimers, setActiveTimers] = useState<Record<string, { id: string; started_at: string }>>({})
+  const [clockingIn, setClockingIn] = useState<string | null>(null)
+
   const today = new Date().toISOString().slice(0, 10)
   const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
 
@@ -97,6 +101,21 @@ export default function FieldModePage() {
       setTodayAppts(
         (Array.isArray(apptsRes) ? apptsRes : []).filter((a: any) => a.date === today)
       )
+
+      // Fetch active time entries
+      try {
+        const teRes = await authFetch("/api/time-entries?active=true")
+        const teData = await teRes.json()
+        if (Array.isArray(teData)) {
+          const timers: Record<string, { id: string; started_at: string }> = {}
+          for (const te of teData) {
+            if (te.job_id && !te.ended_at) {
+              timers[te.job_id] = { id: te.id, started_at: te.started_at }
+            }
+          }
+          setActiveTimers(timers)
+        }
+      } catch {}
 
       // Auto-expand first active job
       const firstActive = scheduled.find((j) => j.status !== "Completed") || active[0]
@@ -263,6 +282,57 @@ export default function FieldModePage() {
       toast.error("Could not get location. Please enable GPS.")
     }
     setCheckingIn(null)
+  }
+
+  const handleClockIn = async (jobId: string) => {
+    setClockingIn(jobId)
+    try {
+      const res = await authFetch("/api/time-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clock_in", job_id: jobId }),
+      })
+      const data = await res.json()
+      if (data.id) {
+        setActiveTimers((prev) => ({ ...prev, [jobId]: { id: data.id, started_at: data.started_at } }))
+        toast.success("Clocked in — timer started")
+      } else {
+        toast.error(data.error || "Failed to clock in")
+      }
+    } catch {
+      toast.error("Failed to clock in")
+    }
+    setClockingIn(null)
+  }
+
+  const handleClockOut = async (jobId: string) => {
+    const timer = activeTimers[jobId]
+    if (!timer) return
+    setClockingIn(jobId)
+    try {
+      const res = await authFetch("/api/time-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clock_out", entry_id: timer.id }),
+      })
+      const data = await res.json()
+      if (data.id) {
+        setActiveTimers((prev) => {
+          const next = { ...prev }
+          delete next[jobId]
+          return next
+        })
+        const mins = data.duration_minutes || 0
+        const h = Math.floor(mins / 60)
+        const m = mins % 60
+        toast.success(`Clocked out — ${h}h ${m}m logged`)
+      } else {
+        toast.error(data.error || "Failed to clock out")
+      }
+    } catch {
+      toast.error("Failed to clock out")
+    }
+    setClockingIn(null)
   }
 
   // --- Render ---
@@ -466,7 +536,7 @@ export default function FieldModePage() {
                       </div>
 
                       {/* Secondary actions */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           onClick={() => setNoteJobId(noteJobId === job.id ? null : job.id)}
                           className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition-colors ${
@@ -476,7 +546,7 @@ export default function FieldModePage() {
                           }`}
                         >
                           <StickyNote className="h-4 w-4" />
-                          Quick Note
+                          Note
                         </button>
                         <button
                           onClick={() => handleGPSCheckin(job.id)}
@@ -488,9 +558,47 @@ export default function FieldModePage() {
                           ) : (
                             <MapPinned className="h-4 w-4" />
                           )}
-                          GPS Check-in
+                          GPS
                         </button>
+                        {activeTimers[job.id] ? (
+                          <button
+                            onClick={() => handleClockOut(job.id)}
+                            disabled={clockingIn === job.id}
+                            className="flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-400 active:bg-red-500/20 transition-colors disabled:opacity-50"
+                          >
+                            {clockingIn === job.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Clock className="h-4 w-4" />
+                            )}
+                            Out
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleClockIn(job.id)}
+                            disabled={clockingIn === job.id}
+                            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-bold text-emerald-400 active:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                          >
+                            {clockingIn === job.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Clock className="h-4 w-4" />
+                            )}
+                            In
+                          </button>
+                        )}
                       </div>
+
+                      {/* Active timer indicator */}
+                      {activeTimers[job.id] && (
+                        <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
+                          <span className="relative flex h-2 w-2">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                          </span>
+                          Timer running since {new Date(activeTimers[job.id].started_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </div>
+                      )}
 
                       {/* Quick Note Input */}
                       {noteJobId === job.id && (

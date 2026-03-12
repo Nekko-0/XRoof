@@ -4,6 +4,7 @@ import { darkenColor, lightenColor, colorWithOpacity } from "@/lib/brand-colors"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { CheckCircle, AlertCircle, Clock, MapPin, Phone, Mail, DollarSign, FileText, Wrench, MessageSquare, User, Download, X, ChevronLeft, ChevronRight, HelpCircle, Send, List } from "lucide-react"
+import { useToast } from "@/lib/toast-context"
 
 type PricingTier = {
   name: string
@@ -52,6 +53,7 @@ type Report = {
 export default function PublicEstimatePage() {
   const params = useParams()
   const token = params.token as string
+  const toast = useToast()
 
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
@@ -69,19 +71,17 @@ export default function PublicEstimatePage() {
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
-      // @ts-expect-error html2pdf.js has no type declarations
-      const html2pdf = (await import("html2pdf.js")).default
-      const element = document.getElementById("estimate-content")
-      if (!element) return
-      await html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: `Estimate-${report?.customer_name || "quote"}.pdf`,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      }).from(element).save()
+      const res = await fetch(`/api/reports/_/pdf?token=${token}`)
+      if (!res.ok) throw new Error("PDF generation failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `Proposal-${report?.customer_name || "estimate"}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
     } catch {
-      alert("PDF download failed. Please try again.")
+      toast.error("PDF download failed. Please try again.")
     }
     setDownloading(false)
   }
@@ -128,12 +128,12 @@ export default function PublicEstimatePage() {
       })
       const data = await res.json()
       if (data.error) {
-        alert(data.error)
+        toast.error(data.error)
       } else {
         setInterested(true)
       }
     } catch {
-      alert("Something went wrong. Please try again.")
+      toast.error("Something went wrong. Please try again.")
     }
     setSubmitting(false)
   }

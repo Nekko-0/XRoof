@@ -61,6 +61,46 @@ const DEFAULT_STEPS: Step[] = [
 
 const PLACEHOLDERS = ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{contract_link}", "{invoice_link}", "{portal_link}"]
 
+const PRESET_TEMPLATES = [
+  {
+    name: "New Lead Nurture",
+    trigger: "new_lead",
+    steps: [
+      { day: 0, type: "email" as const, subject: "Thank you for reaching out!", message: "Hi {customer_name}, thank you for requesting a roofing estimate for {address}. We'll review your project and get back to you shortly. Feel free to reply with any questions!" },
+      { day: 1, type: "sms" as const, subject: "", message: "Hi {customer_name}, this is {company_name}. We received your roofing request for {address} and will have an estimate ready soon!" },
+      { day: 3, type: "email" as const, subject: "Your estimate is ready", message: "Hi {customer_name}, your roofing estimate for {address} is ready. Click here to view it: {estimate_link}. We're happy to walk you through it anytime." },
+      { day: 7, type: "reminder" as const, subject: "", message: "Follow up with {customer_name} about estimate for {address} — no response yet after 7 days." },
+      { day: 14, type: "email" as const, subject: "Still interested in your roofing project?", message: "Hi {customer_name}, just checking in about the estimate we sent for {address}. We'd love to help — feel free to reach out with any questions!" },
+    ],
+  },
+  {
+    name: "Post-Estimate Follow-up",
+    trigger: "estimate_sent",
+    steps: [
+      { day: 1, type: "sms" as const, subject: "", message: "Hi {customer_name}! Your roofing estimate for {address} was just sent. Check your email for the details — happy to answer any questions!" },
+      { day: 3, type: "email" as const, subject: "Any questions about your estimate?", message: "Hi {customer_name}, I wanted to follow up on the estimate we sent for {address}. Do you have any questions I can help with?" },
+      { day: 7, type: "reminder" as const, subject: "", message: "7 days since estimate sent to {customer_name} for {address}. Consider a personal call." },
+    ],
+  },
+  {
+    name: "Review Request Sequence",
+    trigger: "job_completed",
+    steps: [
+      { day: 1, type: "email" as const, subject: "How was your experience with {company_name}?", message: "Hi {customer_name}, congratulations on your new roof at {address}! We'd love to hear about your experience. A quick Google review would mean the world to us." },
+      { day: 5, type: "sms" as const, subject: "", message: "Hi {customer_name}! We hope you're enjoying your new roof. If you have a moment, we'd appreciate a quick Google review. Thank you!" },
+    ],
+  },
+  {
+    name: "Payment Follow-up",
+    trigger: "invoice_overdue",
+    steps: [
+      { day: 0, type: "email" as const, subject: "Friendly reminder: Invoice pending", message: "Hi {customer_name}, this is a friendly reminder that your invoice for {address} is now overdue. You can pay online here: {invoice_link}. Please let us know if you have any questions." },
+      { day: 3, type: "sms" as const, subject: "", message: "Hi {customer_name}, gentle reminder that your roofing invoice is pending. Pay online: {invoice_link}" },
+      { day: 7, type: "reminder" as const, subject: "", message: "Invoice for {customer_name} at {address} is 7+ days overdue. Consider a phone call." },
+    ],
+  },
+]
+
 const CONDITION_FIELDS = [
   { value: "job_type", label: "Job Type" },
   { value: "budget", label: "Budget" },
@@ -295,6 +335,39 @@ export default function AutomationsPage() {
             <Plus className="h-4 w-4 text-primary" />
             Create Automation
           </h3>
+
+          {/* Quick Start Presets */}
+          {newName === "" && (
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Quick Start — use a preset template:</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {PRESET_TEMPLATES.map((preset) => {
+                  const trigger = TRIGGERS.find((t) => t.value === preset.trigger)
+                  return (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        setNewName(preset.name)
+                        setNewTrigger(preset.trigger)
+                        setNewSteps(preset.steps.map((s) => ({ ...s })))
+                      }}
+                      className="flex items-start gap-2 rounded-xl border border-border/60 bg-background/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                    >
+                      <Zap className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{preset.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{trigger?.label} • {preset.steps.length} steps</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="relative my-3">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/50" /></div>
+                <div className="relative flex justify-center"><span className="bg-card px-2 text-[10px] text-muted-foreground">or create from scratch</span></div>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

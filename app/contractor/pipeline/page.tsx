@@ -109,6 +109,7 @@ export default function PipelinePage() {
   const [addingJob, setAddingJob] = useState(false)
   const [googleReviewUrl, setGoogleReviewUrl] = useState("")
   const [companyName, setCompanyName] = useState("")
+  const [leadScores, setLeadScores] = useState<Record<string, { score: number; factors: string[] }>>({})
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -137,6 +138,12 @@ export default function PipelinePage() {
       if (prof?.company_name) setCompanyName(prof.company_name)
 
       setLoading(false)
+
+      // Fetch lead scores
+      authFetch("/api/leads/score")
+        .then((r) => r.json())
+        .then((data) => { if (data.scores) setLeadScores(data.scores) })
+        .catch(() => {})
     }
     fetchJobs()
   }, [accountId])
@@ -626,6 +633,7 @@ export default function PipelinePage() {
                       getInitials={getInitials}
                       formatShortDate={formatShortDate}
                       canEdit={canEdit}
+                      leadScore={leadScores[job.id]}
                     />
                   ))
                 )}
@@ -684,6 +692,7 @@ export default function PipelinePage() {
                     getInitials={getInitials}
                     formatShortDate={formatShortDate}
                     canEdit={canEdit}
+                    leadScore={leadScores[job.id]}
                   />
                 ))
               )}
@@ -812,9 +821,18 @@ type JobCardProps = {
   getInitials: (n: string) => string
   formatShortDate: (d: string) => string
   canEdit: boolean
+  leadScore?: { score: number; factors: string[] }
 }
 
 const COST_CATEGORIES = ["Materials", "Labor", "Subcontractor", "Permits", "Dumpster", "Other"] as const
+
+const SCORE_COLORS: Record<number, string> = {
+  1: "bg-red-500/20 text-red-400",
+  2: "bg-orange-500/20 text-orange-400",
+  3: "bg-yellow-500/20 text-yellow-400",
+  4: "bg-emerald-500/20 text-emerald-400",
+  5: "bg-emerald-600/20 text-emerald-300",
+}
 
 function JobCard({
   job, stage, config, expanded, movingJob, loadingDetails,
@@ -822,7 +840,7 @@ function JobCard({
   onToggle, onMoveStage, onAddActivity, onSetNewActivity,
   onAddFollowup, onSetFollowupDays, onSetFollowupNote,
   onCompleteFollowup, timeAgo, daysInStage, followupUrgency,
-  activityIcon, getInitials, formatShortDate, canEdit,
+  activityIcon, getInitials, formatShortDate, canEdit, leadScore,
 }: JobCardProps) {
   const stage_info = daysInStage(job.created_at)
   const [costs, setCosts] = useState<JobCost[]>([])
@@ -913,6 +931,14 @@ function JobCard({
                     ${job.budget.toLocaleString()}
                   </span>
                 ) : null}
+                {leadScore && (
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${SCORE_COLORS[Math.round(leadScore.score)] || SCORE_COLORS[3]}`}
+                    title={leadScore.factors.join(", ")}
+                  >
+                    {leadScore.score.toFixed(1)}
+                  </span>
+                )}
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">{job.address}</p>

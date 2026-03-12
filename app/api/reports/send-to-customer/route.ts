@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { getCustomTemplate, renderTemplate } from "@/lib/email-template"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { generateProposalPdf } from "@/lib/pdf/generate-proposal"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -133,11 +134,31 @@ export async function POST(req: Request) {
     }
   }
 
+  // Generate branded PDF proposal to attach
+  let pdfAttachments: { filename: string; content: Buffer }[] = []
+  try {
+    let profile: Record<string, unknown> = {}
+    if (contractorId) {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("company_name, widget_color, logo_url, phone, email, business_address, license_number")
+        .eq("id", contractorId)
+        .single()
+      if (p) profile = p
+    }
+    const pdfBuffer = await generateProposalPdf({ report, profile })
+    const safeName = (report.customer_name || "estimate").replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-")
+    pdfAttachments = [{ filename: `Proposal-${safeName}.pdf`, content: pdfBuffer }]
+  } catch (pdfErr) {
+    console.error("PDF generation failed (email will send without attachment):", pdfErr)
+  }
+
   const { error: sendError } = await resend.emails.send({
     from: `${report.company_name || "XRoof"} via XRoof <contracts@xroof.io>`,
     to: customer_email,
     subject: emailSubject,
     html: emailHtml + trackingPixel,
+    attachments: pdfAttachments.length > 0 ? pdfAttachments : undefined,
   })
 
   if (sendError) {
@@ -153,8 +174,8 @@ export async function POST(req: Request) {
       fetch(`${appUrl}/api/automations/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger: "estimate_sent", job_id: report.job_id, contractor_id: contractorId }),
-      }).catch(() => {})
+        body: JSON.stringify({ trigger: "estimate_sent", job_id: report.job_id, contractor_id: contractorId, internal_secret: process.env.CRON_SECRET }),
+      }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
     }
   }
 

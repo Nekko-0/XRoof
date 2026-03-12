@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
-import { Camera, Upload, Trash2, X, Image as ImageIcon } from "lucide-react"
+import { Camera, Upload, Trash2, X, Image as ImageIcon, ArrowLeftRight } from "lucide-react"
+import { BeforeAfterSlider } from "./before-after-slider"
 
 type Photo = {
   id: string
@@ -85,7 +86,11 @@ export function PhotoGallery({ jobId, contractorId }: PhotoGalleryProps) {
     }
   }
 
-  const filteredPhotos = activeCategory === "all" ? photos : photos.filter((p) => p.category === activeCategory)
+  const filteredPhotos = activeCategory === "all" ? photos : activeCategory === "compare" ? photos : photos.filter((p) => p.category === activeCategory)
+
+  const beforePhotos = photos.filter((p) => p.category === "before")
+  const afterPhotos = photos.filter((p) => p.category === "after")
+  const canCompare = beforePhotos.length > 0 && afterPhotos.length > 0
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading photos...</p>
 
@@ -109,6 +114,18 @@ export function PhotoGallery({ jobId, contractorId }: PhotoGalleryProps) {
             </button>
           )
         })}
+        {canCompare && (
+          <button
+            onClick={() => setActiveCategory("compare")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors flex items-center gap-1 ${
+              activeCategory === "compare"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ArrowLeftRight className="h-3 w-3" /> Compare
+          </button>
+        )}
       </div>
 
       {/* Upload Buttons */}
@@ -134,6 +151,25 @@ export function PhotoGallery({ jobId, contractorId }: PhotoGalleryProps) {
       </div>
 
       {uploading && <p className="mb-3 text-xs text-primary animate-pulse">Uploading...</p>}
+
+      {/* Before/After Compare View */}
+      {activeCategory === "compare" && canCompare && (
+        <div className="space-y-4 mb-4">
+          <p className="text-xs text-muted-foreground">
+            Drag the slider to compare before and after photos. Showing {Math.min(beforePhotos.length, afterPhotos.length)} comparison{Math.min(beforePhotos.length, afterPhotos.length) > 1 ? "s" : ""}.
+          </p>
+          {beforePhotos.slice(0, afterPhotos.length).map((bp, i) => (
+            <BeforeAfterSlider
+              key={bp.id}
+              beforeUrl={bp.url}
+              afterUrl={afterPhotos[i].url}
+              beforeLabel={bp.caption || "Before"}
+              afterLabel={afterPhotos[i]?.caption || "After"}
+              height={280}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Photo Grid */}
       {filteredPhotos.length === 0 ? (

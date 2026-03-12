@@ -141,6 +141,13 @@ export async function GET(req: Request) {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 20)
 
+  // --- Review requests count ---
+  const { count: reviewRequestCount } = await supabase
+    .from("document_events")
+    .select("id", { count: "exact", head: true })
+    .eq("event_type", "review_requested")
+    .in("job_id", jobIds.length > 0 ? jobIds : ["__none__"])
+
   // --- NEW: Recent Activity (for ticker) ---
   const recentActivity = (allJobs || []).slice(0, 20).map((j) => {
     const typeMap: Record<string, string> = {
@@ -183,6 +190,7 @@ export async function GET(req: Request) {
     dealVelocity,
     zipRevenue,
     recentActivity,
+    reviewRequestCount: reviewRequestCount || 0,
   })
 }
 

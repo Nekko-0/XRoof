@@ -1,31 +1,34 @@
 import { Resend } from "resend"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
-import { getCustomTemplate, renderTemplate } from "@/lib/email-template"
+import { getCustomTemplate, renderTemplate, escapeHtml } from "@/lib/email-template"
+import { sendSMS } from "@/lib/twilio"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { job_id, customer_email, customer_name, company_name, google_review_url } = await req.json()
 
   if (!job_id || !customer_email || !google_review_url) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = getServiceSupabase()
+
+  const safeCompany = escapeHtml(company_name || "Your Roofing Contractor")
+  const safeCustomer = escapeHtml(customer_name || "there")
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
       <div style="text-align:center;border-bottom:2px solid #e5e5e5;padding-bottom:15px;margin-bottom:20px;">
         <h1 style="font-size:22px;margin:0;">Thank You for Choosing Us!</h1>
-        <p style="font-size:12px;color:#888;margin:5px 0 0;">${company_name || "Your Roofing Contractor"}</p>
+        <p style="font-size:12px;color:#888;margin:5px 0 0;">${safeCompany}</p>
       </div>
 
-      <p style="font-size:14px;margin:0 0 15px;">Hi ${customer_name || "there"},</p>
+      <p style="font-size:14px;margin:0 0 15px;">Hi ${safeCustomer},</p>
       <p style="font-size:13px;color:#555;margin:0 0 20px;">
         We hope you're happy with your new roof! Your feedback means the world to us and helps other homeowners find quality roofing services.
       </p>
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
       </p>
 
       <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
-        <p style="font-size:11px;color:#aaa;margin:0;">${company_name || ""}</p>
+        <p style="font-size:11px;color:#aaa;margin:0;">${safeCompany}</p>
         <p style="font-size:10px;color:#ccc;margin:5px 0 0;">Sent via XRoof</p>
       </div>
     </div>
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
   // Check for custom email template
   let emailSubject = `How was your experience with ${company_name || "us"}? We'd love your feedback!`
   let emailHtml = html
-  const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", job_id).single()
+  const { data: job } = await supabase.from("jobs").select("contractor_id, customer_phone").eq("id", job_id).single()
   if (job?.contractor_id) {
     const custom = await getCustomTemplate(job.contractor_id, "review_request")
     if (custom) {
@@ -85,6 +88,12 @@ export async function POST(req: Request) {
 
   if (sendError) {
     return NextResponse.json({ error: "Failed to send email: " + sendError.message }, { status: 500 })
+  }
+
+  // Send SMS review request if customer phone is available
+  if (job?.customer_phone) {
+    const smsBody = `Hi ${customer_name || "there"}! Thank you for choosing ${company_name || "us"}. We'd love your feedback — please leave us a quick Google review: ${google_review_url}`
+    sendSMS(job.customer_phone, smsBody).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
   }
 
   return NextResponse.json({ success: true })

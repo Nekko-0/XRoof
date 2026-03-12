@@ -46,6 +46,7 @@ export async function GET(req: Request) {
           trigger: "invoice_overdue",
           job_id: inv.job_id,
           contractor_id: inv.contractor_id,
+          internal_secret: process.env.CRON_SECRET,
         }),
       })
       triggered++

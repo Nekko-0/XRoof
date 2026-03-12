@@ -20,9 +20,19 @@ export async function getCustomTemplate(
   return data || null
 }
 
+/** Escape HTML special characters to prevent XSS in email bodies */
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 export function renderTemplate(
   template: string,
   data: Record<string, string>
 ): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => data[key] || `{${key}}`)
+  return template.replace(/\{(\w+)\}/g, (_, key) => escapeHtml(data[key] || `{${key}}`))
 }

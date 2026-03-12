@@ -12,6 +12,8 @@ import {
   Bell, Save, CheckCircle, ExternalLink, Settings,
 } from "lucide-react"
 
+type BookingHours = { start: string; end: string; days: number[] }
+
 type SettingsProfile = {
   company_name: string
   phone: string
@@ -26,6 +28,10 @@ type SettingsProfile = {
   quickbooks_connected: boolean
   quickbooks_last_sync: string | null
   notification_preferences: NotificationPreferences
+  booking_enabled: boolean
+  booking_hours: BookingHours
+  booking_duration_min: number
+  booking_buffer_min: number
 }
 
 type NotificationPreferences = {
@@ -36,6 +42,7 @@ type NotificationPreferences = {
 const TABS = [
   { id: "general", label: "General", icon: Building2 },
   { id: "branding", label: "Branding", icon: Palette },
+  { id: "scheduling", label: "Scheduling", icon: Calendar },
   { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "email-templates", label: "Templates", icon: Mail },
@@ -85,7 +92,7 @@ export default function SettingsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, phone, email, service_zips, google_review_url, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences")
+        .select("company_name, phone, email, service_zips, google_review_url, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
         .eq("id", accountId)
         .single()
 
@@ -96,6 +103,8 @@ export default function SettingsPage() {
           widget_price_per_sqft: null, sms_notifications: {},
           google_calendar_connected: false, quickbooks_connected: false, quickbooks_last_sync: null,
           notification_preferences: { email: {}, sms: {} },
+          booking_enabled: false, booking_hours: { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
+          booking_duration_min: 60, booking_buffer_min: 30,
         })
       } else {
         setProfile({
@@ -112,6 +121,10 @@ export default function SettingsPage() {
           quickbooks_connected: data.quickbooks_connected || false,
           quickbooks_last_sync: data.quickbooks_last_sync || null,
           notification_preferences: data.notification_preferences || { email: {}, sms: {} },
+          booking_enabled: data.booking_enabled || false,
+          booking_hours: data.booking_hours || { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
+          booking_duration_min: data.booking_duration_min || 60,
+          booking_buffer_min: data.booking_buffer_min || 30,
         })
       }
       setLoading(false)
@@ -411,6 +424,156 @@ export default function SettingsPage() {
                 widget_color: profile.widget_color,
                 logo_url: profile.logo_url,
                 widget_price_per_sqft: profile.widget_price_per_sqft,
+              })}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Scheduling Tab */}
+      {activeTab === "scheduling" && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+              Online Booking
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Let customers schedule appointments directly from your portal or widget.
+            </p>
+          </div>
+
+          {/* Enable toggle */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Enable Online Booking</h4>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Customers can self-schedule site visits and inspections
+                </p>
+              </div>
+              <NotifToggle
+                on={profile.booking_enabled}
+                onToggle={() => setProfile({ ...profile, booking_enabled: !profile.booking_enabled })}
+              />
+            </div>
+          </div>
+
+          {profile.booking_enabled && (
+            <>
+              {/* Business Hours */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                <h4 className="text-sm font-semibold text-foreground">Available Hours</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Start Time</label>
+                    <input
+                      type="time"
+                      value={profile.booking_hours.start}
+                      onChange={(e) =>
+                        setProfile({
+                          ...profile,
+                          booking_hours: { ...profile.booking_hours, start: e.target.value },
+                        })
+                      }
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">End Time</label>
+                    <input
+                      type="time"
+                      value={profile.booking_hours.end}
+                      onChange={(e) =>
+                        setProfile({
+                          ...profile,
+                          booking_hours: { ...profile.booking_hours, end: e.target.value },
+                        })
+                      }
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                </div>
+
+                {/* Days of week */}
+                <div>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Available Days</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => {
+                      const active = profile.booking_hours.days.includes(idx)
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => {
+                            const days = active
+                              ? profile.booking_hours.days.filter((d) => d !== idx)
+                              : [...profile.booking_hours.days, idx].sort()
+                            setProfile({
+                              ...profile,
+                              booking_hours: { ...profile.booking_hours, days },
+                            })
+                          }}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            active
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Duration & Buffer */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                <h4 className="text-sm font-semibold text-foreground">Appointment Settings</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Duration (minutes)</label>
+                    <select
+                      value={profile.booking_duration_min}
+                      onChange={(e) => setProfile({ ...profile, booking_duration_min: Number(e.target.value) })}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>1 hour</option>
+                      <option value={90}>1.5 hours</option>
+                      <option value={120}>2 hours</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Buffer Between</label>
+                    <select
+                      value={profile.booking_buffer_min}
+                      onChange={(e) => setProfile({ ...profile, booking_buffer_min: Number(e.target.value) })}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={0}>No buffer</option>
+                      <option value={15}>15 min</option>
+                      <option value={30}>30 min</option>
+                      <option value={60}>1 hour</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={() => saveProfile({
+                booking_enabled: profile.booking_enabled,
+                booking_hours: profile.booking_hours,
+                booking_duration_min: profile.booking_duration_min,
+                booking_buffer_min: profile.booking_buffer_min,
               })}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"

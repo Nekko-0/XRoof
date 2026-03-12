@@ -207,3 +207,106 @@ ALTER TABLE reports ADD COLUMN IF NOT EXISTS estimate_line_items jsonb;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS estimate_accepted boolean DEFAULT false;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS estimate_accepted_at timestamptz;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS accepted_tier_index int;
+
+-- ============================================
+-- PDF Proposals: Business details on profiles
+-- ============================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS business_address text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS license_number text;
+
+-- ============================================
+-- Customer Self-Booking
+-- ============================================
+
+-- Booking settings on profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS booking_enabled boolean DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS booking_hours jsonb DEFAULT '{"start":"09:00","end":"17:00","days":[1,2,3,4,5]}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS booking_duration_min int DEFAULT 60;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS booking_buffer_min int DEFAULT 30;
+
+-- Track who booked (customer vs contractor) on appointments
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booked_by text DEFAULT 'contractor';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_name text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_email text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_phone text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS duration_min int DEFAULT 60;
+
+-- ============================================
+-- Time & Labor Tracking
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  contractor_id uuid NOT NULL,
+  job_id uuid REFERENCES jobs(id) ON DELETE CASCADE,
+  work_order_id uuid REFERENCES work_orders(id) ON DELETE SET NULL,
+  user_id uuid NOT NULL,
+  user_name text,
+  started_at timestamptz NOT NULL,
+  ended_at timestamptz,
+  duration_minutes int,
+  notes text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- ============================================
+-- Lead Source Landing Pages
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS landing_pages (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  contractor_id uuid NOT NULL,
+  slug text NOT NULL UNIQUE,
+  title text NOT NULL DEFAULT 'Get Your Free Roof Estimate',
+  subtitle text DEFAULT 'Professional roofing services you can trust.',
+  cta_text text DEFAULT 'Get Free Estimate',
+  hero_image_url text,
+  template text DEFAULT 'standard',
+  utm_source text,
+  utm_campaign text,
+  active boolean DEFAULT true,
+  views int DEFAULT 0,
+  conversions int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Enhanced source tracking on jobs
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_source text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_medium text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_campaign text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS landing_page_id uuid;
+
+-- ============================================
+-- Insurance Claim Tracking
+-- ============================================
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_insurance_claim boolean DEFAULT false;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS insurance_company text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS claim_number text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS adjuster_name text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS adjuster_phone text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS adjuster_email text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS deductible numeric;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS claim_status text DEFAULT 'pending';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS adjuster_meeting_date date;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS insurance_notes text;
+
+-- ============================================
+-- Performance Indexes
+-- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_jobs_contractor_id ON jobs(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
+CREATE INDEX IF NOT EXISTS idx_appointments_contractor_id ON appointments(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date);
+CREATE INDEX IF NOT EXISTS idx_customers_contractor_id ON customers(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_job_id ON time_entries(job_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_contractor_id ON time_entries(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_work_orders_contractor_id ON work_orders(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_work_orders_job_id ON work_orders(job_id);
+CREATE INDEX IF NOT EXISTS idx_landing_pages_slug ON landing_pages(slug);
+CREATE INDEX IF NOT EXISTS idx_landing_pages_contractor_id ON landing_pages(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_automations_status ON scheduled_automations(status);
+CREATE INDEX IF NOT EXISTS idx_scheduled_automations_contractor_id ON scheduled_automations(contractor_id);

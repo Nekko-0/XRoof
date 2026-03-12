@@ -100,8 +100,9 @@ export async function POST(req: Request) {
         trigger: "contract_signed",
         job_id: contract.job_id,
         contractor_id: contract.contractor_id,
+        internal_secret: process.env.CRON_SECRET,
       }),
-    }).catch(() => {})
+    }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
   }
 
   // Send completion email to contractor + admin

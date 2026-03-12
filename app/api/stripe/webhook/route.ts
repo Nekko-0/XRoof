@@ -86,8 +86,9 @@ export async function POST(req: Request) {
                   trigger: "payment_received",
                   job_id: inv.job_id,
                   contractor_id: inv.contractor_id,
+                  internal_secret: process.env.CRON_SECRET,
                 }),
-              }).catch(() => {})
+              }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
 
               // Auto-sync paid invoice to QuickBooks if connected
               try {

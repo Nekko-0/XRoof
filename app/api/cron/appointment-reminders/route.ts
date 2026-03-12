@@ -46,6 +46,7 @@ export async function GET(req: Request) {
           trigger: "appointment_reminder",
           job_id: appt.job_id,
           contractor_id: appt.contractor_id,
+          internal_secret: process.env.CRON_SECRET,
         }),
       })
       triggered++

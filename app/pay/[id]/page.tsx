@@ -3,9 +3,8 @@
 import { darkenColor, lightenColor, colorWithOpacity } from "@/lib/brand-colors"
 import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { CheckCircle, CreditCard, Lock, Printer, MapPin, Phone, Calendar, Hash, Banknote, Building2, Wallet, DollarSign } from "lucide-react"
-
-import { Mail } from "lucide-react"
+import { CheckCircle, CreditCard, Lock, Printer, MapPin, Phone, Calendar, Hash, Banknote, Building2, Wallet, DollarSign, Mail } from "lucide-react"
+import { useToast } from "@/lib/toast-context"
 
 type LineItem = { description: string; amount: number }
 
@@ -47,6 +46,7 @@ type Invoice = {
 export default function PayInvoicePage() {
   const { id } = useParams()
   const searchParams = useSearchParams()
+  const toast = useToast()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [paying, setPaying] = useState(false)
@@ -101,7 +101,7 @@ export default function PayInvoicePage() {
     if (data.url) {
       window.location.href = data.url
     } else {
-      alert(data.error || "Unable to start payment")
+      toast.error(data.error || "Unable to start payment")
       setPaying(false)
     }
   }

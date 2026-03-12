@@ -55,9 +55,10 @@ const adminNav: NavItem[] = [
 // Bottom tab bar items for contractor mobile
 const contractorTabs: NavItem[] = [
   { label: "Home", href: "/contractor/dashboard", icon: Home },
+  { label: "Jobs", href: "/contractor/leads", icon: FileText },
   { label: "Field", href: "/contractor/field", icon: Smartphone },
-  { label: "Support", href: "/contractor/messages", icon: MessageSquare },
-  { label: "Profile", href: "/contractor/profile", icon: User },
+  { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
+  { label: "More", href: "/contractor/profile", icon: Menu },
 ]
 
 export function DashboardShell({ children, role }: DashboardShellProps) {

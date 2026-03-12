@@ -148,8 +148,8 @@ export async function POST(req: Request) {
       fetch(`${appUrl}/api/automations/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger: "new_lead", job_id: newJob.id, contractor_id }),
-      }).catch(() => {})
+        body: JSON.stringify({ trigger: "new_lead", job_id: newJob.id, contractor_id, internal_secret: process.env.CRON_SECRET }),
+      }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
     }
 
     // Instant SMS alert to contractor
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       await sendSMS(
         profile.phone,
         `New lead! ${customer_name} at ${address} — est. $${estimateLow.toLocaleString()}-$${estimateHigh.toLocaleString()}. Check your dashboard.`
-      ).catch(() => {}) // Don't fail the request if SMS fails
+      ).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err)) // Don't fail the request if SMS fails
     }
   }
 

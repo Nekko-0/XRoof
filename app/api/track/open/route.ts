@@ -52,8 +52,9 @@ export async function GET(req: Request) {
                 trigger: "estimate_viewed",
                 job_id: sentEvent.job_id,
                 contractor_id: job.contractor_id,
+                internal_secret: process.env.CRON_SECRET,
               }),
-            }).catch(() => {})
+            }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
           }
         }
       }

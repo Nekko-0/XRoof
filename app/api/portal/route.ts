@@ -44,10 +44,35 @@ export async function GET(req: Request) {
     .eq("job_id", job.id)
     .order("created_at", { ascending: false })
 
+  // Get contracts for this job
+  const { data: contracts } = await supabase
+    .from("contracts")
+    .select("id, contract_price, deposit_percent, status, signing_token, signing_token_expires_at, customer_signed_at, contractor_signed_at, created_at")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+
+  // Get all reports/estimates (not just latest)
+  const { data: allReports } = await supabase
+    .from("reports")
+    .select("id, price_quote, scope_of_work, viewing_token, viewing_token_expires_at, estimate_accepted, estimate_accepted_at, created_at, report_completed")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+
+  // Get document events for activity timeline
+  const { data: events } = await supabase
+    .from("document_events")
+    .select("id, document_type, event_type, created_at")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+    .limit(20)
+
   return NextResponse.json({
     job,
     contractor: profile || {},
     report: reports?.[0] || null,
     photos: photos || [],
+    contracts: contracts || [],
+    estimates: allReports || [],
+    events: events || [],
   })
 }

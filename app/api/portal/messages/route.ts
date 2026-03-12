@@ -47,6 +47,12 @@ export async function POST(req: Request) {
       )
     }
 
+    // Verify the job exists to prevent blind writes
+    const { data: job } = await supabase.from("jobs").select("id").eq("id", job_id).single()
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+    }
+
     const { data: row, error } = await supabase
       .from("portal_messages")
       .insert({ job_id, sender, message })

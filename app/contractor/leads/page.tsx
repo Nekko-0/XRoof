@@ -8,6 +8,7 @@ import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
 import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, ScrollText, RotateCcw, Plus, EyeOff, Eye, Trash2, Star, Camera, Receipt, Download, Copy, Send, ExternalLink, Mail, X, ChevronDown, ChevronUp, ImagePlus, Search, Filter, TrendingUp } from "lucide-react"
 import { PhotoGallery } from "@/components/photo-gallery"
+import { InsuranceClaimPanel } from "@/components/insurance-claim-panel"
 import { ActivityTimeline } from "@/components/activity-timeline"
 import { JobCostEntry } from "@/components/job-cost-entry"
 import { StatusBadge } from "@/components/status-badge"
@@ -685,6 +686,7 @@ export default function MyJobsPage() {
                 <option value="Gutter Repair">Gutter Repair</option>
                 <option value="New Construction">New Construction</option>
                 <option value="Storm Damage">Storm Damage</option>
+                <option value="Insurance Claim">Insurance Claim</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -796,6 +798,13 @@ export default function MyJobsPage() {
                 {/* Description */}
                 {job.description && (
                   <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{job.description}</p>
+                )}
+
+                {/* Insurance Claim Panel */}
+                {(job.job_type === "Storm Damage" || job.job_type === "Insurance Claim") && (
+                  <div className="mb-3">
+                    <InsuranceClaimPanel jobId={job.id} />
+                  </div>
                 )}
 
                 {/* Photos */}

@@ -50,8 +50,17 @@ export async function DELETE(req: Request) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
   const supabase = getServiceSupabase()
-  const { error } = await supabase.from("job_photos").delete().eq("id", id)
 
+  // Verify ownership before deleting
+  const { data: photo } = await supabase.from("job_photos").select("id, job_id").eq("id", id).single()
+  if (!photo) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", photo.job_id).single()
+  if (!job || job.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const { error } = await supabase.from("job_photos").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
