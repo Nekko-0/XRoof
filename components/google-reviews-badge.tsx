@@ -10,7 +10,7 @@ interface GoogleReviewsBadgeProps {
 }
 
 export function GoogleReviewsBadge({ rating, reviewCount, reviewUrl, className = "" }: GoogleReviewsBadgeProps) {
-  if (!rating || !reviewCount) return null
+  if (rating == null && !reviewCount) return null
 
   const stars = Math.round(rating * 2) / 2 // Round to nearest 0.5
 

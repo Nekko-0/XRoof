@@ -18,6 +18,7 @@ import {
   Send, LayoutDashboard, Circle, X, Zap, FileText, Star, Download,
 } from "lucide-react"
 import { HelpTooltip } from "@/components/help-tooltip"
+import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
 
 type Job = {
   id: string
@@ -90,6 +91,10 @@ export default function ContractorDashboard() {
   // Outstanding invoices
   const [outstandingTotal, setOutstandingTotal] = useState(0)
 
+  // Google Reviews
+  const [googleReviewUrl, setGoogleReviewUrl] = useState("")
+  const [googleReviewsCache, setGoogleReviewsCache] = useState<{ rating: number; reviewCount: number } | null>(null)
+
   // Weather events for storm correlation
   const [weatherEvents, setWeatherEvents] = useState<{ date: string; type: string; description: string }[]>([])
 
@@ -112,15 +117,17 @@ export default function ContractorDashboard() {
       setDashUserId(uid)
       const today = new Date().toISOString().slice(0, 10)
 
-      // Check onboarding
+      // Check onboarding + google reviews
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("onboarding_completed")
+        .select("onboarding_completed, google_review_url, google_reviews_cache")
         .eq("id", uid)
         .single()
       if (profileData && !profileData.onboarding_completed) {
         setShowOnboarding(true)
       }
+      if (profileData?.google_review_url) setGoogleReviewUrl(profileData.google_review_url)
+      if (profileData?.google_reviews_cache) setGoogleReviewsCache(profileData.google_reviews_cache as any)
 
       const [jobsRes, followupsRes, appointmentsRes, invoicesRes, costsRes] = await Promise.all([
         supabase.from("jobs")
@@ -779,6 +786,16 @@ export default function ContractorDashboard() {
               value={String(analytics.reviewRequestCount || 0)}
               trend={(analytics.reviewRequestCount || 0) > 0 ? "up" : "flat"}
             />
+            {googleReviewUrl && (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-3 shadow-sm">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Google Reviews</p>
+                <GoogleReviewsBadge
+                  rating={googleReviewsCache?.rating || 0}
+                  reviewCount={googleReviewsCache?.reviewCount || 0}
+                  reviewUrl={googleReviewUrl}
+                />
+              </div>
+            )}
             {(analytics.totalCosts || 0) > 0 && (
               <>
                 <MiniStatCard
