@@ -109,9 +109,10 @@ export async function POST(req: Request) {
   `
 
   const recipients = [contractorEmail]
-  // Also notify admin
-  if (contractorEmail !== "contact@leons-roofing.com") {
-    recipients.push("contact@leons-roofing.com")
+  // Notify admin if configured
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (adminEmail && contractorEmail !== adminEmail) {
+    recipients.push(adminEmail)
   }
 
   await resend.emails.send({

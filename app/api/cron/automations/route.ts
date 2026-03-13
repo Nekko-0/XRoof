@@ -110,7 +110,7 @@ export async function GET(req: Request) {
       // Fetch related documents for link placeholders
       const { data: report } = await supabase
         .from("reports")
-        .select("share_token")
+        .select("viewing_token")
         .eq("job_id", item.job_id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -137,10 +137,10 @@ export async function GET(req: Request) {
         address: job.address || "",
         company_name: profile?.company_name || "",
         phone: profile?.phone || "",
-        estimate_link: report?.share_token ? `${appUrl}/estimate/${report.share_token}` : "",
+        estimate_link: report?.viewing_token ? `${appUrl}/estimate/${report.viewing_token}` : "",
         contract_link: contractDoc?.signing_token ? `${appUrl}/sign/${contractDoc.signing_token}` : "",
         invoice_link: invoiceDoc?.id ? `${appUrl}/pay/${invoiceDoc.id}` : "",
-        portal_link: `${appUrl}/portal/${item.contractor_id}`,
+        portal_link: `${appUrl}/portal/${item.job_id}`,
       }
 
       const message = replacePlaceholders(item.message, vars)

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,11 @@ const supabase = createClient(
 )
 
 export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`portal-messages:${ip}`, 30, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
   const { searchParams } = new URL(req.url)
   const job_id = searchParams.get("job_id")
 
@@ -29,6 +35,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const postIp = getClientIP(req)
+  const postRl = rateLimit(`portal-messages-post:${postIp}`, 5, 60_000)
+  if (!postRl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   try {
     const body = await req.json()
     const { job_id, sender, message } = body

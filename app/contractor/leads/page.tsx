@@ -197,7 +197,7 @@ export default function MyJobsPage() {
       const { data: adminProfile } = await supabase
         .from("profiles")
         .select("id")
-        .eq("email", "contact@leons-roofing.com")
+        .eq("email", process.env.NEXT_PUBLIC_ADMIN_EMAIL || "")
         .maybeSingle()
 
       if (adminProfile) {

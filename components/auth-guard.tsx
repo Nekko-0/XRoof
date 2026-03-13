@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 
-const ADMIN_EMAIL = "contact@leons-roofing.com"
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()

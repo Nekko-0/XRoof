@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     const data = await res.json()
 
     // Extract one forecast per day (noon reading)
-    const dailyMap = new Map<string, { date: string; temp: number; description: string; icon: string }>()
+    const dailyMap = new Map<string, { date: string; temp: number; description: string; icon: string; hour: number }>()
 
     for (const item of data.list || []) {
       const date = item.dt_txt?.split(" ")[0]
@@ -37,12 +37,14 @@ export async function GET(req: Request) {
       if (!date) continue
 
       // Prefer the noon reading for each day
-      if (!dailyMap.has(date) || Math.abs(hour - 12) < Math.abs(parseInt(dailyMap.get(date)!.description) - 12)) {
+      const existing = dailyMap.get(date)
+      if (!existing || Math.abs(hour - 12) < Math.abs(existing.hour - 12)) {
         dailyMap.set(date, {
           date,
           temp: Math.round(item.main?.temp || 0),
           description: item.weather?.[0]?.main || "",
           icon: item.weather?.[0]?.icon || "",
+          hour,
         })
       }
     }

@@ -80,7 +80,7 @@ export default function ContractorMessagesPage() {
     const { data: adminProfile } = await supabase
       .from("profiles")
       .select("id")
-      .ilike("email", "contact@leons-roofing.com")
+      .ilike("email", process.env.NEXT_PUBLIC_ADMIN_EMAIL || "")
       .single()
 
     if (adminProfile) {

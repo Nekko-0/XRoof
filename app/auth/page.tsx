@@ -81,7 +81,7 @@ function AuthForm() {
     }
 
     if (data.user) {
-      if (data.user.email?.toLowerCase() === "contact@leons-roofing.com") {
+      if (data.user.email?.toLowerCase() === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()) {
         router.push("/admin/dashboard")
         return
       }
