@@ -1,14 +1,16 @@
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { ContractSignSchema, validateBody } from "@/lib/validations"
+import { emitToUser } from "@/lib/event-emitter"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
-  const { token, signature_data_url } = await req.json()
-  if (!token || !signature_data_url) {
-    return NextResponse.json({ error: "Missing token or signature" }, { status: 400 })
-  }
+  const body = await req.json()
+  const v = validateBody(ContractSignSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { token, signature_data_url } = v.data!
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -89,6 +91,14 @@ export async function POST(req: Request) {
     event_type: "signed",
     recipient_email: contract.customer_email,
   })
+
+  // Emit real-time SSE event
+  if (contract.contractor_id) {
+    emitToUser(contract.contractor_id, {
+      type: "contract_signed",
+      payload: { customerName: contract.customer_name, address: contract.project_address },
+    })
+  }
 
   // Fire contract_signed automation trigger
   if (contract.job_id && contract.contractor_id) {

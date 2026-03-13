@@ -310,3 +310,30 @@ CREATE INDEX IF NOT EXISTS idx_landing_pages_slug ON landing_pages(slug);
 CREATE INDEX IF NOT EXISTS idx_landing_pages_contractor_id ON landing_pages(contractor_id);
 CREATE INDEX IF NOT EXISTS idx_scheduled_automations_status ON scheduled_automations(status);
 CREATE INDEX IF NOT EXISTS idx_scheduled_automations_contractor_id ON scheduled_automations(contractor_id);
+
+-- ============================================
+-- White-Label Branding Fields
+-- ============================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company_tagline text;
+
+-- ============================================
+-- Two-Way SMS Messaging
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS sms_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  contractor_id uuid NOT NULL,
+  job_id uuid REFERENCES jobs(id) ON DELETE SET NULL,
+  phone_number text NOT NULL,
+  direction text NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+  body text NOT NULL,
+  customer_name text,
+  twilio_sid text,
+  status text DEFAULT 'delivered',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sms_messages_contractor_id ON sms_messages(contractor_id);
+CREATE INDEX IF NOT EXISTS idx_sms_messages_phone_number ON sms_messages(phone_number);
+CREATE INDEX IF NOT EXISTS idx_sms_messages_created_at ON sms_messages(created_at);

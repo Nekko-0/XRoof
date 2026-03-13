@@ -30,6 +30,7 @@ export interface ProposalData {
   logo_url: string
   business_address?: string
   license_number?: string
+  company_tagline?: string
   // Customer
   customer_name: string
   customer_address: string
@@ -102,11 +103,17 @@ function PageHeader({ companyName, logoBuffer, styles }: { companyName: string; 
   )
 }
 
-function PageFooter({ companyEmail, companyPhone, styles }: { companyEmail: string; companyPhone: string; styles: ReturnType<typeof createProposalStyles> }) {
-  const parts = [companyEmail, companyPhone].filter(Boolean)
+function PageFooter({ data, styles }: { data: ProposalData; styles: ReturnType<typeof createProposalStyles> }) {
+  const parts = [
+    data.company_name,
+    data.business_address,
+    data.company_phone,
+    data.company_email,
+    data.license_number ? `Lic #${data.license_number}` : "",
+  ].filter(Boolean)
   return (
     <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>{parts.join("  |  ")}{parts.length > 0 ? "  |  " : ""}Powered by XRoof</Text>
+      <Text style={styles.footerText}>{parts.join("  |  ")}</Text>
     </View>
   )
 }
@@ -138,8 +145,12 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
     <Document title={`Roofing Proposal - ${data.customer_name}`} author={data.company_name}>
       {/* ===== COVER PAGE ===== */}
       <Page size="A4" style={s.coverPage}>
+        {/* Top accent bar */}
+        <View style={s.coverAccentBar} fixed />
+
         {logoBuffer && <Image style={s.coverLogo} src={{ data: logoBuffer, format: "png" }} />}
         <Text style={s.coverCompany}>{data.company_name}</Text>
+        {data.company_tagline ? <Text style={s.coverTagline}>{data.company_tagline}</Text> : null}
         <Text style={s.coverTitle}>ROOFING PROPOSAL</Text>
         <View style={s.coverDivider} />
 
@@ -164,12 +175,20 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
         ) : null}
         {data.business_address ? <Text style={s.coverPreparedBy}>{data.business_address}</Text> : null}
         {data.license_number ? <Text style={s.coverPreparedBy}>License #{data.license_number}</Text> : null}
+        {data.company_phone || data.company_email ? (
+          <Text style={s.coverPreparedBy}>
+            {[data.company_phone, data.company_email].filter(Boolean).join("  |  ")}
+          </Text>
+        ) : null}
+
+        {/* Bottom accent bar */}
+        <View style={s.coverAccentBarBottom} fixed />
       </Page>
 
       {/* ===== PROPERTY DETAILS + MEASUREMENTS ===== */}
       <Page size="A4" style={s.page}>
         <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
-        <PageFooter companyEmail={data.company_email} companyPhone={data.company_phone} styles={s} />
+        <PageFooter data={data} styles={s} />
 
         <Text style={s.sectionTitle}>Property Details</Text>
 
@@ -268,7 +287,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {visiblePhotos.length > 0 ? (
         <Page size="A4" style={s.page}>
           <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
-          <PageFooter companyEmail={data.company_email} companyPhone={data.company_phone} styles={s} />
+          <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Property Photos</Text>
           <View style={s.photoGrid}>
@@ -286,7 +305,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {(data.scope_of_work || data.material) ? (
         <Page size="A4" style={s.page}>
           <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
-          <PageFooter companyEmail={data.company_email} companyPhone={data.company_phone} styles={s} />
+          <PageFooter data={data} styles={s} />
 
           {data.scope_of_work ? (
             <>
@@ -363,7 +382,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {(lineItems.length > 0 || tiers.length > 0 || data.price_quote) ? (
         <Page size="A4" style={s.page}>
           <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
-          <PageFooter companyEmail={data.company_email} companyPhone={data.company_phone} styles={s} />
+          <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Pricing</Text>
 
@@ -427,7 +446,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {(data.recommendations || data.notes) ? (
         <Page size="A4" style={s.page}>
           <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
-          <PageFooter companyEmail={data.company_email} companyPhone={data.company_phone} styles={s} />
+          <PageFooter data={data} styles={s} />
 
           {data.recommendations ? (
             <>

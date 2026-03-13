@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { CustomerCreateSchema, CustomerUpdateSchema, validateBody } from "@/lib/validations"
 
 // GET — list customers for the authenticated contractor
 export async function GET(req: Request) {
@@ -26,10 +27,9 @@ export async function POST(req: Request) {
   const supabase = getServiceSupabase()
 
   const body = await req.json()
-  const { name, email, phone, address, notes } = body
-  if (!name) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
+  const v = validateBody(CustomerCreateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { name, email, phone, address, notes } = v.data!
 
   // Check for existing customer with same name + phone/email
   if (phone || email) {
@@ -66,8 +66,9 @@ export async function PATCH(req: Request) {
   const supabase = getServiceSupabase()
 
   const body = await req.json()
-  const { id, ...updates } = body
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+  const v = validateBody(CustomerUpdateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { id, ...updates } = v.data!
 
   // Verify customer belongs to authenticated user
   const { data: customer } = await supabase

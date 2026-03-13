@@ -631,91 +631,203 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
         </div>
       )}
 
-      {/* Starter Templates */}
-      {!savedId && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Start — Common Job Templates</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              {
-                name: "Roof Replacement",
-                data: {
-                  job_type: "Roof Replacement",
-                  scope_of_work: "Complete tear-off of existing roofing materials down to deck.\nInspect and repair any damaged decking.\nInstall synthetic underlayment.\nInstall new architectural shingles per manufacturer specifications.\nInstall new ridge cap, starter strip, and drip edge.\nReplace all pipe boots, flashing, and vents.\nComplete cleanup and haul-away of all debris.",
-                  material: "GAF Timberline HDZ Architectural Shingles",
-                  recommendations: "We recommend upgrading to a ridge vent system for improved attic ventilation and energy efficiency.",
-                  estimate_line_items: [
-                    { description: "Tear-off & disposal", quantity: 1, unit_price: 0 },
-                    { description: "Synthetic underlayment", quantity: 1, unit_price: 0 },
-                    { description: "Architectural shingles — installed", quantity: 1, unit_price: 0 },
-                    { description: "Ridge cap & starter strip", quantity: 1, unit_price: 0 },
-                    { description: "Flashing & pipe boots", quantity: 1, unit_price: 350 },
-                    { description: "Drip edge (aluminum)", quantity: 1, unit_price: 0 },
-                    { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
-                  ],
-                },
+      {/* Starter Templates — always visible */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Start — Pre-Built Job Templates</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            {
+              name: "Shingle Tear-Off & Replace",
+              icon: "🏠",
+              data: {
+                job_type: "Roof Replacement",
+                scope_of_work: "Complete tear-off of existing roofing materials down to deck.\nInspect and repair any damaged decking (up to 2 sheets included).\nInstall ice & water shield in valleys and at eaves.\nInstall synthetic underlayment on entire roof surface.\nInstall new architectural shingles per manufacturer specifications.\nInstall new ridge cap, starter strip, and drip edge.\nReplace all pipe boots, flashing, and vents.\nInstall ridge vent for improved attic ventilation.\nComplete cleanup, magnetic nail sweep, and haul-away of all debris.\n10-year workmanship warranty included.",
+                material: "GAF Timberline HDZ Architectural Shingles",
+                recommendations: "We recommend upgrading to GAF Timberline HDZ with the Golden Pledge warranty for lifetime coverage including labor. Consider adding a powered attic fan for improved ventilation and energy savings.",
+                deposit_percent: 50,
+                pricing_tiers: [
+                  { name: "Standard", description: "GAF Timberline HDZ 30-year architectural shingles", price: null },
+                  { name: "Premium", description: "GAF Timberline Ultra HD with enhanced wind warranty (130 mph)", price: null },
+                  { name: "Elite", description: "GAF Grand Sequoia designer shingles with Golden Pledge warranty", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Tear-off & disposal (per square)", quantity: 0, unit_price: 75 },
+                  { description: "Synthetic underlayment", quantity: 0, unit_price: 45 },
+                  { description: "Ice & water shield (valleys/eaves)", quantity: 0, unit_price: 65 },
+                  { description: "Architectural shingles — installed (per sq)", quantity: 0, unit_price: 350 },
+                  { description: "Ridge cap & starter strip", quantity: 1, unit_price: 450 },
+                  { description: "Flashing & pipe boots", quantity: 1, unit_price: 350 },
+                  { description: "Drip edge (aluminum)", quantity: 0, unit_price: 4 },
+                  { description: "Ridge vent (per LF)", quantity: 0, unit_price: 12 },
+                  { description: "Decking repair (per sheet, if needed)", quantity: 0, unit_price: 85 },
+                  { description: "Cleanup, nail sweep & haul-away", quantity: 1, unit_price: 500 },
+                ],
               },
-              {
-                name: "Roof Repair",
-                data: {
-                  job_type: "Roof Repair",
-                  scope_of_work: "Identify and repair damaged/missing shingles in affected area.\nInspect and seal around all flashing and penetrations.\nCheck and reseal any exposed nail heads.\nVerify proper drainage and clear debris from valleys.",
-                  material: "Matching shingles to existing roof",
-                  recommendations: "Consider scheduling a full roof inspection to assess overall condition and remaining lifespan.",
-                  estimate_line_items: [
-                    { description: "Shingle repair/replacement", quantity: 1, unit_price: 0 },
-                    { description: "Flashing repair & sealant", quantity: 1, unit_price: 0 },
-                    { description: "Labor", quantity: 1, unit_price: 0 },
-                  ],
-                },
+            },
+            {
+              name: "Metal Roof Install",
+              icon: "🔩",
+              data: {
+                job_type: "Metal Roof Installation",
+                scope_of_work: "Remove existing roofing materials down to deck.\nInspect and repair any damaged decking.\nInstall high-temp synthetic underlayment.\nInstall standing seam metal roofing panels per manufacturer specifications.\nInstall custom-fabricated flashing at all penetrations, walls, and transitions.\nInstall metal ridge cap and drip edge.\nSeal all fasteners and joints.\nComplete cleanup and haul-away of all debris.\n20-year workmanship warranty included.",
+                material: "24-gauge standing seam metal panels (Kynar 500 finish)",
+                recommendations: "Metal roofing offers 40-70 year lifespan, superior wind resistance (140+ mph), and potential insurance premium reductions. Consider adding snow guards if applicable to your area.",
+                deposit_percent: 50,
+                pricing_tiers: [
+                  { name: "Exposed Fastener", description: "26-gauge ribbed metal panels — economical option", price: null },
+                  { name: "Standing Seam", description: "24-gauge concealed fastener panels — premium durability", price: null },
+                  { name: "Premium Standing Seam", description: "24-gauge Kynar 500 finish with 40-year paint warranty", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Tear-off & disposal (per square)", quantity: 0, unit_price: 75 },
+                  { description: "High-temp synthetic underlayment", quantity: 0, unit_price: 55 },
+                  { description: "Standing seam panels — installed (per sq)", quantity: 0, unit_price: 750 },
+                  { description: "Custom flashing fabrication & install", quantity: 1, unit_price: 0 },
+                  { description: "Metal ridge cap", quantity: 0, unit_price: 18 },
+                  { description: "Metal drip edge", quantity: 0, unit_price: 8 },
+                  { description: "Pipe boot flashing (metal)", quantity: 0, unit_price: 125 },
+                  { description: "Decking repair (per sheet, if needed)", quantity: 0, unit_price: 85 },
+                  { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
+                ],
               },
-              {
-                name: "Gutter Install",
-                data: {
-                  job_type: "Gutter Installation",
-                  scope_of_work: "Remove existing gutters and downspouts.\nInstall new seamless aluminum gutters with hidden hangers.\nInstall new downspouts with extensions.\nSeal all joints and end caps.\nVerify proper slope and drainage.",
-                  material: "5\" seamless aluminum gutters with 3x4 downspouts",
-                  estimate_line_items: [
-                    { description: "Remove existing gutters", quantity: 1, unit_price: 0 },
-                    { description: "Seamless aluminum gutters — installed", quantity: 1, unit_price: 0 },
-                    { description: "Downspouts with extensions", quantity: 1, unit_price: 0 },
-                  ],
-                },
+            },
+            {
+              name: "Roof Repair",
+              icon: "🔧",
+              data: {
+                job_type: "Roof Repair",
+                scope_of_work: "Identify and repair all damaged or missing shingles in affected area.\nInspect and reseal around all flashing, penetrations, and transitions.\nCheck and reseal any exposed or backed-out nail heads.\nReplace damaged pipe boots or vent covers as needed.\nVerify proper drainage and clear debris from valleys and gutters.\nApply roofing sealant to all vulnerable areas.\nProvide photo documentation of repairs.",
+                material: "Matching shingles to existing roof",
+                recommendations: "Consider scheduling a full roof inspection to assess overall condition and remaining lifespan. If the roof is over 15 years old, replacement may be more cost-effective than repeated repairs.",
+                deposit_percent: 0,
+                estimate_line_items: [
+                  { description: "Shingle repair/replacement (per area)", quantity: 1, unit_price: 0 },
+                  { description: "Flashing repair & sealant", quantity: 1, unit_price: 0 },
+                  { description: "Pipe boot replacement (if needed)", quantity: 0, unit_price: 125 },
+                  { description: "Valley/transition repair", quantity: 1, unit_price: 0 },
+                  { description: "Labor", quantity: 1, unit_price: 0 },
+                ],
               },
-              {
-                name: "Storm Damage",
-                data: {
-                  job_type: "Storm Damage Repair",
-                  scope_of_work: "Emergency tarp or temporary repair to prevent further water intrusion.\nFull inspection and documentation of all storm damage.\nReplace all damaged shingles, flashing, and vents.\nRepair or replace damaged decking as needed.\nCoordinate with insurance adjuster for claim documentation.",
-                  material: "Matching materials to existing roof system",
-                  recommendations: "We can assist with the insurance claim process including adjuster meetings and supplemental documentation.",
-                  estimate_line_items: [
-                    { description: "Emergency tarp / temporary repair", quantity: 1, unit_price: 0 },
-                    { description: "Damage inspection & documentation", quantity: 1, unit_price: 0 },
-                    { description: "Shingle replacement", quantity: 1, unit_price: 0 },
-                    { description: "Decking repair (if needed)", quantity: 1, unit_price: 0 },
-                    { description: "Flashing & vent replacement", quantity: 1, unit_price: 0 },
-                  ],
-                },
+            },
+            {
+              name: "Storm Damage / Insurance",
+              icon: "⛈️",
+              data: {
+                job_type: "Storm Damage Repair",
+                scope_of_work: "Emergency tarp or temporary repair to prevent further water intrusion.\nFull inspection and photo documentation of all storm damage (roof, gutters, siding, etc.).\nPrepare detailed scope of damage report for insurance claim.\nReplace all damaged shingles, flashing, and vents.\nRepair or replace damaged decking as needed.\nReplace damaged gutters and downspouts as needed.\nCoordinate with insurance adjuster for claim documentation and supplemental requests.\nComplete cleanup and haul-away of all debris.\nMatching materials warranty included.",
+                material: "Matching materials to existing roof system",
+                recommendations: "We handle the full insurance claim process — from initial inspection to adjuster meeting to supplement filing. Our team will ensure all damage is properly documented and covered. No out-of-pocket beyond your deductible in most cases.",
+                deposit_percent: 0,
+                pricing_tiers: [
+                  { name: "Insurance Claim", description: "Full replacement per insurance scope — deductible only out of pocket", price: null },
+                  { name: "Insurance + Upgrade", description: "Insurance scope + upgrade to premium materials (difference out of pocket)", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Emergency tarp / temporary repair", quantity: 1, unit_price: 250 },
+                  { description: "Damage inspection & documentation", quantity: 1, unit_price: 0 },
+                  { description: "Shingle replacement (per square)", quantity: 0, unit_price: 350 },
+                  { description: "Decking repair (per sheet)", quantity: 0, unit_price: 85 },
+                  { description: "Flashing & vent replacement", quantity: 1, unit_price: 0 },
+                  { description: "Gutter replacement (per LF)", quantity: 0, unit_price: 12 },
+                  { description: "Adjuster meeting & supplement filing", quantity: 1, unit_price: 0 },
+                  { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
+                ],
               },
-            ].map((template) => (
-              <button
-                key={template.name}
-                onClick={() => {
-                  setReport((prev) => ({
-                    ...prev,
-                    ...template.data,
-                  }))
-                  toast.success(`"${template.name}" template loaded`)
-                }}
-                className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
-              >
-                {template.name}
-              </button>
-            ))}
-          </div>
+            },
+            {
+              name: "Flat Roof / Commercial",
+              icon: "🏢",
+              data: {
+                job_type: "Flat Roof Installation",
+                scope_of_work: "Remove existing roofing membrane and insulation.\nInspect and repair roof deck as needed.\nInstall tapered insulation system for proper drainage.\nInstall TPO/EPDM single-ply membrane per manufacturer specifications.\nFlash all penetrations, curbs, and wall transitions.\nInstall new scuppers, drains, or overflow drains as specified.\nInstall new coping cap or edge metal.\nPerform flood test to verify watertight installation.\n15-year manufacturer warranty + 10-year workmanship warranty.",
+                material: "60-mil TPO single-ply membrane",
+                recommendations: "Consider a white TPO membrane for energy savings through solar reflectivity. Adding R-30 insulation can qualify for energy efficiency tax credits.",
+                deposit_percent: 40,
+                pricing_tiers: [
+                  { name: "EPDM Rubber", description: "45-mil EPDM — proven, economical flat roof system", price: null },
+                  { name: "TPO", description: "60-mil TPO — energy efficient, heat-welded seams", price: null },
+                  { name: "PVC", description: "60-mil PVC — chemical resistant, premium durability", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Tear-off & disposal", quantity: 0, unit_price: 3 },
+                  { description: "Tapered insulation system (per sq ft)", quantity: 0, unit_price: 4 },
+                  { description: "TPO membrane — installed (per sq ft)", quantity: 0, unit_price: 8 },
+                  { description: "Penetration flashing (each)", quantity: 0, unit_price: 175 },
+                  { description: "Wall transition flashing (per LF)", quantity: 0, unit_price: 22 },
+                  { description: "Edge metal / coping (per LF)", quantity: 0, unit_price: 18 },
+                  { description: "Drain / scupper installation", quantity: 0, unit_price: 350 },
+                  { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
+                ],
+              },
+            },
+            {
+              name: "Gutter Install",
+              icon: "🌧️",
+              data: {
+                job_type: "Gutter Installation",
+                scope_of_work: "Remove and dispose of existing gutters and downspouts.\nInstall new seamless aluminum gutters with hidden hangers spaced 24\" on center.\nInstall new 3x4 aluminum downspouts with extensions directing water away from foundation.\nSeal all joints, end caps, and miters.\nVerify proper slope (1/16\" per foot) for optimal drainage.\nSecure all gutter guards/screens if specified.\nClean up all work areas.",
+                material: "5\" seamless aluminum gutters with 3x4 downspouts",
+                recommendations: "Consider adding leaf guards to reduce maintenance. Upgrading to 6\" gutters is recommended for steep-pitch roofs or areas with heavy rainfall.",
+                deposit_percent: 0,
+                pricing_tiers: [
+                  { name: "Standard 5\"", description: "5\" seamless aluminum gutters — standard residential", price: null },
+                  { name: "Oversized 6\"", description: "6\" seamless aluminum gutters — high volume capacity", price: null },
+                  { name: "6\" + Leaf Guards", description: "6\" gutters with micro-mesh leaf protection system", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Remove existing gutters & disposal", quantity: 1, unit_price: 0 },
+                  { description: "Seamless aluminum gutters (per LF)", quantity: 0, unit_price: 12 },
+                  { description: "Downspouts with extensions (each)", quantity: 0, unit_price: 85 },
+                  { description: "Inside/outside miters (each)", quantity: 0, unit_price: 35 },
+                  { description: "Leaf guard system (per LF, if selected)", quantity: 0, unit_price: 8 },
+                ],
+              },
+            },
+            {
+              name: "Siding",
+              icon: "🪵",
+              data: {
+                job_type: "Siding Installation",
+                scope_of_work: "Remove existing siding and inspect wall sheathing.\nRepair or replace damaged sheathing as needed.\nInstall house wrap / moisture barrier.\nInstall new vinyl/fiber cement siding per manufacturer specifications.\nInstall J-channel, starter strip, and corner posts.\nCaulk and seal all windows, doors, and penetrations.\nInstall soffit and fascia as specified.\nComplete cleanup and haul-away of debris.",
+                material: "James Hardie fiber cement siding (ColorPlus finish)",
+                recommendations: "Fiber cement siding offers superior durability (30-50 year lifespan), fire resistance, and resale value compared to vinyl. Consider adding insulated foam backing for improved energy efficiency.",
+                deposit_percent: 40,
+                pricing_tiers: [
+                  { name: "Vinyl", description: "Premium vinyl siding — economical, low maintenance", price: null },
+                  { name: "Fiber Cement", description: "James Hardie fiber cement — premium durability & aesthetics", price: null },
+                  { name: "Fiber Cement + Insulation", description: "Hardie siding with insulated foam backing — maximum energy efficiency", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Remove existing siding & disposal", quantity: 0, unit_price: 2 },
+                  { description: "House wrap / moisture barrier (per sq ft)", quantity: 0, unit_price: 1 },
+                  { description: "Fiber cement siding — installed (per sq ft)", quantity: 0, unit_price: 10 },
+                  { description: "Window/door trim & J-channel", quantity: 1, unit_price: 0 },
+                  { description: "Corner posts (each)", quantity: 0, unit_price: 65 },
+                  { description: "Soffit & fascia (per LF)", quantity: 0, unit_price: 14 },
+                  { description: "Caulk & seal all penetrations", quantity: 1, unit_price: 0 },
+                  { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
+                ],
+              },
+            },
+          ].map((template) => (
+            <button
+              key={template.name}
+              onClick={() => {
+                setReport((prev) => ({
+                  ...prev,
+                  ...template.data,
+                }))
+                toast.success(`"${template.name}" template loaded`)
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary hover:border-primary/30 transition-colors"
+            >
+              <span>{template.icon}</span>
+              {template.name}
+            </button>
+          ))}
         </div>
-      )}
+        <p className="mt-2.5 text-[10px] text-muted-foreground">Click any template to pre-fill scope of work, line items, pricing tiers & materials. Customize pricing to match your rates.</p>
+      </div>
 
       {/* Report Preview — Edit Mode */}
       <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { LandingPageCreateSchema, LandingPageUpdateSchema, validateBody } from "@/lib/validations"
 
 export async function GET(req: Request) {
   const auth = await requireAuth(req)
@@ -23,7 +24,9 @@ export async function POST(req: Request) {
   const { userId } = auth
 
   const body = await req.json()
-  const { title, subtitle, cta_text, hero_image_url, template, utm_source, utm_campaign } = body
+  const v = validateBody(LandingPageCreateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { title, subtitle, cta_text, hero_image_url, template, utm_source, utm_campaign } = v.data!
 
   // Generate slug from title
   const baseSlug = (title || "page")
@@ -59,8 +62,9 @@ export async function PATCH(req: Request) {
   const { userId } = auth
 
   const body = await req.json()
-  const { id, ...updates } = body
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+  const v = validateBody(LandingPageUpdateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { id, ...updates } = v.data!
 
   const supabase = getServiceSupabase()
   // Verify ownership

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { WorkOrderCreateSchema, WorkOrderUpdateSchema, validateBody } from "@/lib/validations"
 
 export async function GET(req: Request) {
   const auth = await requireAuth(req)
@@ -35,11 +36,9 @@ export async function POST(req: Request) {
   if (auth instanceof NextResponse) return auth
 
   const body = await req.json()
-  const { job_id, contractor_id, assigned_to, assigned_name, title, description, priority, due_date } = body
-
-  if (!title || !contractor_id) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
+  const v = validateBody(WorkOrderCreateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { job_id, contractor_id, assigned_to, assigned_name, title, description, priority, due_date } = v.data!
 
   const supabase = getServiceSupabase()
   const { data, error } = await supabase
@@ -66,8 +65,9 @@ export async function PATCH(req: Request) {
   if (auth instanceof NextResponse) return auth
 
   const body = await req.json()
-  const { id, ...updates } = body
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+  const v = validateBody(WorkOrderUpdateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { id, ...updates } = v.data!
 
   // Auto-set completed_at when status changes to completed
   if (updates.status === "completed" && !updates.completed_at) {

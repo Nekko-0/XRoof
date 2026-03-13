@@ -120,6 +120,28 @@ export function createProposalStyles(primaryColor: string) {
       color: "#888",
       marginTop: 4,
     },
+    coverTagline: {
+      fontSize: 11,
+      color: "#888",
+      marginBottom: 20,
+      fontStyle: "italic",
+    },
+    coverAccentBar: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 8,
+      backgroundColor: toRgbStr(primaryColor),
+    },
+    coverAccentBarBottom: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 8,
+      backgroundColor: toRgbStr(primaryColor),
+    },
 
     // --- Sections ---
     sectionTitle: {

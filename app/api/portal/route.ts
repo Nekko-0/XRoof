@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { emitToUser } from "@/lib/event-emitter"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +14,18 @@ export async function GET(req: Request) {
   const token = searchParams.get("token")
 
   if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 })
+
+  // Rate limit public portal access
+  const ip = getClientIP(req)
+  const rl = rateLimit(`portal:${ip}`, 30, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
+  // Validate UUID format
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 400 })
+  }
 
   // Token is the job ID for simplicity
   const { data: job, error: jobErr } = await supabase
@@ -65,6 +79,14 @@ export async function GET(req: Request) {
     .eq("job_id", job.id)
     .order("created_at", { ascending: false })
     .limit(20)
+
+  // Emit estimate_viewed SSE event to contractor
+  if (job.contractor_id) {
+    emitToUser(job.contractor_id, {
+      type: "estimate_viewed",
+      payload: { customerName: job.customer_name, address: job.address },
+    })
+  }
 
   return NextResponse.json({
     job,

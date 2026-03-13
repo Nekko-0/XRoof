@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { sendSMS } from "@/lib/twilio"
+import { LeadCaptureSchema, validateBody } from "@/lib/validations"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,11 +11,17 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
-  const { page_id, contractor_id, name, phone, email, address, utm_source, utm_medium, utm_campaign } = await req.json()
-
-  if (!contractor_id || !name || !phone || !address) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  // Rate limit: 20 leads per minute per IP
+  const ip = getClientIP(req)
+  const rl = rateLimit(`lead:${ip}`, 20, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 })
   }
+
+  const body = await req.json()
+  const v = validateBody(LeadCaptureSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { page_id, contractor_id, name, phone, email, address, utm_source, utm_medium, utm_campaign } = v.data!
 
   // Create lead as a new job
   const { data: job, error } = await supabase

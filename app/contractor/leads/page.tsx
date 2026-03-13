@@ -64,6 +64,9 @@ export default function MyJobsPage() {
   const [googleReviewUrl, setGoogleReviewUrl] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [companyLogo, setCompanyLogo] = useState("")
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const PAGE_SIZE = 50
   const [newLead, setNewLead] = useState({
     customer_name: "",
     customer_phone: "",
@@ -132,8 +135,10 @@ export default function MyJobsPage() {
       .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url, signed_at, source")
       .eq("contractor_id", contractorId)
       .order("created_at", { ascending: false })
+      .range(0, PAGE_SIZE - 1)
 
     setJobs(jobsRaw || [])
+    setHasMore((jobsRaw?.length || 0) >= PAGE_SIZE)
 
     // Fetch aggregated costs per job
     if (jobsRaw && jobsRaw.length > 0) {
@@ -244,6 +249,25 @@ export default function MyJobsPage() {
       setJobs(jobs.map((j) => j.id === jobId ? { ...j, status: "Accepted" } : j))
     }
     setReopening(null)
+  }
+
+  const loadMore = async () => {
+    if (!hasMore || loadingMore) return
+    setLoadingMore(true)
+    const contractorId = accountId || userId
+    const { data: moreJobs } = await supabase
+      .from("jobs")
+      .select("id, address, zip_code, job_type, description, budget, status, created_at, customer_name, customer_phone, photo_urls, signature_url, signed_at, source")
+      .eq("contractor_id", contractorId!)
+      .order("created_at", { ascending: false })
+      .range(jobs.length, jobs.length + PAGE_SIZE - 1)
+    if (moreJobs && moreJobs.length > 0) {
+      setJobs(prev => [...prev, ...moreJobs])
+      setHasMore(moreJobs.length >= PAGE_SIZE)
+    } else {
+      setHasMore(false)
+    }
+    setLoadingMore(false)
   }
 
   const [sendingInvoice, setSendingInvoice] = useState<string | null>(null)
@@ -626,7 +650,7 @@ export default function MyJobsPage() {
 
       {/* Results count */}
       <p className="text-[11px] text-muted-foreground">
-        Showing {filteredJobs.length} of {jobs.length} leads
+        Showing {filteredJobs.length} of {jobs.length} leads{hasMore ? "+" : ""}
         {searchText && ` matching "${searchText}"`}
       </p>
 
@@ -1392,6 +1416,19 @@ export default function MyJobsPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Load More */}
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+          >
+            {loadingMore ? "Loading..." : "Load More Leads"}
+          </button>
         </div>
       )}
 

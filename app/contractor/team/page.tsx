@@ -8,6 +8,7 @@ import { authFetch } from "@/lib/auth-fetch"
 import {
   Users, UserPlus, Shield, Eye, Briefcase, Trash2, Mail,
   CheckCircle, Clock, Crown, RefreshCw, Check, X, ChevronDown,
+  Clipboard, HardHat,
 } from "lucide-react"
 
 type TeamMember = {
@@ -22,8 +23,10 @@ type TeamMember = {
 }
 
 const ROLES = [
-  { value: "admin", label: "Owner", description: "Full access to everything", icon: Crown, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { value: "sales", label: "Sales", description: "Leads, proposals, pipeline", icon: Briefcase, color: "text-blue-400", bg: "bg-blue-500/10" },
+  { value: "admin", label: "Admin", description: "Full access to everything", icon: Crown, color: "text-amber-400", bg: "bg-amber-500/10" },
+  { value: "office_manager", label: "Office Manager", description: "All features except billing & team", icon: Clipboard, color: "text-purple-400", bg: "bg-purple-500/10" },
+  { value: "sales", label: "Salesperson", description: "Own leads, estimates, contracts", icon: Briefcase, color: "text-blue-400", bg: "bg-blue-500/10" },
+  { value: "field_tech", label: "Field Tech", description: "Field mode, work orders, measurements", icon: HardHat, color: "text-emerald-400", bg: "bg-emerald-500/10" },
   { value: "viewer", label: "Viewer", description: "Read-only access", icon: Eye, color: "text-gray-400", bg: "bg-gray-500/10" },
 ]
 
@@ -197,20 +200,26 @@ export default function TeamPage() {
               </thead>
               <tbody>
                 {[
-                  { label: "View Jobs / Leads", owner: true, sales: true, viewer: true },
-                  { label: "Create / Edit Jobs", owner: true, sales: true, viewer: false },
-                  { label: "Send Estimates", owner: true, sales: true, viewer: false },
-                  { label: "Sign Contracts", owner: true, sales: false, viewer: false },
-                  { label: "Manage Invoices", owner: true, sales: false, viewer: false },
-                  { label: "View Analytics", owner: true, sales: true, viewer: true },
-                  { label: "Manage Team", owner: true, sales: false, viewer: false },
-                  { label: "Billing & Settings", owner: true, sales: false, viewer: false },
-                  { label: "Automations", owner: true, sales: false, viewer: false },
+                  { label: "View Dashboard", perms: [true, true, true, true, true] },
+                  { label: "View All Leads", perms: [true, true, false, false, false] },
+                  { label: "Manage Own Leads", perms: [true, true, true, false, false] },
+                  { label: "Create & Send Estimates", perms: [true, true, true, false, false] },
+                  { label: "Manage Contracts", perms: [true, true, false, false, false] },
+                  { label: "Manage Invoices", perms: [true, true, false, false, false] },
+                  { label: "View Analytics", perms: [true, true, true, false, false] },
+                  { label: "Field Mode", perms: [true, true, false, true, false] },
+                  { label: "Work Orders", perms: [true, true, false, true, true] },
+                  { label: "Dispatch Board", perms: [true, true, false, false, false] },
+                  { label: "Calendar", perms: [true, true, true, true, false] },
+                  { label: "SMS & Messages", perms: [true, true, true, false, false] },
+                  { label: "Automations", perms: [true, true, false, false, false] },
+                  { label: "Manage Team", perms: [true, false, false, false, false] },
+                  { label: "Billing & Settings", perms: [true, false, false, false, false] },
                 ].map((perm, i) => (
                   <tr key={perm.label} className={i % 2 === 0 ? "bg-secondary/40" : ""}>
                     <td className="rounded-l-lg py-2.5 pl-3 pr-4 text-foreground font-medium">{perm.label}</td>
-                    {[perm.owner, perm.sales, perm.viewer].map((allowed, j) => (
-                      <td key={j} className={`py-2.5 text-center ${j === 2 ? "rounded-r-lg" : ""}`}>
+                    {perm.perms.map((allowed, j) => (
+                      <td key={j} className={`py-2.5 text-center ${j === perm.perms.length - 1 ? "rounded-r-lg" : ""}`}>
                         {allowed ? (
                           <Check className="mx-auto h-4 w-4 text-emerald-400" />
                         ) : (

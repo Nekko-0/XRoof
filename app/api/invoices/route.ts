@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { InvoiceCreateSchema, InvoiceUpdateSchema, validateBody } from "@/lib/validations"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -7,11 +9,23 @@ export async function GET(req: Request) {
 
   if (id) {
     // Public: single invoice lookup for payment pages (/pay/[id])
+    // Rate limit public access to prevent enumeration
+    const ip = getClientIP(req)
+    const rl = rateLimit(`invoice-view:${ip}`, 30, 60_000)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+    }
+
+    // Validate UUID format to prevent enumeration
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
+
     const supabase = getServiceSupabase()
 
     const { data, error } = await supabase
       .from("invoices")
-      .select("*")
+      .select("id, invoice_number, customer_name, customer_email, customer_phone, address, job_type, amount, status, notes, discount, payment_methods, line_items, scope, extra_photo_urls, logo_url, contractor_id, job_id, created_at")
       .eq("id", id)
       .single()
 
@@ -68,11 +82,9 @@ export async function POST(req: Request) {
   const supabase = getServiceSupabase()
 
   const body = await req.json()
-  const { job_id, customer_name, customer_email, customer_phone, address, job_type, amount, notes, discount, payment_methods, line_items, hidden_fields, scope, extra_photo_urls, logo_url } = body
-
-  if (!customer_name || !amount) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
+  const v = validateBody(InvoiceCreateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { job_id, customer_name, customer_email, customer_phone, address, job_type, amount, notes, discount, payment_methods, line_items, hidden_fields, scope, extra_photo_urls, logo_url } = v.data!
 
   // Generate invoice number
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`
@@ -113,9 +125,9 @@ export async function PATCH(req: Request) {
   const supabase = getServiceSupabase()
 
   const body = await req.json()
-  const { id, ...updates } = body
-
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+  const iv = validateBody(InvoiceUpdateSchema, body)
+  if (iv.error) return NextResponse.json({ error: iv.error }, { status: 400 })
+  const { id, ...updates } = iv.data!
 
   // Verify the invoice belongs to the authenticated user
   const { data: existing, error: lookupError } = await supabase

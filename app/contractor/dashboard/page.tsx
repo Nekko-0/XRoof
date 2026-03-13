@@ -15,8 +15,9 @@ import { OnboardingWizard } from "@/components/onboarding-wizard"
 import {
   CheckCircle, Ruler, TrendingUp, Plus, Calendar,
   AlertTriangle, Bell, Clock, ArrowRight, BarChart3, Target,
-  Send, LayoutDashboard, Circle, X, Zap, FileText, Star,
+  Send, LayoutDashboard, Circle, X, Zap, FileText, Star, Download,
 } from "lucide-react"
+import { HelpTooltip } from "@/components/help-tooltip"
 
 type Job = {
   id: string
@@ -331,6 +332,127 @@ export default function ContractorDashboard() {
     benchmark: (d as any).benchmark ?? 7,
   }))
 
+  // CSV Export
+  const handleExportCSV = () => {
+    if (!analytics) return
+    const rows: string[][] = []
+
+    // Header info
+    rows.push(["XRoof Analytics Export", new Date().toLocaleDateString()])
+    rows.push([])
+
+    // Summary
+    rows.push(["SUMMARY"])
+    rows.push(["Metric", "Value"])
+    rows.push(["Total Revenue", `$${analytics.totalRevenue.toLocaleString()}`])
+    rows.push(["Jobs Completed", String(analytics.totalJobsCompleted)])
+    rows.push(["Total Leads", String(analytics.totalLeads || 0)])
+    rows.push(["Close Rate", `${analytics.closeRate || 0}%`])
+    rows.push(["Accept Rate", `${analytics.acceptRate || 0}%`])
+    rows.push(["Total Costs", `$${(analytics.totalCosts || 0).toLocaleString()}`])
+    rows.push(["Net Profit", `$${(analytics.totalProfit || 0).toLocaleString()}`])
+    rows.push(["Avg Margin", `${analytics.avgMargin || 0}%`])
+    rows.push(["Outstanding Invoices", `$${outstandingTotal.toLocaleString()}`])
+    rows.push(["Pipeline Value", `$${pipelineValue.toLocaleString()}`])
+    rows.push([])
+
+    // Monthly breakdown
+    rows.push(["MONTHLY BREAKDOWN"])
+    rows.push(["Month", "Revenue", "Costs", "Profit", "Jobs", "Cumulative Revenue"])
+    for (const m of analytics.monthly) {
+      rows.push([m.month, `$${m.revenue}`, `$${m.costs}`, `$${m.profit}`, String(m.jobs), `$${m.cumulative}`])
+    }
+    rows.push([])
+
+    // Funnel data
+    if (funnelData) {
+      rows.push(["CONVERSION FUNNEL (30 DAYS)"])
+      rows.push(["Stage", "Count"])
+      rows.push(["Leads", String(funnelData.funnel.leads)])
+      rows.push(["Estimates Sent", String(funnelData.funnel.estimates_sent)])
+      rows.push(["Estimates Viewed", String(funnelData.funnel.estimates_viewed)])
+      rows.push(["Accepted", String(funnelData.funnel.accepted)])
+      rows.push(["Paid", String(funnelData.funnel.paid)])
+      rows.push([])
+      rows.push(["CONVERSION RATES"])
+      rows.push(["Lead to Estimate", `${funnelData.conversion_rates.lead_to_estimate}%`])
+      rows.push(["Estimate to Viewed", `${funnelData.conversion_rates.estimate_to_view}%`])
+      rows.push(["Viewed to Accepted", `${funnelData.conversion_rates.view_to_accept}%`])
+      rows.push(["Accepted to Paid", `${funnelData.conversion_rates.accept_to_paid}%`])
+      rows.push(["Overall", `${funnelData.conversion_rates.overall}%`])
+      rows.push([])
+
+      // By source
+      if (Object.keys(funnelData.by_source).length > 0) {
+        rows.push(["CLOSE RATE BY SOURCE"])
+        rows.push(["Source", "Leads", "Accepted", "Rate"])
+        for (const [source, data] of Object.entries(funnelData.by_source)) {
+          rows.push([source, String(data.leads), String(data.accepted), `${data.rate}%`])
+        }
+        rows.push([])
+      }
+
+      // By job type
+      if (Object.keys(funnelData.by_job_type).length > 0) {
+        rows.push(["PERFORMANCE BY JOB TYPE"])
+        rows.push(["Job Type", "Leads", "Accepted", "Rate", "Avg Value"])
+        for (const [jt, data] of Object.entries(funnelData.by_job_type)) {
+          rows.push([jt, String(data.leads), String(data.accepted), `${data.rate}%`, `$${data.avg_value.toLocaleString()}`])
+        }
+        rows.push([])
+      }
+
+      // Revenue pipeline
+      rows.push(["REVENUE PIPELINE"])
+      rows.push(["Pipeline", `$${funnelData.revenue.pipeline.toLocaleString()}`])
+      rows.push(["Closed", `$${funnelData.revenue.closed.toLocaleString()}`])
+      rows.push(["Lost", `$${funnelData.revenue.lost.toLocaleString()}`])
+      rows.push([])
+    }
+
+    // Deal velocity
+    if (analytics.dealVelocity && analytics.dealVelocity.length > 0) {
+      rows.push(["DEAL VELOCITY"])
+      rows.push(["Stage", "Avg Days", "Benchmark"])
+      for (const d of analytics.dealVelocity) {
+        rows.push([d.stage, String(d.avgDays), String(d.benchmark)])
+      }
+      rows.push([])
+    }
+
+    // Zip revenue
+    if (analytics.zipRevenue && analytics.zipRevenue.length > 0) {
+      rows.push(["REVENUE BY ZIP CODE"])
+      rows.push(["Zip Code", "Revenue", "Job Count"])
+      for (const z of analytics.zipRevenue) {
+        rows.push([z.zip, `$${z.revenue.toLocaleString()}`, String(z.count)])
+      }
+      rows.push([])
+    }
+
+    // Close rate trend
+    if (analytics.closeRateTrend && analytics.closeRateTrend.length > 0) {
+      rows.push(["CLOSE RATE TREND"])
+      rows.push(["Month", "Rate"])
+      for (const t of analytics.closeRateTrend) {
+        rows.push([t.month, `${t.rate}%`])
+      }
+    }
+
+    // Build CSV string
+    const csvContent = rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `XRoof-Analytics-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Onboarding Wizard */}
@@ -471,11 +593,11 @@ export default function ContractorDashboard() {
         <div className="flex flex-col gap-3">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm text-center">
             <p className="text-3xl font-bold text-primary">{closeRate}%</p>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Close Rate</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Close Rate <HelpTooltip text="Percentage of leads that resulted in a signed contract. Close Rate = Contracts Signed ÷ Total Leads × 100" /></p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm text-center">
             <p className="text-2xl font-bold text-foreground">${pipelineValue.toLocaleString()}</p>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pipeline Value</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pipeline Value <HelpTooltip text="Total estimated value of all active (non-completed, non-hidden) leads in your pipeline" /></p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm text-center">
             <p className="text-2xl font-bold text-foreground">{totalJobs}</p>
@@ -490,7 +612,7 @@ export default function ContractorDashboard() {
           {/* Conversion Rates */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              <TrendingUp className="h-3.5 w-3.5" /> Conversion Rates (30 days)
+              <TrendingUp className="h-3.5 w-3.5" /> Conversion Rates (30 days) <HelpTooltip text="How leads move through your pipeline: leads → estimates sent → viewed → accepted → paid" />
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -516,7 +638,7 @@ export default function ContractorDashboard() {
           {/* Close Rate by Source */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              <BarChart3 className="h-3.5 w-3.5" /> Close Rate by Source (30 days)
+              <BarChart3 className="h-3.5 w-3.5" /> Close Rate by Source (30 days) <HelpTooltip text="Which lead sources (organic, referral, landing page, etc.) convert to signed contracts most often" />
             </h3>
             {Object.keys(funnelData.by_source).length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-6">No data yet</p>
@@ -604,9 +726,18 @@ export default function ContractorDashboard() {
       {/* Analytics */}
       {analytics && (
         <div className="flex flex-col gap-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <TrendingUp className="h-3.5 w-3.5" /> Performance
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-3.5 w-3.5" /> Performance
+            </h3>
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            >
+              <Download className="h-3 w-3" />
+              Export CSV
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <MiniStatCard
               label="Total Revenue"
@@ -716,7 +847,7 @@ export default function ContractorDashboard() {
             )}
             {analytics.closeRateTrend && analytics.closeRateTrend.some((t) => t.rate > 0) && (
               <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Close Rate Trend</p>
+                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Close Rate Trend <HelpTooltip text="Monthly close rate over time — helps identify seasonal patterns and improvement trends" /></p>
                 <div className="flex items-end gap-2 h-24">
                   {analytics.closeRateTrend.map((t) => (
                     <div key={t.month} className="flex flex-1 flex-col items-center gap-1">

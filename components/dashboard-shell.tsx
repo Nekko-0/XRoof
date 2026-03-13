@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck } from "lucide-react"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { NAV_PERMISSIONS } from "@/lib/permissions"
 import { NotificationBell } from "@/components/notification-bell"
 import { CommandPalette } from "@/components/command-palette"
 import { useRole } from "@/lib/role-context"
@@ -34,6 +35,7 @@ const contractorNav: NavItem[] = [
   { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
   { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true },
   { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true },
+  { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true },
   { label: "Materials", href: "/contractor/materials", icon: Calculator },
   { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true },
   { label: "Support", href: "/contractor/messages", icon: MessageSquare },
@@ -65,7 +67,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { role: teamRole, accountId } = useRole()
+  const { role: teamRole, accountId, can } = useRole()
   const isContractor = role === "contractor"
 
   // Search
@@ -99,12 +101,16 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  // Filter nav items based on team role (admin sees everything, others see non-adminOnly)
+  // Filter nav items based on granular permissions
   const navItems = useMemo(() => {
     const items = role === "admin" ? adminNav : contractorNav
     if (role === "admin" || teamRole === "admin") return items
-    return items.filter((item) => !item.adminOnly)
-  }, [role, teamRole])
+    return items.filter((item) => {
+      const requiredPerm = NAV_PERMISSIONS[item.href]
+      if (!requiredPerm) return !item.adminOnly // fallback to legacy check
+      return can(requiredPerm)
+    })
+  }, [role, teamRole, can])
 
   const roleLabel = role === "admin" ? "Admin" : teamRole === "admin" ? "Owner" : "Contractor"
 

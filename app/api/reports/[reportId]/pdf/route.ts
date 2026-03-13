@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { generateProposalPdf } from "@/lib/pdf/generate-proposal"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +15,13 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ reportId: string }> }
 ) {
+  // Rate limit: 5 PDF generations per minute per IP
+  const ip = getClientIP(request)
+  const rl = rateLimit(`pdf:${ip}`, 5, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many PDF requests. Try again shortly." }, { status: 429 })
+  }
+
   const { reportId } = await params
   const url = new URL(request.url)
   const token = url.searchParams.get("token")
@@ -74,7 +82,7 @@ export async function GET(
   if (contractorId) {
     const { data: p } = await supabaseAdmin
       .from("profiles")
-      .select("company_name, widget_color, logo_url, phone, email, business_address, license_number")
+      .select("company_name, widget_color, logo_url, phone, email, business_address, license_number, company_tagline")
       .eq("id", contractorId)
       .single()
 

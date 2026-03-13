@@ -224,6 +224,17 @@ export default function FieldModePage() {
     const file = e.target.files?.[0]
     if (!file || !photoJobId || !accountId) return
 
+    // Validate file size and type
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large (max 10MB)")
+      return
+    }
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)) {
+      toast.error("Only image files are supported")
+      return
+    }
+
     setUploading(true)
     try {
       const ext = file.name.split(".").pop() || "jpg"

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Search, Save, FolderOpen, HelpCircle } from "lucide-react"
+import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Search, Save, FolderOpen, HelpCircle, Sparkles } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 
 // Pitch factor lookup table
@@ -112,6 +112,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const currentMarkersRef = useRef<any[]>([])
   const geocoderRef = useRef<any>(null)
   const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null)
+  const [solarLoading, setSolarLoading] = useState(false)
+  const [solarBanner, setSolarBanner] = useState<string | null>(null)
   const drawingActiveRef = useRef(false)
   const activePlaneIndexRef = useRef(0)
   const addressMarkerRef = useRef<any>(null)
@@ -368,6 +370,135 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       } else {
         alert("Address not found (status: " + status + "). Please try a more specific address.")
       }
+    })
+  }
+
+  const handleAutoDetect = async () => {
+    if (!latLng) return
+    setSolarLoading(true)
+    setSolarBanner(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/solar/building-insights", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ lat: latLng.lat, lng: latLng.lng }),
+      })
+
+      if (!res.ok) {
+        setSolarBanner("No roof data available for this address. Draw manually.")
+        setSolarLoading(false)
+        return
+      }
+
+      const data = await res.json()
+      if (!data.available || !data.segments?.length) {
+        setSolarBanner("No roof data available for this address. Draw manually.")
+        setSolarLoading(false)
+        return
+      }
+
+      // Convert solar segments to RoofPlane format
+      const newPlanes: RoofPlane[] = data.segments.map((seg: any) => ({
+        name: seg.name,
+        points: seg.points,
+        area_sqft: seg.area_sqft,
+        edgeTypes: seg.points.map(() => "unspecified" as EdgeType),
+        edge_lengths: [],
+      }))
+
+      setPlanes(newPlanes)
+      setActivePlaneIndex(0)
+
+      // Set pitch from the largest segment (most representative)
+      if (data.segments[0]?.pitchRatio) {
+        const matchedPitch = PITCH_DATA.find(p => p.pitch === data.segments[0].pitchRatio)
+        if (matchedPitch) {
+          setSelectedPitch(matchedPitch.pitch)
+          setPitchFactor(matchedPitch.factor)
+        }
+      }
+
+      // Set waste factor based on complexity
+      if (data.segments.length > 4) {
+        setWastePercent(20) // Complex roofs need more waste
+      } else if (data.segments.length > 2) {
+        setWastePercent(15)
+      }
+
+      setSolarBanner(`AI detected ${data.segments.length} roof sections (${Math.round(data.totalAreaSqft).toLocaleString()} sqft) — drag vertices to refine`)
+
+      // Render polygons on map
+      renderPlanesOnMap(newPlanes)
+    } catch (err) {
+      console.error("[Solar]", err)
+      setSolarBanner("Auto-detect failed. Draw manually.")
+    }
+    setSolarLoading(false)
+  }
+
+  // Render planes on map (used by auto-detect and load measurement)
+  const renderPlanesOnMap = (planesToRender: RoofPlane[]) => {
+    if (!mapInstanceRef.current || !window.google?.maps) return
+
+    // Clear existing polygons and markers
+    for (const p of polygonsRef.current) p?.setMap(null)
+    for (const m of markersRef.current) m?.setMap(null)
+    polygonsRef.current = []
+    markersRef.current = []
+
+    planesToRender.forEach((plane, pIdx) => {
+      if (plane.points.length < 3) return
+      const path = plane.points.map(p => new window.google.maps.LatLng(p.lat, p.lng))
+
+      const polygon = new window.google.maps.Polygon({
+        paths: path,
+        strokeColor: "#3b82f6",
+        strokeWeight: 2,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.15,
+        map: mapInstanceRef.current,
+      })
+      polygonsRef.current.push(polygon)
+
+      // Add draggable vertex markers
+      plane.points.forEach((pt, ptIdx) => {
+        const marker = new window.google.maps.Marker({
+          position: { lat: pt.lat, lng: pt.lng },
+          map: mapInstanceRef.current,
+          draggable: true,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#3b82f6",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#fff",
+          },
+        })
+
+        marker.addListener("dragend", () => {
+          const pos = marker.getPosition()
+          if (!pos) return
+          setPlanes(prev => {
+            const updated = [...prev]
+            if (updated[pIdx]) {
+              updated[pIdx] = {
+                ...updated[pIdx],
+                points: updated[pIdx].points.map((p, i) =>
+                  i === ptIdx ? { lat: pos.lat(), lng: pos.lng() } : p
+                ),
+              }
+            }
+            return updated
+          })
+        })
+
+        markersRef.current.push(marker)
+      })
     })
   }
 
@@ -1120,7 +1251,25 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         >
           {!mapLoaded ? "Loading Maps..." : "Search"}
         </button>
+        {latLng && (
+          <button
+            onClick={handleAutoDetect}
+            disabled={solarLoading}
+            className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-50"
+          >
+            <Sparkles className="mr-1.5 inline h-3.5 w-3.5" />
+            {solarLoading ? "Detecting..." : "Auto-Detect Roof"}
+          </button>
+        )}
       </div>
+
+      {/* Solar AI Banner */}
+      {solarBanner && (
+        <div className={`rounded-xl px-4 py-2.5 text-sm ${solarBanner.includes("detected") ? "border border-violet-500/30 bg-violet-500/10 text-violet-300" : "border border-amber-500/30 bg-amber-500/10 text-amber-300"}`}>
+          <Sparkles className="mr-1.5 inline h-3.5 w-3.5" />
+          {solarBanner}
+        </div>
+      )}
 
       {/* Map / Street View Tabs */}
       {latLng && (

@@ -9,13 +9,14 @@ import { useRole } from "@/lib/role-context"
 import {
   Building2, Phone, Mail, MapPin, Star, DollarSign,
   Palette, Upload, Link2, Calendar, CreditCard, MessageSquare,
-  Bell, Save, CheckCircle, ExternalLink, Settings,
+  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database,
 } from "lucide-react"
 
 type BookingHours = { start: string; end: string; days: number[] }
 
 type SettingsProfile = {
   company_name: string
+  company_tagline: string
   phone: string
   email: string
   service_zips: string[]
@@ -46,6 +47,7 @@ const TABS = [
   { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "email-templates", label: "Templates", icon: Mail },
+  { id: "data", label: "Data", icon: Database },
 ] as const
 
 type TabId = (typeof TABS)[number]["id"]
@@ -92,13 +94,13 @@ export default function SettingsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, phone, email, service_zips, google_review_url, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
+        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
         .eq("id", accountId)
         .single()
 
       if (error || !data) {
         setProfile({
-          company_name: "", phone: "", email: "", service_zips: [],
+          company_name: "", company_tagline: "", phone: "", email: "", service_zips: [],
           google_review_url: "", widget_color: "#059669", logo_url: "",
           widget_price_per_sqft: null, sms_notifications: {},
           google_calendar_connected: false, quickbooks_connected: false, quickbooks_last_sync: null,
@@ -109,6 +111,7 @@ export default function SettingsPage() {
       } else {
         setProfile({
           company_name: data.company_name || "",
+          company_tagline: data.company_tagline || "",
           phone: data.phone || "",
           email: data.email || "",
           service_zips: data.service_zips || [],
@@ -246,6 +249,13 @@ export default function SettingsPage() {
               placeholder="e.g. Smith Roofing LLC"
             />
             <SettingsField
+              icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
+              label="Company Tagline"
+              value={profile.company_tagline}
+              onChange={(v) => setProfile({ ...profile, company_tagline: v })}
+              placeholder="e.g. Quality Roofing You Can Trust — Since 2005"
+            />
+            <SettingsField
               icon={<Phone className="h-4 w-4 text-muted-foreground" />}
               label="Phone Number"
               value={profile.phone}
@@ -278,6 +288,7 @@ export default function SettingsPage() {
             <button
               onClick={() => saveProfile({
                 company_name: profile.company_name,
+                company_tagline: profile.company_tagline,
                 phone: profile.phone,
                 email: profile.email,
                 service_zips: profile.service_zips,
@@ -925,6 +936,82 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {activeTab === "data" && (
+        <DataExportTab />
+      )}
+    </div>
+  )
+}
+
+function DataExportTab() {
+  const [exporting, setExporting] = useState(false)
+  const toast = useToast()
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { toast.error("Not authenticated"); setExporting(false); return }
+
+      const res = await fetch("/api/export", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }))
+        toast.error(err.error || "Export failed")
+        setExporting(false)
+        return
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `xroof-export-${new Date().toISOString().split("T")[0]}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success("Export downloaded!")
+    } catch {
+      toast.error("Export failed")
+    }
+    setExporting(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+          Data Export
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Download all your data as a ZIP file containing CSV spreadsheets.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h4 className="text-sm font-semibold text-foreground mb-3">Export All Data</h4>
+        <p className="text-xs text-muted-foreground mb-4">
+          This will download a ZIP file containing:
+        </p>
+        <ul className="text-xs text-muted-foreground mb-6 space-y-1 ml-4 list-disc">
+          <li><strong>jobs.csv</strong> — All leads and jobs with status, dates, amounts</li>
+          <li><strong>customers.csv</strong> — Customer names, contact info, notes</li>
+          <li><strong>invoices.csv</strong> — All invoices with amounts and payment status</li>
+          <li><strong>sms_messages.csv</strong> — SMS conversation history</li>
+          <li><strong>work_orders.csv</strong> — Work orders with assignments and status</li>
+          <li><strong>appointments.csv</strong> — All scheduled appointments</li>
+        </ul>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" />
+          {exporting ? "Exporting..." : "Download All Data (ZIP)"}
+        </button>
+      </div>
     </div>
   )
 }

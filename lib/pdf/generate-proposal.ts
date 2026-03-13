@@ -28,6 +28,7 @@ interface GenerateOptions {
     email?: string
     business_address?: string
     license_number?: string
+    company_tagline?: string
   }
 }
 
@@ -63,6 +64,7 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
     logo_url: (profile.logo_url || report.logo_url || "") as string,
     business_address: (profile.business_address || "") as string,
     license_number: (profile.license_number || "") as string,
+    company_tagline: (profile.company_tagline || "") as string,
     customer_name: (report.customer_name || "") as string,
     customer_address: (report.customer_address || "") as string,
     customer_phone: (report.customer_phone || "") as string,

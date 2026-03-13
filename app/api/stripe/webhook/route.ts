@@ -2,6 +2,7 @@ import { getStripe } from "@/lib/stripe"
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { getQBClient, syncCustomerToQB, syncInvoiceToQB, syncPaymentToQB } from "@/lib/quickbooks"
+import { emitToUser } from "@/lib/event-emitter"
 
 export async function POST(req: Request) {
   const stripe = getStripe()
@@ -69,11 +70,19 @@ export async function POST(req: Request) {
             .eq("id", invoiceId)
 
           // Auto-advance pipeline: Completed (only when ALL invoices for this job are paid)
-          const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id").eq("id", invoiceId).single()
+          const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id, amount, customer_name").eq("id", invoiceId).single()
           if (inv?.job_id) {
             const { data: allInvoices } = await supabase.from("invoices").select("status").eq("job_id", inv.job_id)
             if (allInvoices?.every((i: any) => i.status === "paid")) {
               await supabase.from("jobs").update({ status: "Completed", completed_at: new Date().toISOString() }).eq("id", inv.job_id)
+            }
+
+            // Emit real-time SSE event
+            if (inv.contractor_id) {
+              emitToUser(inv.contractor_id, {
+                type: "payment_received",
+                payload: { amount: inv.amount, customerName: inv.customer_name },
+              })
             }
 
             // Fire payment_received automation trigger

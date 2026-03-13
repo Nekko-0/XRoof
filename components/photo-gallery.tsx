@@ -43,7 +43,19 @@ export function PhotoGallery({ jobId, contractorId }: PhotoGalleryProps) {
     if (!files || files.length === 0) return
     setUploading(true)
 
+    const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
+
     for (const file of Array.from(files)) {
+      if (file.size > MAX_SIZE) {
+        alert(`File "${file.name}" is too large (max 10MB)`)
+        continue
+      }
+      if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)) {
+        alert(`File "${file.name}" is not a supported image type`)
+        continue
+      }
+
       const path = `job-${jobId}/${category}-${Date.now()}-${file.name}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("job-photos")

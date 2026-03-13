@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { sendSMS } from "@/lib/twilio"
+import { BookingCreateSchema, validateBody } from "@/lib/validations"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,11 +13,10 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
-  const { contractor_id, job_id, date, time, customer_name, customer_email, customer_phone, notes } = await req.json()
-
-  if (!contractor_id || !date || !time || !customer_name) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
+  const body = await req.json()
+  const bv = validateBody(BookingCreateSchema, body)
+  if (bv.error) return NextResponse.json({ error: bv.error }, { status: 400 })
+  const { contractor_id, job_id, date, time, customer_name, customer_email, customer_phone, notes } = bv.data!
 
   // Verify booking is enabled
   const { data: profile } = await supabase

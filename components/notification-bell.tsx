@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Bell } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useEventListener } from "@/components/event-provider"
 
 type Notification = {
   id: string
@@ -86,6 +87,14 @@ export function NotificationBell() {
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  // Refresh notifications immediately when SSE events arrive
+  const handleSSEEvent = useRef(() => { fetchNotifications() }).current
+  useEventListener("sms_received", handleSSEEvent)
+  useEventListener("contract_signed", handleSSEEvent)
+  useEventListener("payment_received", handleSSEEvent)
+  useEventListener("estimate_viewed", handleSSEEvent)
+  useEventListener("notification", handleSSEEvent)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

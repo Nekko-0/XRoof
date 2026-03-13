@@ -2,21 +2,26 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { hasPermission, type Role, type Permission } from "@/lib/permissions"
 
 type RoleInfo = {
   role: "admin" | "sales" | "viewer"
+  granularRole: Role   // Full role including office_manager, field_tech
   accountId: string   // The contractor owner's ID (used for all data queries)
   userId: string      // The logged-in user's own ID
   isOwner: boolean    // true if this user is the account owner
   loading: boolean
+  can: (permission: Permission) => boolean
 }
 
 const RoleContext = createContext<RoleInfo>({
   role: "admin",
+  granularRole: "owner",
   accountId: "",
   userId: "",
   isOwner: true,
   loading: true,
+  can: () => true,
 })
 
 export function useRole() {
@@ -26,10 +31,12 @@ export function useRole() {
 export function RoleProvider({ children }: { children: ReactNode }) {
   const [roleInfo, setRoleInfo] = useState<RoleInfo>({
     role: "admin",
+    granularRole: "owner",
     accountId: "",
     userId: "",
     isOwner: true,
     loading: true,
+    can: () => true,
   })
 
   useEffect(() => {
@@ -55,21 +62,33 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           .eq("account_id", profile.parent_account_id)
           .single()
 
+        const memberRole = (member?.role || "viewer") as string
+        // Map granular roles to legacy role for backward compatibility
+        const legacyRole: "admin" | "sales" | "viewer" =
+          ["admin", "office_manager"].includes(memberRole) ? "admin" :
+          ["sales"].includes(memberRole) ? "sales" :
+          "viewer"
+        const granular = memberRole as Role
+
         setRoleInfo({
-          role: (member?.role as "admin" | "sales" | "viewer") || "viewer",
+          role: legacyRole,
+          granularRole: granular,
           accountId: profile.parent_account_id,
           userId: uid,
           isOwner: false,
           loading: false,
+          can: (p: Permission) => hasPermission(granular, p),
         })
       } else {
         // Account owner
         setRoleInfo({
           role: "admin",
+          granularRole: "owner",
           accountId: uid,
           userId: uid,
           isOwner: true,
           loading: false,
+          can: () => true,
         })
       }
     }
