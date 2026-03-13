@@ -114,6 +114,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null)
   const [solarLoading, setSolarLoading] = useState(false)
   const [solarBanner, setSolarBanner] = useState<string | null>(null)
+  const [solarClickMode, setSolarClickMode] = useState(false)
+  const solarClickModeRef = useRef(false)
   const drawingActiveRef = useRef(false)
   const activePlaneIndexRef = useRef(0)
   const addressMarkerRef = useRef<any>(null)
@@ -239,9 +241,19 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       setMapZoom(map.getZoom() || 20)
     })
 
-    // Click handler for drawing — use ref to avoid stale closure
+    // Click handler for drawing + solar click-to-detect — uses refs to avoid stale closures
     map.addListener("click", (e: any) => {
       if (satPitchActiveRef.current) return
+
+      // Solar click-to-detect mode: use clicked point for Solar API
+      if (solarClickModeRef.current) {
+        const lat = e.latLng.lat()
+        const lng = e.latLng.lng()
+        solarClickModeRef.current = false
+        runSolarDetection(lat, lng)
+        return
+      }
+
       if (!drawingActiveRef.current) return
       // Remove the red pin on first drawing click so it doesn't interfere
       if (addressMarkerRef.current) {
@@ -373,10 +385,37 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     })
   }
 
-  const handleAutoDetect = async () => {
+  const handleAutoDetect = () => {
     if (!latLng) return
+    if (solarClickMode) {
+      // Cancel click mode
+      setSolarClickMode(false)
+      solarClickModeRef.current = false
+      setSolarBanner(null)
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setOptions({ draggableCursor: null })
+      }
+      return
+    }
+    // Enter click-to-detect mode
+    setSolarClickMode(true)
+    solarClickModeRef.current = true
+    setSolarBanner("Click on the roof you want to detect")
+    setDrawingActive(false)
+    drawingActiveRef.current = false
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({ draggableCursor: "crosshair" })
+    }
+  }
+
+  const runSolarDetection = async (clickLat: number, clickLng: number) => {
+    setSolarClickMode(false)
+    solarClickModeRef.current = false
     setSolarLoading(true)
     setSolarBanner(null)
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({ draggableCursor: null })
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch("/api/solar/building-insights", {
@@ -385,11 +424,11 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ lat: latLng.lat, lng: latLng.lng }),
+        body: JSON.stringify({ lat: clickLat, lng: clickLng }),
       })
 
       if (!res.ok) {
-        setSolarBanner("No roof data available for this address. Draw manually.")
+        setSolarBanner("No roof data available for this location. Draw manually.")
         setSolarLoading(false)
         return
       }
@@ -397,9 +436,9 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       const data = await res.json()
       if (!data.available || !data.segments?.length) {
         if (data.error === "wrong_building") {
-          setSolarBanner("AI detected a nearby building instead of the target house. Try moving the pin closer to the roof, or draw manually.")
+          setSolarBanner("Could not match a building at that point. Try clicking directly on the roof.")
         } else {
-          setSolarBanner("No roof data available for this address. Draw manually.")
+          setSolarBanner("No roof data available for this location. Draw manually.")
         }
         setSolarLoading(false)
         return
@@ -428,7 +467,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
       // Set waste factor based on complexity
       if (data.segments.length > 4) {
-        setWastePercent(20) // Complex roofs need more waste
+        setWastePercent(20)
       } else if (data.segments.length > 2) {
         setWastePercent(15)
       }
@@ -1259,10 +1298,10 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           <button
             onClick={handleAutoDetect}
             disabled={solarLoading}
-            className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-50"
+            className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${solarClickMode ? "bg-amber-600 hover:bg-amber-500" : "bg-violet-600 hover:bg-violet-500"}`}
           >
             <Sparkles className="mr-1.5 inline h-3.5 w-3.5" />
-            {solarLoading ? "Detecting..." : "Auto-Detect Roof"}
+            {solarLoading ? "Detecting..." : solarClickMode ? "Cancel Detection" : "Auto-Detect Roof"}
           </button>
         )}
       </div>

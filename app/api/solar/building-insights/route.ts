@@ -96,9 +96,9 @@ function transformSolarData(data: any, requestedLat: number, requestedLng: numbe
   const center = data.center || solarPanels.roofSegmentStats[0].center
   const buildingCenter = { lat: center.latitude, lng: center.longitude }
 
-  // Check if the Solar API returned the correct building (within 40m of requested point)
+  // Check if the Solar API returned the correct building (within 50m of clicked point)
   const dist = distanceMeters(requestedLat, requestedLng, buildingCenter.lat, buildingCenter.lng)
-  if (dist > 40) {
+  if (dist > 50) {
     return {
       available: false,
       segments: [],
