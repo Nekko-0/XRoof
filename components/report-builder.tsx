@@ -809,6 +809,27 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                 ],
               },
             },
+            {
+              name: "Roof Inspection",
+              icon: "🔍",
+              data: {
+                job_type: "Roof Inspection",
+                scope_of_work: "Complete visual inspection of all roofing components.\nInspect shingles/membrane for damage, wear, curling, or missing pieces.\nInspect flashing at all walls, chimneys, vents, and penetrations.\nCheck ridge caps, hip caps, and rake edges.\nInspect valleys for proper drainage and wear.\nCheck pipe boots and vent covers for cracks or deterioration.\nInspect gutters and downspouts for proper attachment and drainage.\nCheck attic for ventilation, moisture, and structural concerns.\nProvide detailed photo documentation with annotations.\nDeliver written inspection report with findings and recommendations.",
+                material: "N/A — inspection only",
+                recommendations: "A professional roof inspection should be conducted annually and after major storms. This report can be used for insurance documentation, real estate transactions, or maintenance planning.",
+                deposit_percent: 0,
+                pricing_tiers: [
+                  { name: "Standard Inspection", description: "Visual exterior inspection with photo report", price: null },
+                  { name: "Full Inspection", description: "Exterior + attic interior + moisture scan", price: null },
+                ],
+                estimate_line_items: [
+                  { description: "Roof inspection fee", quantity: 1, unit_price: 0 },
+                  { description: "Written report with photos", quantity: 1, unit_price: 0 },
+                  { description: "Attic inspection (if selected)", quantity: 0, unit_price: 75 },
+                  { description: "Moisture/infrared scan (if selected)", quantity: 0, unit_price: 150 },
+                ],
+              },
+            },
           ].map((template) => (
             <button
               key={template.name}

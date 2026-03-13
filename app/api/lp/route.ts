@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   // Fetch contractor branding
   const { data: branding } = await supabase
     .from("profiles")
-    .select("company_name, logo_url, widget_color, phone, email, service_zips, widget_price_per_sqft, google_review_url")
+    .select("company_name, logo_url, widget_color, phone, email, service_zips, widget_price_per_sqft, google_review_url, google_reviews_cache")
     .eq("id", page.contractor_id)
     .single()
 

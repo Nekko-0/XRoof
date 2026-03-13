@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react"
 import { BeforeAfterSlider } from "@/components/before-after-slider"
+import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
 
 type PortalMessage = {
   id: string
@@ -81,6 +82,7 @@ type PortalData = {
     google_review_url: string
     widget_color: string
     logo_url: string
+    google_reviews_cache: { rating: number; reviewCount: number } | null
   }
   report: {
     id: string
@@ -305,7 +307,17 @@ export default function HomeownerPortal() {
             {contractor.logo_url && <img src={contractor.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />}
             <div>
               <h1 className="text-lg font-bold">{companyName}</h1>
-              <p className="text-xs text-gray-400">Project Portal</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-400">Project Portal</p>
+                {contractor.google_reviews_cache && (
+                  <GoogleReviewsBadge
+                    rating={contractor.google_reviews_cache.rating}
+                    reviewCount={contractor.google_reviews_cache.reviewCount}
+                    reviewUrl={contractor.google_review_url}
+                    className="text-gray-300 text-xs"
+                  />
+                )}
+              </div>
             </div>
           </div>
           {contractor.phone && (

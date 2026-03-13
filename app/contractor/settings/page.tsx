@@ -21,6 +21,7 @@ type SettingsProfile = {
   email: string
   service_zips: string[]
   google_review_url: string
+  google_place_id: string
   widget_color: string
   logo_url: string
   widget_price_per_sqft: number | null
@@ -94,14 +95,14 @@ export default function SettingsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
+        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, google_place_id, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
         .eq("id", accountId)
         .single()
 
       if (error || !data) {
         setProfile({
           company_name: "", company_tagline: "", phone: "", email: "", service_zips: [],
-          google_review_url: "", widget_color: "#059669", logo_url: "",
+          google_review_url: "", google_place_id: "", widget_color: "#059669", logo_url: "",
           widget_price_per_sqft: null, sms_notifications: {},
           google_calendar_connected: false, quickbooks_connected: false, quickbooks_last_sync: null,
           notification_preferences: { email: {}, sms: {} },
@@ -116,6 +117,7 @@ export default function SettingsPage() {
           email: data.email || "",
           service_zips: data.service_zips || [],
           google_review_url: data.google_review_url || "",
+          google_place_id: data.google_place_id || "",
           widget_color: data.widget_color || "#059669",
           logo_url: data.logo_url || "",
           widget_price_per_sqft: data.widget_price_per_sqft || null,
@@ -283,6 +285,14 @@ export default function SettingsPage() {
               onChange={(v) => setProfile({ ...profile, google_review_url: v })}
               placeholder="https://g.page/r/your-business/review"
             />
+            <SettingsField
+              icon={<Star className="h-4 w-4 text-muted-foreground" />}
+              label="Google Place ID"
+              value={profile.google_place_id}
+              onChange={(v) => setProfile({ ...profile, google_place_id: v })}
+              placeholder="ChIJ..."
+              hint="Find at: Google Maps → Your Business → Share → Place ID"
+            />
           </div>
           <div className="flex justify-end">
             <button
@@ -293,6 +303,7 @@ export default function SettingsPage() {
                 email: profile.email,
                 service_zips: profile.service_zips,
                 google_review_url: profile.google_review_url,
+                google_place_id: profile.google_place_id,
               })}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
@@ -1022,12 +1033,14 @@ function SettingsField({
   value,
   onChange,
   placeholder,
+  hint,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   onChange: (v: string) => void
   placeholder?: string
+  hint?: string
 }) {
   return (
     <div className="flex items-start gap-3 rounded-lg bg-secondary/30 px-4 py-3">
@@ -1040,6 +1053,7 @@ function SettingsField({
           placeholder={placeholder}
           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
+        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       </div>
     </div>
   )

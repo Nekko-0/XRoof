@@ -34,20 +34,24 @@ export async function GET(
     let contractorName = "Unknown"
     let brandColor = "#059669"
     let logoUrl = ""
+    let googleReviewUrl = ""
+    let googleReviewsCache: any = null
     if (report.contractor_id) {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("username, widget_color, logo_url")
+        .select("username, widget_color, logo_url, google_review_url, google_reviews_cache")
         .eq("id", report.contractor_id)
         .single()
       if (profile) {
         contractorName = profile.username
         brandColor = profile.widget_color || brandColor
         logoUrl = profile.logo_url || ""
+        googleReviewUrl = profile.google_review_url || ""
+        googleReviewsCache = profile.google_reviews_cache || null
       }
     }
 
-    return NextResponse.json({ ...report, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl })
+    return NextResponse.json({ ...report, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl, google_review_url: googleReviewUrl, google_reviews_cache: googleReviewsCache })
   }
 
   // Standard ID-based lookup
@@ -64,18 +68,22 @@ export async function GET(
   let contractorName = "Unknown"
   let brandColor = "#059669"
   let logoUrl = ""
+  let googleReviewUrl = ""
+  let googleReviewsCache: any = null
   if (data.contractor_id) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("username, widget_color, logo_url")
+      .select("username, widget_color, logo_url, google_review_url, google_reviews_cache")
       .eq("id", data.contractor_id)
       .single()
     if (profile) {
       contractorName = profile.username
       brandColor = profile.widget_color || brandColor
       logoUrl = profile.logo_url || ""
+      googleReviewUrl = profile.google_review_url || ""
+      googleReviewsCache = profile.google_reviews_cache || null
     }
   }
 
-  return NextResponse.json({ ...data, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl })
+  return NextResponse.json({ ...data, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl, google_review_url: googleReviewUrl, google_reviews_cache: googleReviewsCache })
 }

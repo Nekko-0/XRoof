@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck, Globe } from "lucide-react"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -37,6 +37,7 @@ const contractorNav: NavItem[] = [
   { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true },
   { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true },
   { label: "Materials", href: "/contractor/materials", icon: Calculator },
+  { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true },
   { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true },
   { label: "Support", href: "/contractor/messages", icon: MessageSquare },
   { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true },

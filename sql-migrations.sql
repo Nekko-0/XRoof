@@ -337,3 +337,11 @@ CREATE TABLE IF NOT EXISTS sms_messages (
 CREATE INDEX IF NOT EXISTS idx_sms_messages_contractor_id ON sms_messages(contractor_id);
 CREATE INDEX IF NOT EXISTS idx_sms_messages_phone_number ON sms_messages(phone_number);
 CREATE INDEX IF NOT EXISTS idx_sms_messages_created_at ON sms_messages(created_at);
+
+-- ============================================
+-- Google Reviews integration
+-- ============================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_place_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_reviews_cache JSONB;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_reviews_cached_at TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_google_reviews BOOLEAN DEFAULT true;

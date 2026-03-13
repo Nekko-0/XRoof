@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { CheckCircle, AlertCircle, Clock, MapPin, Phone, Mail, DollarSign, FileText, Wrench, MessageSquare, User, Download, X, ChevronLeft, ChevronRight, HelpCircle, Send, List } from "lucide-react"
 import { useToast } from "@/lib/toast-context"
+import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
 
 type PricingTier = {
   name: string
@@ -48,6 +49,8 @@ type Report = {
   estimate_accepted: boolean
   brand_color: string
   brand_logo_url: string
+  google_review_url: string
+  google_reviews_cache: { rating: number; reviewCount: number } | null
 }
 
 export default function PublicEstimatePage() {
@@ -228,6 +231,16 @@ export default function PublicEstimatePage() {
           <p className="text-xs font-semibold uppercase tracking-widest opacity-80">Roof Estimate</p>
           <h1 className="mt-1 text-lg font-bold">{report.company_name || report.contractor_name}</h1>
           {report.company_phone && <p className="mt-1 text-xs opacity-70">{report.company_phone}</p>}
+          {report.google_reviews_cache && (
+            <div className="mt-2 flex justify-center">
+              <GoogleReviewsBadge
+                rating={report.google_reviews_cache.rating}
+                reviewCount={report.google_reviews_cache.reviewCount}
+                reviewUrl={report.google_review_url}
+                className="text-white/90"
+              />
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
