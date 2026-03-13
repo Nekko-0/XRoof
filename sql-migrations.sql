@@ -351,3 +351,24 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_google_reviews BOOLEAN DEFAUL
 -- ============================================
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan_tier text DEFAULT 'pro';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS max_team_seats int DEFAULT 3;
+
+-- ============================================
+-- Storage bucket for report images & logos
+-- ============================================
+INSERT INTO storage.buckets (id, name, public) VALUES ('report-images', 'report-images', true) ON CONFLICT DO NOTHING;
+
+CREATE POLICY "Anyone can read report images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'report-images');
+
+CREATE POLICY "Authenticated users can upload report images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'report-images' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can update their report images"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'report-images' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can delete their report images"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'report-images' AND auth.role() = 'authenticated');

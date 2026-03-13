@@ -374,12 +374,10 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
     setUploadingLogo(false)
   }
 
-  // Save report
-  const handleSave = async () => {
+  // Save report — returns the saved ID or null on failure
+  const doSave = async (): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-
-    setSaving(true)
+    if (!session) return null
 
     const payload = {
       customer_name: report.customer_name,
@@ -408,6 +406,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
       pricing_tiers: report.pricing_tiers,
       deposit_percent: report.deposit_percent,
       estimate_line_items: report.estimate_line_items,
+      job_type: report.job_type,
       report_completed: report.report_completed,
       contractor_id: session.user.id,
       status: "Pending",
@@ -421,10 +420,10 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
 
       if (error) {
         toast.error("Error saving: " + error.message)
-      } else {
-        toast.success("Report saved!")
-        onSaved?.(savedId)
+        return null
       }
+      onSaved?.(savedId)
+      return savedId
     } else {
       const { data, error } = await supabase
         .from("reports")
@@ -434,24 +433,39 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
 
       if (error) {
         toast.error("Error creating report: " + error.message)
-      } else if (data) {
-        setSavedId(data.id)
-        toast.success("Report created!")
-        onSaved?.(data.id)
+        return null
       }
+      if (data) {
+        setSavedId(data.id)
+        onSaved?.(data.id)
+        return data.id
+      }
+      return null
     }
+  }
 
+  const handleSave = async () => {
+    setSaving(true)
+    const id = await doSave()
+    if (id) toast.success("Report saved!")
     setSaving(false)
   }
 
   const handleSendToCustomer = async () => {
-    if (!customerEmail || !savedId || savedId === "new") return
+    if (!customerEmail) return
     setSending(true)
     try {
+      // Auto-save before sending
+      const id = savedId && savedId !== "new" ? savedId : await doSave()
+      if (!id) {
+        toast.error("Failed to save report before sending")
+        setSending(false)
+        return
+      }
       const res = await authFetch("/api/reports/send-to-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ report_id: savedId, customer_email: customerEmail }),
+        body: JSON.stringify({ report_id: id, customer_email: customerEmail }),
       })
       const data = await res.json()
       if (data.error) {
@@ -537,23 +551,23 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
               <Download className="h-4 w-4" />
               {downloadingPdf ? "Generating..." : "Download PDF"}
             </button>
-            <button
-              onClick={() => setShowSendForm(!showSendForm)}
-              className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors ${
-                showSendForm
-                  ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
-                  : "border border-border bg-card text-foreground hover:bg-secondary"
-              }`}
-            >
-              <Mail className="h-4 w-4" />
-              Send to Customer
-            </button>
           </>
         )}
+        <button
+          onClick={() => setShowSendForm(!showSendForm)}
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors ${
+            showSendForm
+              ? "bg-emerald-600 text-white border border-emerald-500"
+              : "bg-emerald-600 text-white hover:bg-emerald-700"
+          }`}
+        >
+          <Mail className="h-4 w-4" />
+          {savedId && savedId !== "new" ? "Send to Customer" : "Save & Send"}
+        </button>
       </div>
 
       {/* Send to Customer Form */}
-      {showSendForm && savedId && savedId !== "new" && (
+      {showSendForm && (
         <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
           <Mail className="h-4 w-4 text-primary shrink-0" />
           <input
