@@ -96,11 +96,29 @@ export async function POST(req: Request) {
         }
       }
 
+      // Record reminder event and add tracking pixel
+      const { data: sentEvent } = await supabase
+        .from("document_events")
+        .insert({
+          job_id: inv.job_id || null,
+          document_type: "invoice",
+          document_id: inv.id,
+          event_type: "reminder_sent",
+          recipient_email: inv.customer_email,
+        })
+        .select("id")
+        .single()
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://xroof.io"
+      const trackingPixel = sentEvent
+        ? `<img src="${appUrl}/api/track/open?eid=${sentEvent.id}" width="1" height="1" style="display:none;" />`
+        : ""
+
       await resend.emails.send({
         from: `${companyName} via XRoof <noreply@xroof.io>`,
         to: inv.customer_email,
         subject: emailSubject,
-        html: emailHtml,
+        html: emailHtml + trackingPixel,
       })
 
       await supabase

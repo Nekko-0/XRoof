@@ -51,6 +51,28 @@ export async function GET(req: Request) {
       if (job?.description) description = job.description
     }
 
+    // Record "viewed" event (fire-and-forget, deduplicate by checking recent views)
+    ;(async () => {
+      try {
+        const { data: recent } = await supabase.from("document_events")
+          .select("id")
+          .eq("document_id", id)
+          .eq("document_type", "invoice")
+          .eq("event_type", "viewed")
+          .gte("created_at", new Date(Date.now() - 3600_000).toISOString())
+          .limit(1)
+        if (!recent || recent.length === 0) {
+          await supabase.from("document_events").insert({
+            job_id: data.job_id || null,
+            document_type: "invoice",
+            document_id: id,
+            event_type: "viewed",
+            recipient_email: data.customer_email || "",
+          })
+        }
+      } catch {}
+    })()
+
     return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", photo_urls, description })
   }
 
@@ -115,6 +137,20 @@ export async function POST(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Record "sent" event for tracking
+  if (data) {
+    try {
+      await supabase.from("document_events").insert({
+        job_id: data.job_id || null,
+        document_type: "invoice",
+        document_id: data.id,
+        event_type: "sent",
+        recipient_email: data.customer_email || "",
+      })
+    } catch {}
+  }
+
   return NextResponse.json(data)
 }
 

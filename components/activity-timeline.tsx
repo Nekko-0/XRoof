@@ -9,6 +9,9 @@ import {
   DollarSign,
   ArrowRight,
   Loader2,
+  Eye,
+  CheckCircle,
+  Send,
 } from "lucide-react"
 
 type Activity = {
@@ -27,6 +30,13 @@ const iconMap: Record<string, typeof Clock> = {
   note_added: MessageSquare,
   sms_sent: MessageSquare,
   payment_received: DollarSign,
+  // document_events types
+  sent: Send,
+  opened: Eye,
+  viewed: Eye,
+  interested: CheckCircle,
+  signed: CheckCircle,
+  reminder_sent: Mail,
 }
 
 const colorMap: Record<string, string> = {
@@ -35,6 +45,19 @@ const colorMap: Record<string, string> = {
   note_added: "text-slate-400",
   sms_sent: "text-green-400",
   payment_received: "text-emerald-400",
+  // document_events types
+  sent: "text-blue-400",
+  opened: "text-amber-400",
+  viewed: "text-amber-400",
+  interested: "text-emerald-400",
+  signed: "text-emerald-400",
+  reminder_sent: "text-orange-400",
+}
+
+const docEventLabels: Record<string, Record<string, string>> = {
+  report: { sent: "Estimate sent", opened: "Estimate email opened", interested: "Estimate accepted" },
+  invoice: { sent: "Invoice created", viewed: "Invoice viewed", reminder_sent: "Payment reminder sent", opened: "Reminder email opened" },
+  contract: { sent: "Contract sent", opened: "Contract email opened", signed: "Contract signed" },
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -60,15 +83,47 @@ export function ActivityTimeline({ jobId }: { jobId: string }) {
 
     async function fetchActivities() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from("job_activities")
-        .select("id, job_id, contractor_id, activity_type, description, metadata, created_at")
-        .eq("job_id", jobId)
-        .order("created_at", { ascending: false })
-        .limit(50)
+
+      const [jobRes, docRes] = await Promise.all([
+        supabase
+          .from("job_activities")
+          .select("id, job_id, contractor_id, activity_type, description, metadata, created_at")
+          .eq("job_id", jobId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("document_events")
+          .select("id, job_id, event_type, document_type, recipient_email, created_at")
+          .eq("job_id", jobId)
+          .order("created_at", { ascending: false })
+          .limit(30),
+      ])
+
+      const jobActivities = (jobRes.data as Activity[]) ?? []
+
+      // Convert document_events to Activity format
+      const docActivities: Activity[] = ((docRes.data as any[]) ?? []).map((evt) => {
+        const docType = evt.document_type || "document"
+        const label = docEventLabels[docType]?.[evt.event_type] || `${docType} ${evt.event_type}`
+        const emailSuffix = evt.recipient_email ? ` — ${evt.recipient_email}` : ""
+        return {
+          id: `doc-${evt.id}`,
+          job_id: evt.job_id,
+          contractor_id: null,
+          activity_type: evt.event_type,
+          description: `${label}${emailSuffix}`,
+          metadata: null,
+          created_at: evt.created_at,
+        }
+      })
+
+      // Merge and sort by date descending
+      const merged = [...jobActivities, ...docActivities]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 50)
 
       if (!cancelled) {
-        setActivities(error ? [] : (data as Activity[]) ?? [])
+        setActivities(merged)
         setLoading(false)
       }
     }
