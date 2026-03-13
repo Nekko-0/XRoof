@@ -400,7 +400,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     // Enter click-to-detect mode
     setSolarClickMode(true)
     solarClickModeRef.current = true
-    setSolarBanner("Click on the roof you want to detect")
+    setSolarBanner("Click on the roof to detect its pitch")
     setDrawingActive(false)
     drawingActiveRef.current = false
     if (mapInstanceRef.current) {
@@ -444,38 +444,21 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         return
       }
 
-      // Convert solar segments to RoofPlane format
-      const newPlanes: RoofPlane[] = data.segments.map((seg: any) => ({
-        name: seg.name,
-        points: seg.points,
-        area_sqft: seg.area_sqft,
-        edgeTypes: seg.points.map(() => "unspecified" as EdgeType),
-        edge_lengths: [],
-      }))
-
-      setPlanes(newPlanes)
-      setActivePlaneIndex(0)
-
-      // Set pitch from the largest segment (most representative)
-      if (data.segments[0]?.pitchRatio) {
-        const matchedPitch = PITCH_DATA.find(p => p.pitch === data.segments[0].pitchRatio)
+      // Auto-fill pitch from the largest segment (most representative)
+      const seg = data.segments[0]
+      if (seg?.pitchRatio) {
+        const matchedPitch = PITCH_DATA.find(p => p.pitch === seg.pitchRatio)
         if (matchedPitch) {
           setSelectedPitch(matchedPitch.pitch)
           setPitchFactor(matchedPitch.factor)
+          const degrees = PITCH_DATA.find(p => p.pitch === seg.pitchRatio)?.degrees ?? seg.pitchDegrees
+          setSolarBanner(`Detected roof pitch: ${seg.pitchRatio} (${degrees.toFixed(1)}°) — pitch has been auto-set`)
+        } else {
+          setSolarBanner("Detected roof data but could not determine pitch. Set pitch manually.")
         }
+      } else {
+        setSolarBanner("No pitch data available for this building.")
       }
-
-      // Set waste factor based on complexity
-      if (data.segments.length > 4) {
-        setWastePercent(20)
-      } else if (data.segments.length > 2) {
-        setWastePercent(15)
-      }
-
-      setSolarBanner(`AI detected ${data.segments.length} roof sections (${Math.round(data.totalAreaSqft).toLocaleString()} sqft) — polygons are approximate, drag vertices to match actual roof`)
-
-      // Render polygons on map
-      renderPlanesOnMap(newPlanes)
     } catch (err) {
       console.error("[Solar]", err)
       setSolarBanner("Auto-detect failed. Draw manually.")
@@ -1301,7 +1284,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
             className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${solarClickMode ? "bg-amber-600 hover:bg-amber-500" : "bg-violet-600 hover:bg-violet-500"}`}
           >
             <Sparkles className="mr-1.5 inline h-3.5 w-3.5" />
-            {solarLoading ? "Detecting..." : solarClickMode ? "Cancel Detection" : "Auto-Detect Roof"}
+            {solarLoading ? "Detecting..." : solarClickMode ? "Cancel" : "Detect Pitch"}
           </button>
         )}
       </div>
