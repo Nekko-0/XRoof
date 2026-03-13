@@ -37,11 +37,11 @@ export async function POST(req: Request) {
         }, { status: 404 })
       }
       const data = await res2.json()
-      return NextResponse.json(transformSolarData(data))
+      return NextResponse.json(transformSolarData(data, lat, lng))
     }
 
     const data = await res.json()
-    return NextResponse.json(transformSolarData(data))
+    return NextResponse.json(transformSolarData(data, lat, lng))
   } catch (err) {
     console.error("[Solar API]", err)
     return NextResponse.json({ error: "Solar API request failed" }, { status: 500 })
@@ -74,21 +74,46 @@ type TransformedSegment = {
   center: { lat: number; lng: number }
 }
 
-function transformSolarData(data: any): { available: boolean; segments: TransformedSegment[]; totalAreaSqft: number; buildingCenter: { lat: number; lng: number } } {
+// Haversine distance in meters between two lat/lng points
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function transformSolarData(data: any, requestedLat: number, requestedLng: number): {
+  available: boolean; segments: TransformedSegment[]; totalAreaSqft: number;
+  buildingCenter: { lat: number; lng: number }; error?: string
+} {
   const solarPanels = data.solarPotential
   if (!solarPanels?.roofSegmentStats || solarPanels.roofSegmentStats.length === 0) {
     return { available: false, segments: [], totalAreaSqft: 0, buildingCenter: { lat: 0, lng: 0 } }
   }
 
+  const center = data.center || solarPanels.roofSegmentStats[0].center
+  const buildingCenter = { lat: center.latitude, lng: center.longitude }
+
+  // Check if the Solar API returned the correct building (within 40m of requested point)
+  const dist = distanceMeters(requestedLat, requestedLng, buildingCenter.lat, buildingCenter.lng)
+  if (dist > 40) {
+    return {
+      available: false,
+      segments: [],
+      totalAreaSqft: 0,
+      buildingCenter,
+      error: "wrong_building",
+    }
+  }
+
   const segments: TransformedSegment[] = solarPanels.roofSegmentStats
-    .filter((seg: SolarSegment) => seg.stats.areaMeters2 > 2) // Skip tiny segments < ~20 sqft
-    .sort((a: SolarSegment, b: SolarSegment) => b.stats.areaMeters2 - a.stats.areaMeters2) // Largest first
+    .filter((seg: SolarSegment) => seg.stats.areaMeters2 > 2)
+    .sort((a: SolarSegment, b: SolarSegment) => b.stats.areaMeters2 - a.stats.areaMeters2)
     .map((seg: SolarSegment, i: number) => {
       const areaSqft = seg.stats.areaMeters2 * 10.7639
       const pitchRatio = degreesToPitchRatio(seg.pitchDegrees)
-
-      // Create polygon from bounding box + center for a more accurate shape
-      // Use a diamond/quad approximation based on center and bounding box
       const points = generateRoofPolygon(seg)
 
       const names = ["Main Roof", "Garage", "Section C", "Section D", "Section E", "Section F", "Section G", "Section H"]
@@ -104,66 +129,78 @@ function transformSolarData(data: any): { available: boolean; segments: Transfor
     })
 
   const totalAreaSqft = segments.reduce((sum: number, s: TransformedSegment) => sum + s.area_sqft, 0)
-  const center = data.center || solarPanels.roofSegmentStats[0].center
 
   return {
     available: true,
     segments,
     totalAreaSqft,
-    buildingCenter: { lat: center.latitude, lng: center.longitude },
+    buildingCenter,
   }
 }
 
 function generateRoofPolygon(seg: SolarSegment): { lat: number; lng: number }[] {
   const { boundingBox, center } = seg
+  const c = { lat: center.latitude, lng: center.longitude }
+
   if (!boundingBox) {
-    // Fallback: create small rectangle around center
-    const offset = 0.00005 // ~5 meters
+    const offset = 0.00005
     return [
-      { lat: center.latitude + offset, lng: center.longitude - offset },
-      { lat: center.latitude + offset, lng: center.longitude + offset },
-      { lat: center.latitude - offset, lng: center.longitude + offset },
-      { lat: center.latitude - offset, lng: center.longitude - offset },
+      { lat: c.lat + offset, lng: c.lng - offset },
+      { lat: c.lat + offset, lng: c.lng + offset },
+      { lat: c.lat - offset, lng: c.lng + offset },
+      { lat: c.lat - offset, lng: c.lng - offset },
     ]
   }
 
   const sw = boundingBox.sw
   const ne = boundingBox.ne
-  const c = { lat: center.latitude, lng: center.longitude }
 
-  // Create a hexagonal approximation for better roof representation
-  // Uses midpoints of bounding box edges + center offsets
-  const midN = { lat: ne.latitude, lng: (sw.longitude + ne.longitude) / 2 }
-  const midE = { lat: (sw.latitude + ne.latitude) / 2, lng: ne.longitude }
-  const midS = { lat: sw.latitude, lng: (sw.longitude + ne.longitude) / 2 }
-  const midW = { lat: (sw.latitude + ne.latitude) / 2, lng: sw.longitude }
+  // Use ground area to compute approximate dimensions
+  const groundAreaM2 = seg.stats.groundAreaMeters2 || seg.stats.areaMeters2 * 0.9
+  const widthM = Math.sqrt(groundAreaM2) // approximate as square-ish
+  const heightM = groundAreaM2 / widthM
 
-  // For gable-style roofs, create a ridge line based on azimuth
+  // Convert meters to lat/lng offsets
+  const mPerDegLat = 111320
+  const mPerDegLng = 111320 * Math.cos(c.lat * Math.PI / 180)
+  const halfW = (widthM / 2) / mPerDegLng
+  const halfH = (heightM / 2) / mPerDegLat
+
+  // Azimuth = direction the roof slope faces (downhill).
+  // Ridge line runs perpendicular to azimuth.
+  // Create a trapezoid: ridge (narrower) at top, eaves (wider) at bottom relative to slope direction.
   const azRad = (seg.azimuthDegrees * Math.PI) / 180
-  const ridgeLen = Math.max(ne.latitude - sw.latitude, ne.longitude - sw.longitude) * 0.4
 
-  // Simple polygon: use bounding box corners pulled slightly toward center
-  const shrink = 0.15 // Pull corners 15% toward center for more natural shape
-  const pts = [
-    lerp(sw.latitude, ne.latitude, c.lat, sw.longitude, ne.longitude, c.lng, { lat: ne.latitude, lng: sw.longitude }, shrink),
-    lerp(sw.latitude, ne.latitude, c.lat, sw.longitude, ne.longitude, c.lng, { lat: ne.latitude, lng: ne.longitude }, shrink),
-    lerp(sw.latitude, ne.latitude, c.lat, sw.longitude, ne.longitude, c.lng, { lat: sw.latitude, lng: ne.longitude }, shrink),
-    lerp(sw.latitude, ne.latitude, c.lat, sw.longitude, ne.longitude, c.lng, { lat: sw.latitude, lng: sw.longitude }, shrink),
+  // Ridge direction is perpendicular to azimuth (90 degrees offset)
+  const ridgeAngle = azRad - Math.PI / 2
+
+  // Ridge half-length (along the ridge)
+  const ridgeHalf = halfW * 0.85
+  // Eaves half-length (wider than ridge for trapezoid shape)
+  const eavesHalf = halfW * 1.0
+  // Distance from center to ridge and eaves
+  const toRidge = halfH * 0.45
+  const toEaves = halfH * 0.55
+
+  // Ridge points (uphill from center)
+  const ridgeDx = Math.sin(azRad) * toRidge
+  const ridgeDy = Math.cos(azRad) * toRidge
+  // Ridge runs perpendicular
+  const rDx = Math.sin(ridgeAngle) * ridgeHalf
+  const rDy = Math.cos(ridgeAngle) * ridgeHalf
+
+  // Eaves points (downhill from center)
+  const eavesDx = -Math.sin(azRad) * toEaves
+  const eavesDy = -Math.cos(azRad) * toEaves
+  const eDx = Math.sin(ridgeAngle) * eavesHalf
+  const eDy = Math.cos(ridgeAngle) * eavesHalf
+
+  return [
+    { lat: c.lat + ridgeDy + rDy, lng: c.lng + ridgeDx + rDx },
+    { lat: c.lat + ridgeDy - rDy, lng: c.lng + ridgeDx - rDx },
+    { lat: c.lat + eavesDy - eDy, lng: c.lng + eavesDx - eDx },
+    { lat: c.lat + eavesDy + eDy, lng: c.lng + eavesDx + eDx },
   ]
-
-  return pts
-}
-
-function lerp(
-  _swLat: number, _neLat: number, cLat: number,
-  _swLng: number, _neLng: number, cLng: number,
-  corner: { lat: number; lng: number },
-  factor: number
-): { lat: number; lng: number } {
-  return {
-    lat: corner.lat + (cLat - corner.lat) * factor,
-    lng: corner.lng + (cLng - corner.lng) * factor,
-  }
 }
 
 function degreesToPitchRatio(degrees: number): string {

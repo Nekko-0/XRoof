@@ -396,7 +396,11 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
       const data = await res.json()
       if (!data.available || !data.segments?.length) {
-        setSolarBanner("No roof data available for this address. Draw manually.")
+        if (data.error === "wrong_building") {
+          setSolarBanner("AI detected a nearby building instead of the target house. Try moving the pin closer to the roof, or draw manually.")
+        } else {
+          setSolarBanner("No roof data available for this address. Draw manually.")
+        }
         setSolarLoading(false)
         return
       }
@@ -429,7 +433,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         setWastePercent(15)
       }
 
-      setSolarBanner(`AI detected ${data.segments.length} roof sections (${Math.round(data.totalAreaSqft).toLocaleString()} sqft) — drag vertices to refine`)
+      setSolarBanner(`AI detected ${data.segments.length} roof sections (${Math.round(data.totalAreaSqft).toLocaleString()} sqft) — polygons are approximate, drag vertices to match actual roof`)
 
       // Render polygons on map
       renderPlanesOnMap(newPlanes)
@@ -472,8 +476,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           draggable: true,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 6,
-            fillColor: "#3b82f6",
+            scale: 8,
+            fillColor: "#22c55e",
             fillOpacity: 1,
             strokeWeight: 2,
             strokeColor: "#fff",
