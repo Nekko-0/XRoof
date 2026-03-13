@@ -130,7 +130,7 @@ export default function FieldModePage() {
             const wRes = await authFetch(`/api/weather?zip=${zip}`)
             if (wRes.ok) {
               const wData = await wRes.json()
-              if (wData.current) setWeather(wData.current)
+              if (wData.forecast?.[0]) setWeather(wData.forecast[0])
             }
           } catch {}
         }

@@ -345,3 +345,9 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_place_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_reviews_cache JSONB;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_reviews_cached_at TIMESTAMPTZ;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS show_google_reviews BOOLEAN DEFAULT true;
+
+-- ============================================
+-- Subscription & Seat Limits
+-- ============================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan_tier text DEFAULT 'pro';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS max_team_seats int DEFAULT 3;

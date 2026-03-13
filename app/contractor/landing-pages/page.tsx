@@ -48,7 +48,7 @@ export default function LandingPagesPage() {
     const res = await authFetch("/api/landing-pages")
     if (res.ok) {
       const data = await res.json()
-      setPages(data.pages || [])
+      setPages(Array.isArray(data) ? data : [])
     }
     setLoading(false)
   }

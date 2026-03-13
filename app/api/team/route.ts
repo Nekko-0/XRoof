@@ -30,6 +30,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  // Check seat limit
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("max_team_seats")
+    .eq("id", userId)
+    .single()
+
+  const maxSeats = profile?.max_team_seats ?? 3
+
+  const { count: currentMembers } = await supabase
+    .from("team_members")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", userId)
+    .in("status", ["active", "invited"])
+
+  if ((currentMembers ?? 0) >= maxSeats) {
+    return NextResponse.json(
+      { error: `Team member limit reached (${maxSeats} seats). Upgrade your plan or contact support to add more seats.` },
+      { status: 403 }
+    )
+  }
+
   // Check if already invited
   const { data: existing } = await supabase
     .from("team_members")

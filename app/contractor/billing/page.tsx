@@ -124,17 +124,17 @@ export default function BillingPage() {
     )
   }
 
-  const features = [
-    { icon: FileText, label: "Unlimited roof reports" },
+  const coreFeatures = [
+    { icon: FileText, label: "Unlimited roof reports & proposals" },
     { icon: Ruler, label: "Satellite measurement tool" },
     { icon: FileText, label: "Contract builder & e-signing" },
     { icon: Layers, label: "Lead management & pipeline" },
-    { icon: Sparkles, label: "Instant estimates & proposals" },
-    { icon: Users, label: "Team management (up to 3 members)" },
-    { icon: MessageSquare, label: "SMS & email notifications" },
+    { icon: Sparkles, label: "Instant estimates with PDF export" },
+    { icon: MessageSquare, label: "SMS & email automations" },
     { icon: BarChart3, label: "Analytics dashboard" },
-    { icon: Calendar, label: "Calendar & scheduling" },
+    { icon: Calendar, label: "Calendar & customer booking" },
     { icon: CreditCard, label: "Stripe payment collection" },
+    { icon: Shield, label: "Customer portal & landing pages" },
   ]
 
   const hasActiveSub = sub && (sub.status === "active" || sub.status === "trialing")
@@ -154,7 +154,7 @@ export default function BillingPage() {
         </p>
         <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <Shield className="h-3.5 w-3.5 text-primary" />
-          <span>Trusted by roofing contractors nationwide</span>
+          <span>Launch pricing — lock in your rate before prices go up</span>
         </div>
       </div>
 
@@ -171,7 +171,7 @@ export default function BillingPage() {
                 Plan: <span className="font-semibold capitalize text-foreground">{sub!.plan}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                {sub!.plan === "annual" ? "$169/month (billed annually)" : "$199/month"}
+                {sub!.plan === "annual" ? "$169/month (billed annually)" : sub!.plan === "solo" ? "$99/month" : "$199/month"}
               </p>
               {sub!.current_period_end && (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -200,19 +200,20 @@ export default function BillingPage() {
       ) : (
         /* ─── Pricing Cards ─── */
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {/* Monthly */}
+          {/* Solo */}
           <div className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-5">
-              <h3 className="text-lg font-bold text-foreground">Monthly</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">No commitment, cancel anytime</p>
+              <h3 className="text-lg font-bold text-foreground">Solo</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">For independent contractors</p>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold tracking-tight text-foreground">$199</span>
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$99</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
+              <p className="mt-1 text-xs text-muted-foreground">1 user — all features included</p>
             </div>
 
             <ul className="mb-6 flex-1 space-y-2.5">
-              {features.map((f) => (
+              {coreFeatures.map((f) => (
                 <li key={f.label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <Check className="h-4 w-4 flex-shrink-0 text-primary" />
                   {f.label}
@@ -221,44 +222,48 @@ export default function BillingPage() {
             </ul>
 
             <button
-              onClick={() => handleSubscribe("monthly")}
-              disabled={checkingOut === "monthly"}
+              onClick={() => handleSubscribe("solo" as any)}
+              disabled={checkingOut === "solo"}
               className="w-full rounded-xl border-2 border-primary bg-transparent px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "monthly" ? "Redirecting..." : "Get Started"}
+                {checkingOut === "solo" ? "Redirecting..." : "Get Started"}
               </span>
             </button>
           </div>
 
-          {/* Annual — Recommended */}
+          {/* Pro — Recommended */}
           <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 shadow-lg shadow-primary/5">
             {/* Badge */}
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground shadow-md">
                 <Star className="h-3 w-3" />
-                SAVE 15%
+                MOST POPULAR
               </span>
             </div>
 
             <div className="mb-5">
-              <h3 className="text-lg font-bold text-foreground">Annual</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">Best value — save $360 per year</p>
+              <h3 className="text-lg font-bold text-foreground">Pro</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">For growing roofing companies</p>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold tracking-tight text-foreground">$169</span>
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$199</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Billed as $2,028/year</p>
+              <p className="mt-1 text-xs text-muted-foreground">3 users included — additional seats $39/mo each</p>
             </div>
 
             <ul className="mb-6 flex-1 space-y-2.5">
-              {features.map((f) => (
+              {coreFeatures.map((f) => (
                 <li key={f.label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <Check className="h-4 w-4 flex-shrink-0 text-primary" />
                   {f.label}
                 </li>
               ))}
+              <li className="flex items-center gap-2.5 text-sm font-semibold text-primary">
+                <Users className="h-4 w-4 flex-shrink-0" />
+                Team management & dispatch
+              </li>
               <li className="flex items-center gap-2.5 text-sm font-semibold text-primary">
                 <Zap className="h-4 w-4 flex-shrink-0" />
                 Priority support
@@ -266,13 +271,13 @@ export default function BillingPage() {
             </ul>
 
             <button
-              onClick={() => handleSubscribe("annual")}
-              disabled={checkingOut === "annual"}
+              onClick={() => handleSubscribe("monthly")}
+              disabled={checkingOut === "monthly"}
               className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "annual" ? "Redirecting..." : "Get Started — Best Value"}
+                {checkingOut === "monthly" ? "Redirecting..." : "Get Started — Best Value"}
               </span>
             </button>
           </div>

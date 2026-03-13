@@ -21,6 +21,7 @@ type EstimateLineItem = {
 
 type Report = {
   id: string
+  job_id: string
   company_name: string
   company_email: string
   company_phone: string
@@ -509,7 +510,7 @@ export default function PublicEstimatePage() {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          job_id: token,
+                          job_id: report.job_id,
                           sender: "homeowner",
                           message: `[Question from ${questionName.trim() || "Homeowner"} on estimate]\n${questionMsg.trim()}`,
                         }),
