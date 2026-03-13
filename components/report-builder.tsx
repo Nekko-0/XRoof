@@ -9,6 +9,7 @@ import {
   User, MapPin, Phone, Mail, FileText, DollarSign, Wrench,
   MessageSquare, Calendar, Hash, Ruler, Calculator, EyeOff as EyeOffIcon,
   ChevronDown, ChevronUp, BookTemplate, FolderOpen, Printer, Download,
+  Send, CheckCircle, Clock, Activity,
 } from "lucide-react"
 
 interface PricingTier {
@@ -122,6 +123,9 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
 
   // Line items state
   const [showLineItems, setShowLineItems] = useState(false)
+
+  // Activity tracking state
+  const [activityEvents, setActivityEvents] = useState<{ id: string; event_type: string; recipient_email: string; created_at: string }[]>([])
 
   // Template state
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
@@ -306,6 +310,21 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
     load()
   }, [reportId])
 
+  // Fetch activity events for saved reports
+  useEffect(() => {
+    if (!savedId || savedId === "new") return
+    const fetchActivity = async () => {
+      try {
+        const res = await authFetch(`/api/reports/${savedId}/activity`)
+        if (res.ok) {
+          const data = await res.json()
+          setActivityEvents(data)
+        }
+      } catch {}
+    }
+    fetchActivity()
+  }, [savedId])
+
   const updateField = <K extends keyof ReportData>(key: K, value: ReportData[K]) => {
     setReport((prev) => ({ ...prev, [key]: value }))
   }
@@ -474,6 +493,11 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
         toast.success("Estimate sent to " + customerEmail + "!")
         setShowSendForm(false)
         setCustomerEmail("")
+        // Refresh activity timeline
+        try {
+          const actRes = await authFetch(`/api/reports/${id}/activity`)
+          if (actRes.ok) setActivityEvents(await actRes.json())
+        } catch {}
       }
     } catch {
       toast.error("Failed to send. Please try again.")
@@ -584,6 +608,38 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
           >
             {sending ? "Sending..." : "Send"}
           </button>
+        </div>
+      )}
+
+      {/* Report Activity Timeline */}
+      {activityEvents.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h4 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Activity className="h-3.5 w-3.5" /> Report Activity
+          </h4>
+          <div className="space-y-2">
+            {activityEvents.map((evt) => {
+              const icon = evt.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-500" />
+                : evt.event_type === "opened" ? <Eye className="h-3.5 w-3.5 text-amber-500" />
+                : evt.event_type === "interested" ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                : <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              const label = evt.event_type === "sent" ? "Estimate sent"
+                : evt.event_type === "opened" ? "Email opened"
+                : evt.event_type === "interested" ? "Estimate accepted"
+                : evt.event_type
+              return (
+                <div key={evt.id} className="flex items-center gap-3 text-sm">
+                  {icon}
+                  <span className="font-medium text-foreground">{label}</span>
+                  {evt.recipient_email && <span className="text-muted-foreground">— {evt.recipient_email}</span>}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {new Date(evt.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                    {new Date(evt.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

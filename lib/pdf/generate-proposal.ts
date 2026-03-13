@@ -10,10 +10,14 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   if (!url) return null
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
+    if (!res.ok) {
+      console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${url}`)
+      return null
+    }
     const arrayBuf = await res.arrayBuffer()
     return Buffer.from(arrayBuf)
-  } catch {
+  } catch (err) {
+    console.error(`[PDF] Image fetch error for ${url}:`, err)
     return null
   }
 }
@@ -43,8 +47,12 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
   const photoUrls: string[] = (report.photo_urls as string[]) || []
   const photoVisible: boolean[] = (report.photo_visible as boolean[]) || []
 
+  const logoUrl = profile.logo_url || (report.logo_url as string) || ""
+  const visiblePhotoUrls = photoUrls.filter((u, i) => u && photoVisible[i])
+  console.log(`[PDF] Generating proposal — logo: ${logoUrl || "(none)"}, photos: ${visiblePhotoUrls.length}`)
+
   const imagePromises: Promise<Buffer | null>[] = [
-    fetchImageBuffer(profile.logo_url || (report.logo_url as string) || ""),
+    fetchImageBuffer(logoUrl),
   ]
 
   for (let i = 0; i < photoUrls.length; i++) {

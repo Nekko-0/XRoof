@@ -135,6 +135,7 @@ export async function POST(req: Request) {
   }
 
   // Generate branded PDF proposal to attach
+  console.log(`[SendReport] report_id=${report_id} logo_url=${report.logo_url || "(none)"} photos=${(report.photo_urls || []).length}`)
   let pdfAttachments: { filename: string; content: Buffer }[] = []
   try {
     let profile: Record<string, unknown> = {}
