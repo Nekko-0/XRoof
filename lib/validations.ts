@@ -104,7 +104,10 @@ export const LandingPageUpdateSchema = z.object({
   hero_image_url: z.string().url().max(2000).optional().nullable(),
   slug: z.string().max(100).optional(),
   published: z.boolean().optional(),
-}).passthrough()
+  template: z.string().max(50).optional(),
+  utm_source: z.string().max(100).optional(),
+  utm_campaign: z.string().max(100).optional(),
+})
 
 // Invoices
 export const InvoiceCreateSchema = z.object({
