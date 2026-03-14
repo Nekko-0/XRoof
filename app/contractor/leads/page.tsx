@@ -414,7 +414,8 @@ export default function MyJobsPage() {
           hidden_fields: Object.entries(invoiceForm.show).filter(([, v]) => !v).map(([k]) => k),
           milestones: invoiceForm.useMilestones ? invoiceForm.milestones.map((m) => {
             const pct = parseFloat(m.percent) || 0
-            return { label: m.label, percent: pct, amount: Math.round(amountNum * 100 * pct / 100), paid: false, due: false }
+            const totalAfterDiscount = Math.round(amountNum * 100) - Math.round(discountDollars * 100)
+            return { label: m.label, percent: pct, amount: Math.round(totalAfterDiscount * pct / 100), paid: false, due: false }
           }).map((m, i) => ({ ...m, due: i === 0 })) : [],
         }),
       })

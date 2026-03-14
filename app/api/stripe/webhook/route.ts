@@ -65,14 +65,45 @@ export async function POST(req: Request) {
       if (session.metadata?.type === "invoice_payment") {
         const invoiceId = session.metadata.invoice_id
         if (invoiceId) {
-          await supabase
+          const milestoneIdx = session.metadata.milestone_index !== undefined
+            ? parseInt(session.metadata.milestone_index) : undefined
+
+          // Fetch current invoice to check milestones
+          const { data: currentInvoice } = await supabase
             .from("invoices")
-            .update({
-              status: "paid",
-              stripe_payment_intent_id: session.payment_intent,
-              paid_at: new Date().toISOString(),
-            })
+            .select("milestones")
             .eq("id", invoiceId)
+            .single()
+
+          const milestones = currentInvoice?.milestones || []
+
+          if (milestoneIdx !== undefined && milestones[milestoneIdx]) {
+            // Milestone payment — mark only this milestone as paid
+            milestones[milestoneIdx].paid = true
+            milestones[milestoneIdx].due = false
+
+            // Set next unpaid milestone as due
+            const nextUnpaid = milestones.findIndex((m: any, i: number) => i > milestoneIdx && !m.paid)
+            if (nextUnpaid !== -1) milestones[nextUnpaid].due = true
+
+            const allPaid = milestones.every((m: any) => m.paid)
+
+            await supabase.from("invoices").update({
+              milestones,
+              ...(allPaid ? { status: "paid", paid_at: new Date().toISOString() } : {}),
+              stripe_payment_intent_id: session.payment_intent,
+            }).eq("id", invoiceId)
+          } else {
+            // No milestones — full payment, mark as paid
+            await supabase
+              .from("invoices")
+              .update({
+                status: "paid",
+                stripe_payment_intent_id: session.payment_intent,
+                paid_at: new Date().toISOString(),
+              })
+              .eq("id", invoiceId)
+          }
 
           // Auto-advance pipeline: Completed (only when ALL invoices for this job are paid)
           const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id, amount, customer_name").eq("id", invoiceId).single()
