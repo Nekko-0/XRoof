@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
+import { Resend } from "resend"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 import { InvoiceCreateSchema, InvoiceUpdateSchema, validateBody } from "@/lib/validations"
 import { rateLimit, getClientIP } from "@/lib/rate-limit"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -149,6 +152,53 @@ export async function POST(req: Request) {
         recipient_email: data.customer_email || "",
       })
     } catch {}
+
+    // Send invoice email to customer
+    if (data.customer_email) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      const payLink = `${appUrl}/pay/${data.id}`
+      const displayAmount = ((data.amount - (data.discount || 0)) / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })
+
+      // Get contractor profile for branding
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_name")
+        .eq("id", userId)
+        .single()
+      const companyName = profile?.company_name || "Your Contractor"
+
+      try {
+        await resend.emails.send({
+          from: `${companyName} via XRoof <contracts@xroof.io>`,
+          to: data.customer_email,
+          subject: `Invoice from ${companyName} — $${displayAmount}`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
+              <div style="text-align:center;border-bottom:2px solid #e5e5e5;padding-bottom:15px;margin-bottom:20px;">
+                <h1 style="font-size:22px;margin:0;">${companyName}</h1>
+                <p style="font-size:11px;letter-spacing:2px;color:#888;margin:5px 0 0;">INVOICE</p>
+                <p style="font-size:10px;color:#aaa;margin:3px 0 0;">${data.invoice_number}</p>
+              </div>
+
+              <p style="font-size:14px;margin:0 0 15px;">Hi ${data.customer_name},</p>
+              <p style="font-size:14px;margin:0 0 20px;">You have a new invoice for <strong>$${displayAmount}</strong>${data.job_type ? ` for ${data.job_type}` : ""}.</p>
+
+              ${data.scope ? `<p style="font-size:12px;color:#555;margin:0 0 20px;"><strong>Scope:</strong> ${data.scope}</p>` : ""}
+
+              <div style="text-align:center;margin:25px 0;">
+                <a href="${payLink}" style="display:inline-block;padding:14px 40px;background:#166534;color:white;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold;">View & Pay Invoice</a>
+              </div>
+
+              <p style="font-size:11px;color:#888;text-align:center;margin-top:30px;">
+                This invoice was sent via <a href="https://www.xroof.io" style="color:#166534;">XRoof</a>
+              </p>
+            </div>
+          `,
+        })
+      } catch (emailErr) {
+        console.error("Invoice email send failed:", emailErr)
+      }
+    }
   }
 
   return NextResponse.json(data)
