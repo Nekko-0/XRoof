@@ -33,7 +33,12 @@ export async function POST(req: Request) {
 
       if (session.mode === "subscription" && userId) {
         const subscriptionId = session.subscription as string
-        const sub = await stripe.subscriptions.retrieve(subscriptionId) as any
+        const sub = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data"] }) as any
+
+        // In newer Stripe API versions, period dates are on the item, not the subscription
+        const item = sub.items?.data?.[0]
+        const periodStart = sub.current_period_start || item?.current_period_start || 0
+        const periodEnd = sub.current_period_end || item?.current_period_end || 0
 
         await supabase.from("subscriptions").upsert({
           user_id: userId,
@@ -41,8 +46,8 @@ export async function POST(req: Request) {
           stripe_subscription_id: subscriptionId,
           plan: session.metadata?.plan || "monthly",
           status: sub.status,
-          current_period_start: new Date((sub.current_period_start || 0) * 1000).toISOString(),
-          current_period_end: new Date((sub.current_period_end || 0) * 1000).toISOString(),
+          current_period_start: new Date(periodStart * 1000).toISOString(),
+          current_period_end: new Date(periodEnd * 1000).toISOString(),
         }, { onConflict: "user_id" })
       }
 
@@ -142,12 +147,15 @@ export async function POST(req: Request) {
 
     case "customer.subscription.updated": {
       const sub = event.data.object as any
+      const item = sub.items?.data?.[0]
+      const periodStart = sub.current_period_start || item?.current_period_start || 0
+      const periodEnd = sub.current_period_end || item?.current_period_end || 0
       await supabase
         .from("subscriptions")
         .update({
           status: sub.status,
-          current_period_start: new Date((sub.current_period_start || 0) * 1000).toISOString(),
-          current_period_end: new Date((sub.current_period_end || 0) * 1000).toISOString(),
+          current_period_start: new Date(periodStart * 1000).toISOString(),
+          current_period_end: new Date(periodEnd * 1000).toISOString(),
         })
         .eq("stripe_subscription_id", sub.id)
       break
