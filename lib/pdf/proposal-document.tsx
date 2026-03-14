@@ -75,8 +75,8 @@ export interface ProposalData {
 interface ProposalDocumentProps {
   data: ProposalData
   primaryColor: string
-  logoUrl?: string
-  visiblePhotos: { url: string; caption: string }[]
+  logoSrc?: string
+  visiblePhotos: { src: string; caption: string }[]
 }
 
 function formatCurrency(cents: number): string {
@@ -92,11 +92,11 @@ function formatFt(ft: number): string {
 }
 
 // Header rendered on every page (except cover)
-function PageHeader({ companyName, logoUrl, styles }: { companyName: string; logoUrl?: string; styles: ReturnType<typeof createProposalStyles> }) {
+function PageHeader({ companyName, logoSrc, styles }: { companyName: string; logoSrc?: string; styles: ReturnType<typeof createProposalStyles> }) {
   return (
     <View style={styles.header} fixed>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        {logoUrl && <Image style={styles.headerLogo} src={logoUrl} />}
+        {logoSrc && <Image style={styles.headerLogo} src={logoSrc} />}
         <Text style={styles.headerCompany}>{companyName}</Text>
       </View>
       <Text style={styles.headerPageNum} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
@@ -119,7 +119,7 @@ function PageFooter({ data, styles }: { data: ProposalData; styles: ReturnType<t
   )
 }
 
-export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }: ProposalDocumentProps) {
+export function ProposalDocument({ data, primaryColor, logoSrc, visiblePhotos }: ProposalDocumentProps) {
   const s = createProposalStyles(primaryColor)
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
@@ -141,7 +141,7 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
         {/* Top accent bar */}
         <View style={s.coverAccentBar} fixed />
 
-        {logoUrl && <Image style={s.coverLogo} src={logoUrl} />}
+        {logoSrc && <Image style={s.coverLogo} src={logoSrc} />}
         <Text style={s.coverCompany}>{data.company_name}</Text>
         {data.company_tagline ? <Text style={s.coverTagline}>{data.company_tagline}</Text> : null}
         <Text style={s.coverTitle}>ROOFING PROPOSAL</Text>
@@ -180,7 +180,7 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
 
       {/* ===== PROPERTY DETAILS + MEASUREMENTS ===== */}
       <Page size="A4" style={s.page}>
-        <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
+        <PageHeader companyName={data.company_name} logoSrc={logoSrc} styles={s} />
         <PageFooter data={data} styles={s} />
 
         <Text style={s.sectionTitle}>Property Details</Text>
@@ -279,14 +279,14 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
       {/* ===== PHOTO GALLERY (conditional) ===== */}
       {visiblePhotos.length > 0 ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
+          <PageHeader companyName={data.company_name} logoSrc={logoSrc} styles={s} />
           <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Property Photos</Text>
           <View style={s.photoGrid}>
             {visiblePhotos.map((photo, i) => (
               <View key={i} style={s.photoContainer}>
-                <Image style={s.photo} src={photo.url} />
+                <Image style={s.photo} src={photo.src} />
                 {photo.caption ? <Text style={s.photoCaption}>{photo.caption}</Text> : null}
               </View>
             ))}
@@ -297,7 +297,7 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
       {/* ===== SCOPE OF WORK + MATERIALS ===== */}
       {(data.scope_of_work || data.material) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
+          <PageHeader companyName={data.company_name} logoSrc={logoSrc} styles={s} />
           <PageFooter data={data} styles={s} />
 
           {data.scope_of_work ? (
@@ -374,7 +374,7 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
       {/* ===== PRICING ===== */}
       {(lineItems.length > 0 || tiers.length > 0 || data.price_quote) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
+          <PageHeader companyName={data.company_name} logoSrc={logoSrc} styles={s} />
           <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Pricing</Text>
@@ -438,7 +438,7 @@ export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }:
       {/* ===== RECOMMENDATIONS, NOTES, TERMS ===== */}
       {(data.recommendations || data.notes) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
+          <PageHeader companyName={data.company_name} logoSrc={logoSrc} styles={s} />
           <PageFooter data={data} styles={s} />
 
           {data.recommendations ? (

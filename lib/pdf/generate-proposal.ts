@@ -2,6 +2,32 @@ import { renderToBuffer } from "@react-pdf/renderer"
 import { ProposalDocument, type ProposalData } from "./proposal-document"
 import React from "react"
 
+/**
+ * Fetch an image URL and return it as a base64 data URI.
+ * Returns null on any failure (timeout, bad status, too small).
+ */
+async function fetchAsDataUri(url: string): Promise<string | null> {
+  if (!url) return null
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+    if (!res.ok) {
+      console.error(`[PDF] Image fetch failed: ${res.status} — ${url}`)
+      return null
+    }
+    const contentType = res.headers.get("content-type") || "image/jpeg"
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.byteLength < 100) {
+      console.error(`[PDF] Image too small (${buf.byteLength} bytes) — ${url}`)
+      return null
+    }
+    console.log(`[PDF] Image fetched OK: ${url} (${buf.byteLength} bytes, ${contentType})`)
+    return `data:${contentType};base64,${buf.toString("base64")}`
+  } catch (err) {
+    console.error(`[PDF] Image fetch error for ${url}:`, err)
+    return null
+  }
+}
+
 interface GenerateOptions {
   report: Record<string, unknown>
   profile: {
@@ -32,12 +58,26 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
   const logoUrl = profile.logo_url || (report.logo_url as string) || ""
   const captions: string[] = (report.photo_captions as string[]) || []
 
-  // Build visible photos array — pass URLs directly to react-pdf (no pre-fetching)
-  const visiblePhotos = photoUrls
+  // Build list of visible photo URLs with captions
+  const visiblePhotoData = photoUrls
     .map((url, i) => ({ url, caption: captions[i] || "" }))
     .filter((_, i) => photoUrls[i] && photoVisible[i])
 
-  console.log(`[PDF] Generating proposal — logo: ${logoUrl || "(none)"}, photos: ${visiblePhotos.length}`)
+  console.log(`[PDF] Generating proposal — logo: ${logoUrl || "(none)"}, photos: ${visiblePhotoData.length}`)
+
+  // Fetch all images in parallel and convert to base64 data URIs
+  const [logoDataUri, ...photoDataUris] = await Promise.all([
+    fetchAsDataUri(logoUrl),
+    ...visiblePhotoData.map((p) => fetchAsDataUri(p.url)),
+  ])
+
+  console.log(`[PDF] Logo data URI: ${logoDataUri ? `${logoDataUri.length} chars` : "null"}`)
+  console.log(`[PDF] Photo data URIs: ${photoDataUris.filter(Boolean).length}/${visiblePhotoData.length} succeeded`)
+
+  // Build visible photos with data URIs, filtering out any that failed to fetch
+  const visiblePhotos = visiblePhotoData
+    .map((p, i) => ({ src: photoDataUris[i]!, caption: p.caption }))
+    .filter((p) => p.src)
 
   const data: ProposalData = {
     company_name: (profile.company_name || report.company_name || "Roofing Company") as string,
@@ -78,7 +118,7 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
     React.createElement(ProposalDocument, {
       data,
       primaryColor,
-      logoUrl: logoUrl || undefined,
+      logoSrc: logoDataUri || undefined,
       visiblePhotos,
     }) as any
   )
