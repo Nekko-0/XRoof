@@ -118,8 +118,8 @@ export const InvoiceCreateSchema = z.object({
   address: z.string().max(300).optional(),
   job_type: z.string().max(100).optional(),
   amount: z.number().positive("Amount must be positive").max(10000000),
-  notes: z.string().max(5000).optional(),
-  discount: z.number().min(0).max(100).optional(),
+  notes: z.string().max(5000).optional().nullable(),
+  discount: z.number().min(0).max(10000000).optional(),
   payment_methods: z.array(z.string()).optional(),
   line_items: z.array(z.object({
     description: z.string().max(500),
