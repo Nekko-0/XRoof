@@ -571,7 +571,7 @@ export default function PipelinePage() {
           }).length
 
           return (
-            <div key={stage} className="flex flex-col flex-shrink-0 w-[280px] min-h-0">
+            <div key={stage} className="flex flex-col flex-shrink-0 w-[320px] min-h-0">
               {/* Column Header */}
               <div className={`rounded-t-xl border border-border bg-card border-t-[3px] ${config.border} px-3 py-3`}>
                 <div className="flex items-center justify-between">
