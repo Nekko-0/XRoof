@@ -953,6 +953,13 @@ export default function MyJobsPage() {
                       <Camera className="h-3.5 w-3.5" />
                       Photos
                     </button>
+                    <button
+                      onClick={() => openInvoiceModal(job)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+                    >
+                      <Receipt className="h-3.5 w-3.5" />
+                      Invoice
+                    </button>
                     {job.status !== "Completed" ? (
                       <button
                         onClick={() => handleComplete(job.id)}
@@ -964,13 +971,6 @@ export default function MyJobsPage() {
                       </button>
                     ) : (
                       <>
-                        <button
-                          onClick={() => openInvoiceModal(job)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
-                        >
-                          <Receipt className="h-3.5 w-3.5" />
-                          Invoice
-                        </button>
                         <button
                           onClick={() => setReviewModal({ jobId: job.id, customerName: job.customer_name })}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
