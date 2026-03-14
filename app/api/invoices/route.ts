@@ -109,7 +109,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   const v = validateBody(InvoiceCreateSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
-  const { job_id, customer_name, customer_email, customer_phone, address, job_type, amount, notes, discount, payment_methods, line_items, hidden_fields, scope, extra_photo_urls, logo_url } = v.data!
+  const { job_id, customer_name, customer_email, customer_phone, address, job_type, amount, notes, discount, payment_methods, line_items, hidden_fields, scope, extra_photo_urls, logo_url, milestones } = v.data!
 
   // Generate invoice number
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`
@@ -135,6 +135,7 @@ export async function POST(req: Request) {
       scope: scope || null,
       extra_photo_urls: extra_photo_urls || [],
       logo_url: logo_url || null,
+      milestones: milestones || [],
     })
     .select()
     .single()

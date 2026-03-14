@@ -130,6 +130,13 @@ export const InvoiceCreateSchema = z.object({
   scope: z.string().max(5000).optional(),
   extra_photo_urls: z.array(z.string().url()).optional(),
   logo_url: z.string().url().max(2000).optional().nullable(),
+  milestones: z.array(z.object({
+    label: z.string().max(100),
+    percent: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    paid: z.boolean(),
+    due: z.boolean(),
+  })).optional(),
 })
 
 export const InvoiceUpdateSchema = z.object({
