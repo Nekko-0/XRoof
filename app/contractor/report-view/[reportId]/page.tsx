@@ -29,6 +29,9 @@ type ReportView = {
   created_at: string
   measurement_data: any
   materials_visible: boolean
+  estimate_line_items: { description: string; quantity: number; unit_price: number }[] | null
+  pricing_tiers: { label: string; description: string; price: number }[] | null
+  deposit_percent: number | null
 }
 
 export default function ReportViewPage({ params }: { params: Promise<{ reportId: string }> }) {
@@ -296,6 +299,72 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
                   Recommendations
                 </h3>
                 <p className="whitespace-pre-wrap text-sm text-foreground print:text-black">{report.recommendations}</p>
+              </div>
+            )}
+
+            {/* Line Items */}
+            {report.estimate_line_items && report.estimate_line_items.length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                  Line Items
+                </h3>
+                <div className="rounded-lg border border-border overflow-hidden print:border-gray-300">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/30 print:border-gray-300 print:bg-gray-100">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground print:text-gray-500">Description</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground print:text-gray-500">Qty</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground print:text-gray-500">Unit Price</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground print:text-gray-500">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.estimate_line_items.map((item, i) => (
+                        <tr key={i} className="border-b border-border/50 last:border-0 print:border-gray-200">
+                          <td className="px-3 py-2 font-medium text-foreground print:text-black">{item.description}</td>
+                          <td className="px-3 py-2 text-right text-foreground print:text-black">{item.quantity}</td>
+                          <td className="px-3 py-2 text-right text-foreground print:text-black">${item.unit_price.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right font-bold text-foreground print:text-black">${(item.quantity * item.unit_price).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-border bg-secondary/20 print:border-gray-300 print:bg-gray-50">
+                        <td colSpan={3} className="px-3 py-2 text-right text-sm font-bold text-foreground print:text-black">Total</td>
+                        <td className="px-3 py-2 text-right text-sm font-bold text-foreground print:text-black">
+                          ${report.estimate_line_items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Pricing Tiers */}
+            {report.pricing_tiers && report.pricing_tiers.length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                  Pricing Options
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {report.pricing_tiers.map((tier, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-secondary/20 p-4 text-center print:border-gray-300 print:bg-gray-50">
+                      <p className="text-sm font-bold text-foreground print:text-black">{tier.label}</p>
+                      {tier.description && (
+                        <p className="mt-1 text-xs text-muted-foreground print:text-gray-500">{tier.description}</p>
+                      )}
+                      <p className="mt-2 text-2xl font-bold text-primary print:text-[#14532d]">
+                        ${tier.price.toLocaleString()}
+                      </p>
+                      {report.deposit_percent != null && report.deposit_percent > 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground print:text-gray-500">
+                          Deposit: ${Math.round(tier.price * report.deposit_percent / 100).toLocaleString()} ({report.deposit_percent}%)
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
