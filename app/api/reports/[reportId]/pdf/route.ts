@@ -89,6 +89,39 @@ export async function GET(
     if (p) profile = p
   }
 
+  // Debug mode: return JSON with image fetch results instead of PDF
+  if (url.searchParams.get("debug") === "1") {
+    const photoUrls = (report.photo_urls as string[]) || []
+    const photoVisible = (report.photo_visible as boolean[])?.length
+      ? (report.photo_visible as boolean[])
+      : photoUrls.map(() => true)
+    const logoUrl = ((profile.logo_url || report.logo_url || "") as string)
+
+    const items = [
+      { label: "logo", url: logoUrl, visible: true },
+      ...photoUrls.map((u: string, i: number) => ({ label: `photo_${i}`, url: u, visible: photoVisible[i] })),
+    ]
+
+    const results = await Promise.all(
+      items.map(async (item) => {
+        if (!item.url) return { ...item, status: "empty_url" }
+        try {
+          const res = await fetch(item.url, { signal: AbortSignal.timeout(10_000) })
+          return {
+            ...item,
+            status: res.ok ? "ok" : `error_${res.status}`,
+            contentType: res.headers.get("content-type"),
+            size: res.ok ? (await res.arrayBuffer()).byteLength : 0,
+          }
+        } catch (err) {
+          return { ...item, status: "fetch_error", error: String(err) }
+        }
+      })
+    )
+
+    return NextResponse.json({ report_id: reportId, results })
+  }
+
   try {
     const pdfBuffer = await generateProposalPdf({ report, profile })
 
