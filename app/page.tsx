@@ -119,7 +119,7 @@ export default function Home() {
               See Features
             </Link>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">No credit card required</p>
+          <p className="mt-4 text-xs text-muted-foreground">7-day free trial. No credit card required.</p>
         </section>
 
         {/* Feature Showcase */}
@@ -209,7 +209,7 @@ export default function Home() {
                   <span className="text-4xl font-bold text-foreground">$199</span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Cancel anytime</p>
+                <p className="mt-2 text-xs text-muted-foreground">7-day free trial. Cancel anytime.</p>
                 <Link
                   href="/auth"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-primary bg-transparent px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
@@ -235,7 +235,7 @@ export default function Home() {
                   <span className="text-4xl font-bold text-foreground">$169</span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Billed annually ($2,028/yr)</p>
+                <p className="mt-2 text-xs text-muted-foreground">7-day free trial. Billed annually ($2,028/yr).</p>
                 <Link
                   href="/auth"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-colors hover:bg-primary/90"
@@ -256,79 +256,35 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Social Proof / Testimonials */}
+        {/* Built for Roofers */}
         <section className="py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
+            <div className="mx-auto max-w-2xl text-center">
               <h2
                 className="text-3xl font-bold text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Trusted by Roofing Contractors
+                Built by Roofers, for Roofers
               </h2>
-              <p className="mt-3 text-muted-foreground">
-                Real contractors, real results. Here&apos;s what they&apos;re saying.
+              <p className="mt-4 text-muted-foreground leading-relaxed">
+                We built XRoof because we saw roofing contractors wasting hours on spreadsheets, missed follow-ups, and disconnected tools. Every feature is designed around how roofers actually work — from the truck to the office.
               </p>
-            </div>
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  name: "Mike D.",
-                  company: "D&M Roofing",
-                  location: "Milwaukee, WI",
-                  quote: "We used to juggle spreadsheets, texts, and paper estimates. XRoof replaced all of it. Our close rate went up 30% in the first month because we follow up faster now.",
-                  stars: 5,
-                },
-                {
-                  name: "Sarah K.",
-                  company: "Apex Roofing Solutions",
-                  location: "Dallas, TX",
-                  quote: "The satellite measurement tool alone saves me 2 hours per estimate. I can measure a roof, build a proposal, and send it before I even leave my truck.",
-                  stars: 5,
-                },
-                {
-                  name: "Carlos R.",
-                  company: "CR Roofing & Repairs",
-                  location: "Phoenix, AZ",
-                  quote: "My customers love the portal — they can see project progress, photos, and pay invoices online. It makes us look way more professional than the competition.",
-                  stars: 5,
-                },
-              ].map((t) => (
-                <div
-                  key={t.name}
-                  className="rounded-2xl border border-border bg-card p-6 shadow-sm"
-                >
-                  <div className="mb-3 flex gap-0.5">
-                    {Array.from({ length: t.stars }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="mt-4 border-t border-border pt-3">
-                    <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.company} &middot; {t.location}
-                    </p>
-                  </div>
+              <div className="mt-8 grid grid-cols-3 gap-6">
+                <div>
+                  <Users className="mx-auto mb-2 h-8 w-8 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">All-in-One</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Leads, estimates, contracts, payments in one place</p>
                 </div>
-              ))}
-            </div>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-8 text-center">
-              <div>
-                <p className="text-2xl font-bold text-foreground">500+</p>
-                <p className="text-xs text-muted-foreground">Roofs Measured</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">$2M+</p>
-                <p className="text-xs text-muted-foreground">Invoices Collected</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">4.9/5</p>
-                <p className="text-xs text-muted-foreground">Contractor Rating</p>
+                <div>
+                  <Shield className="mx-auto mb-2 h-8 w-8 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Secure</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Bank-level encryption, ESIGN-compliant contracts</p>
+                </div>
+                <div>
+                  <Smartphone className="mx-auto mb-2 h-8 w-8 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Mobile-First</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Works on any device, built for the field</p>
+                </div>
               </div>
             </div>
           </div>
@@ -356,7 +312,7 @@ export default function Home() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <p className="mt-3 text-xs text-muted-foreground">
-                No credit card required. Set up in under 5 minutes.
+                7-day free trial. No credit card required. Set up in under 5 minutes.
               </p>
             </div>
           </div>

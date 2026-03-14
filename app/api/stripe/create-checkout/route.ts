@@ -78,6 +78,7 @@ export async function POST(req: Request) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
+    subscription_data: { trial_period_days: 7 },
     success_url: `${appUrl}/contractor/billing?success=true`,
     cancel_url: `${appUrl}/contractor/billing?canceled=true`,
     metadata: { supabase_user_id: userId, plan },
