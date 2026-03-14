@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import {
-  CreditCard, Check, Zap, Crown, Settings, LinkIcon, CheckCircle,
+  CreditCard, Check, Zap, Crown, LinkIcon, CheckCircle,
   Sparkles, Shield, BarChart3, Users, FileText, Ruler, MessageSquare,
   Calendar, Layers, Star,
 } from "lucide-react"
@@ -28,7 +28,8 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [checkingOut, setCheckingOut] = useState<string | null>(null)
-  const [managingPortal, setManagingPortal] = useState(false)
+  const [canceling, setCanceling] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [connectStatus, setConnectStatus] = useState<ConnectStatus>(null)
   const [connectingStripe, setConnectingStripe] = useState(false)
 
@@ -98,22 +99,34 @@ export default function BillingPage() {
     setConnectingStripe(false)
   }
 
-  const handleManage = async () => {
+  const handleCancel = async () => {
     if (!userId) return
-    setManagingPortal(true)
+    setCanceling(true)
     try {
-      const res = await authFetch("/api/stripe/portal", {
+      const res = await authFetch("/api/stripe/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else toast.error(data.error || "Failed to open portal")
+      if (data.success) {
+        toast.success("Subscription canceled. You'll keep access until the end of your billing period.")
+        setShowCancelConfirm(false)
+        // Refresh sub status
+        const { data: updated } = await supabase
+          .from("subscriptions")
+          .select("plan, status, current_period_end")
+          .eq("user_id", userId)
+          .in("status", ["active", "past_due", "trialing"])
+          .in("plan", ["monthly", "annual"])
+          .maybeSingle()
+        setSub(updated || null)
+      } else {
+        toast.error(data.error || "Failed to cancel subscription")
+      }
     } catch {
-      toast.error("Error opening billing portal")
+      toast.error("Error canceling subscription")
     }
-    setManagingPortal(false)
+    setCanceling(false)
   }
 
   if (loading) {
@@ -188,14 +201,35 @@ export default function BillingPage() {
               Active
             </span>
           </div>
-          <button
-            onClick={handleManage}
-            disabled={managingPortal}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
-          >
-            <Settings className="h-4 w-4" />
-            {managingPortal ? "Opening..." : "Manage Subscription"}
-          </button>
+          {!showCancelConfirm ? (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-secondary"
+            >
+              Cancel Subscription
+            </button>
+          ) : (
+            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+              <p className="mb-3 text-sm text-foreground">
+                Are you sure? You&apos;ll keep access until the end of your current billing period.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCancel}
+                  disabled={canceling}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {canceling ? "Canceling..." : "Yes, Cancel"}
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+                >
+                  Keep Subscription
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ─── Pricing Cards ─── */
