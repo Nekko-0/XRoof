@@ -345,6 +345,14 @@ export default function PipelinePage() {
       setJobs((prev) => [data, ...prev])
       setNewJob({ customer_name: "", address: "", customer_phone: "", customer_email: "", job_type: "", budget: "" })
       setShowAddJob(false)
+      // Auto-create customer record
+      supabase.from("customers").insert({
+        contractor_id: accountId || userId,
+        name: newJob.customer_name.trim(),
+        email: newJob.customer_email || null,
+        phone: newJob.customer_phone || null,
+        address: newJob.address.trim(),
+      }).then(() => {})
       // Fire new_lead automation trigger
       authFetch("/api/automations/trigger", {
         method: "POST",

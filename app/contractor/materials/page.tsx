@@ -43,7 +43,7 @@ export default function MaterialsPage() {
         .eq("job_id", selectedJob)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (report) {
         const area = report.roof_squares ? report.roof_squares * 100 : 0
@@ -51,6 +51,19 @@ export default function MaterialsPage() {
           roofArea: report.measurement_data?.total_area || area,
           pitch: report.roof_pitch || "4/12",
         })
+      } else {
+        // No report for this job yet — check if job has measurement data
+        const { data: job } = await supabase
+          .from("jobs")
+          .select("measurement_data")
+          .eq("id", selectedJob)
+          .single()
+        if (job?.measurement_data?.total_area) {
+          setJobData({
+            roofArea: job.measurement_data.total_area,
+            pitch: job.measurement_data.pitch || "4/12",
+          })
+        }
       }
     }
     load()

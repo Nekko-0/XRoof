@@ -8,16 +8,32 @@ import React from "react"
  */
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   if (!url) return null
+
+  // Normalize relative URLs
+  let fullUrl = url
+  if (url.startsWith("/storage/")) {
+    fullUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}${url}`
+  } else if (url.startsWith("storage/")) {
+    fullUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/${url}`
+  }
+
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    console.log(`[PDF] Fetching image: ${fullUrl}`)
+    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) {
-      console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${url}`)
+      console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${fullUrl}`)
+      return null
+    }
+    const contentType = res.headers.get("content-type") || ""
+    if (!contentType.startsWith("image/")) {
+      console.error(`[PDF] Not an image (${contentType}) — ${fullUrl}`)
       return null
     }
     const arrayBuf = await res.arrayBuffer()
+    console.log(`[PDF] Image fetched OK: ${fullUrl} (${arrayBuf.byteLength} bytes)`)
     return Buffer.from(arrayBuf)
   } catch (err) {
-    console.error(`[PDF] Image fetch error for ${url}:`, err)
+    console.error(`[PDF] Image fetch error for ${fullUrl}:`, err)
     return null
   }
 }

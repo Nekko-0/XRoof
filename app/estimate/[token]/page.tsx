@@ -188,19 +188,7 @@ export default function PublicEstimatePage() {
     )
   }
 
-  if (report?.estimate_accepted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-        <div className="max-w-sm text-center">
-          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-          <h1 className="mb-2 text-xl font-bold text-gray-900">Estimate Already Accepted</h1>
-          <p className="text-sm text-gray-600">
-            This estimate has already been accepted. Your contractor will be in touch with next steps.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const alreadyAccepted = !!report?.estimate_accepted
 
   const visiblePhotos = (report.photo_urls || [])
     .map((url, i) => ({ url, caption: report.photo_captions?.[i] || "", visible: report.photo_visible?.[i] !== false }))
@@ -459,21 +447,28 @@ export default function PublicEstimatePage() {
           )}
 
           {/* Interested Button */}
-          <button
-            onClick={handleInterested}
-            disabled={submitting || !!(report.pricing_tiers && report.pricing_tiers.length > 0 && selectedTier === null)}
-            className="w-full rounded-xl px-6 py-3.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: brandDark }}
-          >
-            {submitting
-              ? "Submitting..."
-              : report.pricing_tiers && selectedTier !== null
-                ? `Accept "${report.pricing_tiers[selectedTier].name}" Option`
-                : report.pricing_tiers && report.pricing_tiers.length > 0
-                  ? "Select an option above"
-                  : "Accept Estimate — Let's Move Forward"
-            }
-          </button>
+          {alreadyAccepted ? (
+            <div className="w-full rounded-xl px-6 py-3.5 text-center text-sm font-bold text-white bg-emerald-600 flex items-center justify-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Estimate Accepted
+            </div>
+          ) : (
+            <button
+              onClick={handleInterested}
+              disabled={submitting || !!(report.pricing_tiers && report.pricing_tiers.length > 0 && selectedTier === null)}
+              className="w-full rounded-xl px-6 py-3.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
+              style={{ backgroundColor: brandDark }}
+            >
+              {submitting
+                ? "Submitting..."
+                : report.pricing_tiers && selectedTier !== null
+                  ? `Accept "${report.pricing_tiers[selectedTier].name}" Option`
+                  : report.pricing_tiers && report.pricing_tiers.length > 0
+                    ? "Select an option above"
+                    : "Accept Estimate — Let's Move Forward"
+              }
+            </button>
+          )}
 
           {/* Have a Question? */}
           <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">

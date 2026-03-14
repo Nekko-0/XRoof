@@ -227,14 +227,33 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     mapInstanceRef.current = map
     geocoderRef.current = new window.google.maps.Geocoder()
 
-    // Drop red pin marker at the geocoded address location — draggable so user can move to correct house
+    // Drop house number label at the geocoded address — draggable so user can move to correct house
     if (addressMarkerRef.current) addressMarkerRef.current.setMap(null)
-    addressMarkerRef.current = new window.google.maps.Marker({
-      position: { lat, lng },
-      map,
-      draggable: true,
-      title: "Drag to correct property",
-    })
+    const houseNum = address.match(/^(\d+)/)?.[1] || ""
+    const labelDiv = document.createElement("div")
+    labelDiv.style.cssText = "background:rgba(0,0,0,0.75);color:#fff;font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.6);white-space:nowrap;cursor:grab;line-height:1.3;"
+    labelDiv.textContent = houseNum || "?"
+    if (window.google.maps.marker?.AdvancedMarkerElement) {
+      addressMarkerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
+        position: { lat, lng },
+        map,
+        gmpDraggable: true,
+        content: labelDiv,
+        title: "Drag to correct property",
+      }) as any
+    } else {
+      addressMarkerRef.current = new window.google.maps.Marker({
+        position: { lat, lng },
+        map,
+        draggable: true,
+        label: { text: houseNum || "?", color: "#fff", fontSize: "11px", fontWeight: "bold" },
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 0,
+        },
+        title: "Drag to correct property",
+      })
+    }
 
     // Track zoom level for label visibility
     map.addListener("zoom_changed", () => {

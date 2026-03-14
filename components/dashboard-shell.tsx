@@ -30,7 +30,7 @@ const contractorNav: NavItem[] = [
   { label: "My Jobs", href: "/contractor/leads", icon: FileText },
   { label: "Customers", href: "/contractor/customers", icon: UserCircle },
   { label: "Measure", href: "/contractor/measure", icon: Ruler },
-  { label: "Reports", href: "/contractor/report-builder", icon: FileText },
+  { label: "Reports", href: "/contractor/reports", icon: FileText },
   { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
   { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
   { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true },

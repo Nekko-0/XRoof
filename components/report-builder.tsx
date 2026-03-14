@@ -1601,9 +1601,13 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                   <label className="text-xs text-muted-foreground">Deposit %:</label>
                   <input
                     type="number"
-                    value={report.deposit_percent ?? 10}
-                    onChange={(e) => updateField("deposit_percent", e.target.value ? Number(e.target.value) : null)}
-                    className="w-16 rounded-lg border border-border bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={report.deposit_percent ?? ""}
+                    onChange={(e) => updateField("deposit_percent", e.target.value === "" ? null : Number(e.target.value))}
+                    placeholder="10"
+                    className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
