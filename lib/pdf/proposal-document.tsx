@@ -2,9 +2,6 @@ import React from "react"
 import { Document, Page, View, Text, Image } from "@react-pdf/renderer"
 import { createProposalStyles } from "./styles"
 
-// Hardcoded 10x10 red PNG — no fetching, no external dependency
-const TEST_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVQYV2P8z8BQz0BFwMgwasCoAgBGWAf/azFCsAAAAABJRU5ErkJggg=="
-
 interface PricingTier {
   name: string
   description: string
@@ -176,10 +173,6 @@ export function ProposalDocument({ data, primaryColor, logoSrc, visiblePhotos }:
             {[data.company_phone, data.company_email].filter(Boolean).join("  |  ")}
           </Text>
         ) : null}
-
-        {/* Diagnostic: hardcoded test image + version marker */}
-        <Image src={TEST_IMAGE} style={{ width: 30, height: 30, marginTop: 10 }} />
-        <Text style={{ fontSize: 8, color: "#999", marginTop: 4 }}>PDF v8</Text>
 
         {/* Bottom accent bar */}
         <View style={s.coverAccentBarBottom} fixed />
