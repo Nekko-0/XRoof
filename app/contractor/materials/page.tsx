@@ -52,10 +52,10 @@ export default function MaterialsPage() {
           pitch: report.roof_pitch || "4/12",
         })
       } else {
-        // No report for this job yet — check if job has measurement data
+        // No report linked by job_id — check if job has measurement data
         const { data: job } = await supabase
           .from("jobs")
-          .select("measurement_data")
+          .select("measurement_data, address")
           .eq("id", selectedJob)
           .single()
         if (job?.measurement_data?.total_area) {
@@ -63,6 +63,22 @@ export default function MaterialsPage() {
             roofArea: job.measurement_data.total_area,
             pitch: job.measurement_data.pitch || "4/12",
           })
+        } else if (job?.address) {
+          // Try matching a report by customer address
+          const { data: addrReport } = await supabase
+            .from("reports")
+            .select("roof_squares, roof_pitch, measurement_data")
+            .eq("customer_address", job.address)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          if (addrReport) {
+            const area = addrReport.roof_squares ? addrReport.roof_squares * 100 : 0
+            setJobData({
+              roofArea: addrReport.measurement_data?.total_area || area,
+              pitch: addrReport.roof_pitch || "4/12",
+            })
+          }
         }
       }
     }
@@ -109,6 +125,9 @@ export default function MaterialsPage() {
             </option>
           ))}
         </select>
+        {selectedJob && jobData.roofArea === 0 && (
+          <p className="mt-2 text-xs text-amber-600">No measurement data found for this job. Enter roof area manually below, or use the Measure tool first.</p>
+        )}
       </div>
 
       <MaterialCalculator

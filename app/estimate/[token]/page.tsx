@@ -48,6 +48,7 @@ type Report = {
   deposit_percent: number | null
   estimate_line_items: EstimateLineItem[] | null
   estimate_accepted: boolean
+  accepted_tier_index: number | null
   brand_color: string
   brand_logo_url: string
   google_review_url: string
@@ -114,6 +115,9 @@ export default function PublicEstimatePage() {
         const data = await res.json()
         if (data.error) { setErrorState("invalid"); setLoading(false); return }
         setReport(data)
+        if (data.estimate_accepted && data.accepted_tier_index != null) {
+          setSelectedTier(data.accepted_tier_index)
+        }
       } catch {
         setErrorState("invalid")
       }
@@ -358,17 +362,19 @@ export default function PublicEstimatePage() {
           {report.pricing_tiers && report.pricing_tiers.length > 0 ? (
             <div className="mb-6">
               <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                <DollarSign className="h-3.5 w-3.5" /> Choose Your Option
+                <DollarSign className="h-3.5 w-3.5" /> {alreadyAccepted ? "Your Selected Option" : "Choose Your Option"}
               </h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {report.pricing_tiers.map((tier, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedTier(i)}
+                    onClick={() => { if (!alreadyAccepted) setSelectedTier(i) }}
                     className={`relative rounded-xl border-2 p-4 text-left transition-all ${
+                      alreadyAccepted ? "cursor-default" : ""
+                    } ${
                       selectedTier === i
                         ? ""
-                        : "border-gray-200 hover:border-gray-300"
+                        : alreadyAccepted ? "border-gray-200 opacity-50" : "border-gray-200 hover:border-gray-300"
                     }`}
                     style={selectedTier === i ? { borderColor: brandColor, backgroundColor: brandLight, boxShadow: `0 0 0 2px ${brandRing}` } : i === 1 ? { borderColor: colorWithOpacity(brandColor, 0.3), backgroundColor: colorWithOpacity(brandColor, 0.05) } : undefined}
                   >

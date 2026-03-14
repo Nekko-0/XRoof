@@ -1,39 +1,66 @@
 import { renderToBuffer } from "@react-pdf/renderer"
+import { createClient } from "@supabase/supabase-js"
 import { ProposalDocument, type ProposalData } from "./proposal-document"
 import React from "react"
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+/**
+ * Extract bucket and path from a Supabase public storage URL.
+ * e.g. "https://xxx.supabase.co/storage/v1/object/public/report-images/file.jpg"
+ *   => { bucket: "report-images", path: "file.jpg" }
+ */
+function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/)
+  if (match) return { bucket: match[1], path: match[2] }
+  return null
+}
+
 /**
  * Fetch an image URL and return it as a Buffer.
- * Returns null if the fetch fails (missing image, CORS, etc.).
+ * Uses Supabase admin download for storage URLs to bypass RLS.
+ * Falls back to raw fetch for external URLs.
  */
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   if (!url) return null
 
-  // Normalize relative URLs
-  let fullUrl = url
-  if (url.startsWith("/storage/")) {
-    fullUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}${url}`
-  } else if (url.startsWith("storage/")) {
-    fullUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/${url}`
-  }
-
   try {
-    console.log(`[PDF] Fetching image: ${fullUrl}`)
-    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) })
+    // Try Supabase storage download first (bypasses RLS)
+    const parsed = parseStorageUrl(url)
+    if (parsed) {
+      console.log(`[PDF] Downloading via Supabase admin: ${parsed.bucket}/${parsed.path}`)
+      const { data, error } = await supabaseAdmin.storage
+        .from(parsed.bucket)
+        .download(parsed.path)
+      if (error || !data) {
+        console.error(`[PDF] Supabase download failed: ${error?.message} — ${url}`)
+        return null
+      }
+      const arrayBuf = await data.arrayBuffer()
+      console.log(`[PDF] Supabase download OK: ${parsed.bucket}/${parsed.path} (${arrayBuf.byteLength} bytes)`)
+      return Buffer.from(arrayBuf)
+    }
+
+    // Fallback: raw fetch for external URLs
+    console.log(`[PDF] Fetching image: ${url}`)
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) {
-      console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${fullUrl}`)
+      console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${url}`)
       return null
     }
     const contentType = res.headers.get("content-type") || ""
     if (!contentType.startsWith("image/")) {
-      console.error(`[PDF] Not an image (${contentType}) — ${fullUrl}`)
+      console.error(`[PDF] Not an image (${contentType}) — ${url}`)
       return null
     }
     const arrayBuf = await res.arrayBuffer()
-    console.log(`[PDF] Image fetched OK: ${fullUrl} (${arrayBuf.byteLength} bytes)`)
+    console.log(`[PDF] Image fetched OK: ${url} (${arrayBuf.byteLength} bytes)`)
     return Buffer.from(arrayBuf)
   } catch (err) {
-    console.error(`[PDF] Image fetch error for ${fullUrl}:`, err)
+    console.error(`[PDF] Image fetch error for ${url}:`, err)
     return null
   }
 }

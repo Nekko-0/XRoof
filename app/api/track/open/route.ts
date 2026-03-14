@@ -27,6 +27,25 @@ export async function GET(req: Request) {
         .single()
 
       if (sentEvent) {
+        // Only record one "opened" event per document to avoid counting contractor previews
+        const { data: existing } = await supabase
+          .from("document_events")
+          .select("id")
+          .eq("document_id", sentEvent.document_id)
+          .eq("document_type", sentEvent.document_type)
+          .eq("event_type", "opened")
+          .limit(1)
+
+        if (existing && existing.length > 0) {
+          // Already recorded an open — skip duplicate
+          return new NextResponse(PIXEL, {
+            headers: {
+              "Content-Type": "image/gif",
+              "Cache-Control": "no-store, no-cache, must-revalidate",
+            },
+          })
+        }
+
         await supabase.from("document_events").insert({
           job_id: sentEvent.job_id,
           document_type: sentEvent.document_type,

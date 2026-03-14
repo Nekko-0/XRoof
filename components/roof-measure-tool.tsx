@@ -119,6 +119,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   const drawingActiveRef = useRef(false)
   const activePlaneIndexRef = useRef(0)
   const addressMarkerRef = useRef<any>(null)
+  const addressRef = useRef("")
   const streetViewInitedRef = useRef(false)
   const edgeLinesRef = useRef<any[]>([])
   const [activeEdgeTool, setActiveEdgeTool] = useState<EdgeType | null>(null)
@@ -173,9 +174,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       previewLineRef.current.setMap(null)
       previewLineRef.current = null
     }
-    // Reset magnifier instance when drawing stops so it re-inits next time
+    // Clear angle indicator when drawing stops (magnifier instance stays alive)
     if (!drawingActive) {
-      magnifierInstanceRef.current = null
       angleIndicatorRef.current = null
       setAngleIndicator(null)
     }
@@ -229,7 +229,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
     // Drop house number label at the geocoded address — draggable so user can move to correct house
     if (addressMarkerRef.current) addressMarkerRef.current.setMap(null)
-    const houseNum = address.match(/^(\d+)/)?.[1] || ""
+    const houseNum = addressRef.current.match(/^(\d+)/)?.[1] || ""
     const labelDiv = document.createElement("div")
     labelDiv.style.cssText = "background:rgba(0,0,0,0.75);color:#fff;font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.6);white-space:nowrap;cursor:grab;line-height:1.3;"
     labelDiv.textContent = houseNum || "?"
@@ -1141,6 +1141,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
     setPlanes(data.planes || [])
     setAddress(data.address || "")
+    addressRef.current = data.address || ""
     setSelectedPitch(data.pitch || "6/12")
     const found = PITCH_DATA.find((p) => p.pitch === data.pitch)
     if (found) setPitchFactor(found.factor)
@@ -1283,7 +1284,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           </label>
           <input
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={(e) => { setAddress(e.target.value); addressRef.current = e.target.value }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="123 Main St, City, State"
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -1406,21 +1407,19 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   </div>
                 )}
 
-                {/* Mini Magnifier */}
-                {drawingActive && magnifierVisible && (
-                  <div
-                    className="absolute top-3 right-3 rounded-lg border-2 border-white/50 shadow-lg overflow-hidden"
-                    style={{ width: 180, height: 180, zIndex: 40 }}
-                  >
-                    <div ref={magnifierMapRef} style={{ width: 180, height: 180 }} />
-                    {/* Crosshair overlay */}
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <div className="absolute h-full w-px bg-red-500/60" />
-                      <div className="absolute w-full h-px bg-red-500/60" />
-                      <div className="absolute h-3 w-3 rounded-full border-2 border-red-500/80" />
-                    </div>
+                {/* Mini Magnifier — always mounted to preserve instance across plane switches */}
+                <div
+                  className="absolute top-3 right-3 rounded-lg border-2 border-white/50 shadow-lg overflow-hidden"
+                  style={{ width: 180, height: 180, zIndex: 40, display: drawingActive && magnifierVisible ? "block" : "none" }}
+                >
+                  <div ref={magnifierMapRef} style={{ width: 180, height: 180 }} />
+                  {/* Crosshair overlay */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="absolute h-full w-px bg-red-500/60" />
+                    <div className="absolute w-full h-px bg-red-500/60" />
+                    <div className="absolute h-3 w-3 rounded-full border-2 border-red-500/80" />
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Drawing Controls */}

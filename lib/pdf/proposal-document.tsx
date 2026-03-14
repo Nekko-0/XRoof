@@ -82,6 +82,15 @@ function formatCurrency(cents: number): string {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
+function detectImageFormat(buf: Buffer): "png" | "jpg" {
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return "png"
+  return "jpg"
+}
+
+function bufferToSrc(buf: Buffer) {
+  return { data: buf, format: detectImageFormat(buf) }
+}
+
 function formatDollars(dollars: number): string {
   return "$" + dollars.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
@@ -95,7 +104,7 @@ function PageHeader({ companyName, logoBuffer, styles }: { companyName: string; 
   return (
     <View style={styles.header} fixed>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        {logoBuffer && <Image style={styles.headerLogo} src={{ data: logoBuffer, format: "png" }} />}
+        {logoBuffer && <Image style={styles.headerLogo} src={bufferToSrc(logoBuffer)} />}
         <Text style={styles.headerCompany}>{companyName}</Text>
       </View>
       <Text style={styles.headerPageNum} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
@@ -148,7 +157,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
         {/* Top accent bar */}
         <View style={s.coverAccentBar} fixed />
 
-        {logoBuffer && <Image style={s.coverLogo} src={{ data: logoBuffer, format: "png" }} />}
+        {logoBuffer && <Image style={s.coverLogo} src={bufferToSrc(logoBuffer)} />}
         <Text style={s.coverCompany}>{data.company_name}</Text>
         {data.company_tagline ? <Text style={s.coverTagline}>{data.company_tagline}</Text> : null}
         <Text style={s.coverTitle}>ROOFING PROPOSAL</Text>
@@ -293,7 +302,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
           <View style={s.photoGrid}>
             {visiblePhotos.map((photo, i) => (
               <View key={i} style={s.photoContainer}>
-                <Image style={s.photo} src={{ data: photo.buffer, format: "png" }} />
+                <Image style={s.photo} src={bufferToSrc(photo.buffer)} />
                 {photo.caption ? <Text style={s.photoCaption}>{photo.caption}</Text> : null}
               </View>
             ))}
