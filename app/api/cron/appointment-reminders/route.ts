@@ -50,7 +50,9 @@ export async function GET(req: Request) {
         }),
       })
       triggered++
-    } catch {}
+    } catch (err) {
+      console.error(`[cron:appointment-reminders] trigger failed for job ${appt.job_id}:`, err)
+    }
   }
 
   return NextResponse.json({ message: `Checked ${appointments.length} appointments for ${tomorrowStr}`, triggered })

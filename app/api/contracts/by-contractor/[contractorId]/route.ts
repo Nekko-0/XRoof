@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
 
 export async function GET(req: Request, { params }: { params: Promise<{ contractorId: string }> }) {
   const { contractorId } = await params
@@ -7,11 +7,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ contract
     return NextResponse.json({ error: "Missing contractorId" }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
+  // Only allow fetching your own contracts
+  if (auth.userId !== contractorId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const supabase = getServiceSupabase()
 
   const { data: contracts } = await supabase
     .from("contracts")

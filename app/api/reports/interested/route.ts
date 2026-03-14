@@ -87,7 +87,7 @@ export async function POST(req: Request) {
       <div style="border:1px solid #e5e5e5;border-top:none;padding:20px;border-radius:0 0 8px 8px;">
         <p style="font-size:14px;margin:0 0 15px;">Hi ${contractorName},</p>
         <p style="font-size:13px;color:#555;margin:0 0 20px;">
-          Great news! <strong>${report.customer_name}</strong> has <strong>accepted your estimate</strong>${selected_tier != null && report.pricing_tiers?.[selected_tier] ? ` (${report.pricing_tiers[selected_tier].name} option)` : ""}. Send them a contract to make it official.
+          Great news! <strong>${report.customer_name}</strong> has <strong>accepted your estimate</strong>${selected_tier != null && report.pricing_tiers?.[selected_tier] ? ` (${report.pricing_tiers[selected_tier]?.name} option)` : ""}. Send them a contract to make it official.
         </p>
 
         <div style="background:#f9f9f9;border-radius:8px;padding:15px;margin-bottom:15px;">

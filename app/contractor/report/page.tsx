@@ -344,7 +344,7 @@ export default function ContractorReportPage() {
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">
               <StickyNote className="mr-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
-              Extra Notes *
+              Extra Notes
             </label>
             <textarea
               value={extraNotes}

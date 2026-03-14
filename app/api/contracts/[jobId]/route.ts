@@ -63,9 +63,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
+    .select("id, contractor_id, customer_name, customer_phone, address, zip_code, job_type, description, budget")
     .eq("id", jobId)
     .maybeSingle()
+
+  // Verify the authenticated user owns this job
+  if (job && job.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
 
   const { data: contract } = await supabase
     .from("contracts")

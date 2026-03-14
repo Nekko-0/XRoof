@@ -52,10 +52,12 @@ export async function POST(req: Request) {
       )
     }
 
-    if (sender !== "homeowner" && sender !== "contractor") {
+    // Public portal endpoint — only homeowners can send from here.
+    // Contractors send via authenticated endpoints.
+    if (sender !== "homeowner") {
       return NextResponse.json(
-        { error: "sender must be 'homeowner' or 'contractor'" },
-        { status: 400 }
+        { error: "Unauthorized sender type" },
+        { status: 403 }
       )
     }
 

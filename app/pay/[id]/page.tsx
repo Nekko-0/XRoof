@@ -59,28 +59,10 @@ export default function PayInvoicePage() {
         const data = await res.json()
         setInvoice(data)
 
+        // Stripe redirects here with ?success=true after payment.
+        // The Stripe webhook handles the actual status update in the database.
+        // We just show a success message to the customer.
         if (searchParams.get("success") === "true") {
-          const msIdx = searchParams.get("milestone")
-          if (msIdx !== null && data.milestones?.length) {
-            const updatedMilestones = [...data.milestones]
-            updatedMilestones[Number(msIdx)] = { ...updatedMilestones[Number(msIdx)], paid: true, due: false }
-            const nextIdx = updatedMilestones.findIndex((m: Milestone) => !m.paid)
-            if (nextIdx >= 0) updatedMilestones[nextIdx] = { ...updatedMilestones[nextIdx], due: true }
-            const allPaid = updatedMilestones.every((m: Milestone) => m.paid)
-            await fetch("/api/invoices", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id, milestones: updatedMilestones, ...(allPaid ? { status: "paid", paid_at: new Date().toISOString() } : {}) }),
-            })
-            setInvoice({ ...data, milestones: updatedMilestones, status: allPaid ? "paid" : data.status })
-          } else if (data.status !== "paid") {
-            await fetch("/api/invoices", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id, status: "paid", paid_at: new Date().toISOString() }),
-            })
-            setInvoice({ ...data, status: "paid" })
-          }
           setJustPaid(true)
         }
       }

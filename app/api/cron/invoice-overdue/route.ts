@@ -50,7 +50,9 @@ export async function GET(req: Request) {
         }),
       })
       triggered++
-    } catch {}
+    } catch (err) {
+      console.error(`[cron:invoice-overdue] trigger failed for job ${inv.job_id}:`, err)
+    }
   }
 
   return NextResponse.json({ message: `Checked ${overdueInvoices.length} overdue invoices`, triggered })

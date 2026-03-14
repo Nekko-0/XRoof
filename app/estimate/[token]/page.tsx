@@ -394,9 +394,9 @@ export default function PublicEstimatePage() {
                   </button>
                 ))}
               </div>
-              {report.deposit_percent && selectedTier !== null && report.pricing_tiers[selectedTier]?.price && (
+              {report.deposit_percent != null && report.deposit_percent > 0 && selectedTier !== null && report.pricing_tiers?.[selectedTier]?.price && (
                 <p className="mt-2 text-center text-xs text-gray-500">
-                  {report.deposit_percent}% deposit: ${Math.round(report.pricing_tiers[selectedTier].price! * report.deposit_percent / 100).toLocaleString()}
+                  {report.deposit_percent}% deposit: ${Math.round(report.pricing_tiers[selectedTier].price * report.deposit_percent / 100).toLocaleString()}
                 </p>
               )}
             </div>
@@ -468,7 +468,7 @@ export default function PublicEstimatePage() {
               {submitting
                 ? "Submitting..."
                 : report.pricing_tiers && selectedTier !== null
-                  ? `Accept "${report.pricing_tiers[selectedTier].name}" Option`
+                  ? `Accept "${report.pricing_tiers?.[selectedTier]?.name}" Option`
                   : report.pricing_tiers && report.pricing_tiers.length > 0
                     ? "Select an option above"
                     : "Accept Estimate — Let's Move Forward"
