@@ -70,6 +70,7 @@ export default function MyJobsPage() {
   const [newLead, setNewLead] = useState({
     customer_name: "",
     customer_phone: "",
+    customer_email: "",
     address: "",
     zip_code: "",
     job_type: "",
@@ -168,18 +169,39 @@ export default function MyJobsPage() {
     if (!userId) return
 
     setSaving(true)
+    const contractorId = accountId || userId
     const { data: insertedJob, error } = await supabase.from("jobs").insert({
       customer_name: newLead.customer_name,
       customer_phone: newLead.customer_phone,
+      customer_email: newLead.customer_email || null,
       address: newLead.address,
       zip_code: newLead.zip_code,
       job_type: newLead.job_type,
       description: newLead.description,
       budget: newLead.budget ? Number(newLead.budget) : null,
       status: "Accepted",
-      contractor_id: accountId || userId,
+      contractor_id: contractorId,
       source: "manual",
     }).select("id").single()
+
+    // Auto-create customer record if not already exists
+    if (!error && newLead.customer_name) {
+      const { data: existing } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("contractor_id", contractorId)
+        .eq("name", newLead.customer_name)
+        .limit(1)
+      if (!existing || existing.length === 0) {
+        await supabase.from("customers").insert({
+          contractor_id: contractorId,
+          name: newLead.customer_name,
+          phone: newLead.customer_phone || null,
+          email: newLead.customer_email || null,
+          address: newLead.address || null,
+        }).catch(() => {})
+      }
+    }
 
     if (error) {
       toast.error("Error adding lead: " + error.message)
@@ -210,7 +232,7 @@ export default function MyJobsPage() {
         })
       }
 
-      setNewLead({ customer_name: "", customer_phone: "", address: "", zip_code: "", job_type: "", description: "", budget: "" })
+      setNewLead({ customer_name: "", customer_phone: "", customer_email: "", address: "", zip_code: "", job_type: "", description: "", budget: "" })
       setShowForm(false)
       await fetchJobs()
     }
@@ -674,6 +696,16 @@ export default function MyJobsPage() {
                 value={newLead.customer_phone}
                 onChange={(e) => setNewLead({ ...newLead, customer_phone: e.target.value })}
                 placeholder="(555) 123-4567"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Email</label>
+              <input
+                type="email"
+                value={newLead.customer_email}
+                onChange={(e) => setNewLead({ ...newLead, customer_email: e.target.value })}
+                placeholder="customer@email.com"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
