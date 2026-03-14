@@ -193,13 +193,15 @@ export default function MyJobsPage() {
         .eq("name", newLead.customer_name)
         .limit(1)
       if (!existing || existing.length === 0) {
-        await supabase.from("customers").insert({
-          contractor_id: contractorId,
-          name: newLead.customer_name,
-          phone: newLead.customer_phone || null,
-          email: newLead.customer_email || null,
-          address: newLead.address || null,
-        }).catch(() => {})
+        try {
+          await supabase.from("customers").insert({
+            contractor_id: contractorId,
+            name: newLead.customer_name,
+            phone: newLead.customer_phone || null,
+            email: newLead.customer_email || null,
+            address: newLead.address || null,
+          })
+        } catch {}
       }
     }
 
