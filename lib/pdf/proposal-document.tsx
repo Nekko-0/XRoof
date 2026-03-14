@@ -75,21 +75,12 @@ export interface ProposalData {
 interface ProposalDocumentProps {
   data: ProposalData
   primaryColor: string
-  logoBuffer?: Buffer | null
-  photoBuffers: (Buffer | null)[]
+  logoUrl?: string
+  visiblePhotos: { url: string; caption: string }[]
 }
 
 function formatCurrency(cents: number): string {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-}
-
-function detectImageFormat(buf: Buffer): "png" | "jpg" {
-  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return "png"
-  return "jpg"
-}
-
-function bufferToSrc(buf: Buffer) {
-  return { data: buf, format: detectImageFormat(buf) }
 }
 
 function formatDollars(dollars: number): string {
@@ -101,11 +92,11 @@ function formatFt(ft: number): string {
 }
 
 // Header rendered on every page (except cover)
-function PageHeader({ companyName, logoBuffer, styles }: { companyName: string; logoBuffer?: Buffer | null; styles: ReturnType<typeof createProposalStyles> }) {
+function PageHeader({ companyName, logoUrl, styles }: { companyName: string; logoUrl?: string; styles: ReturnType<typeof createProposalStyles> }) {
   return (
     <View style={styles.header} fixed>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        {logoBuffer && <Image style={styles.headerLogo} src={bufferToSrc(logoBuffer)} />}
+        {logoUrl && <Image style={styles.headerLogo} src={logoUrl} />}
         <Text style={styles.headerCompany}>{companyName}</Text>
       </View>
       <Text style={styles.headerPageNum} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
@@ -128,17 +119,9 @@ function PageFooter({ data, styles }: { data: ProposalData; styles: ReturnType<t
   )
 }
 
-export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers }: ProposalDocumentProps) {
+export function ProposalDocument({ data, primaryColor, logoUrl, visiblePhotos }: ProposalDocumentProps) {
   const s = createProposalStyles(primaryColor)
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-
-  // Visible photos
-  const visiblePhotos: { buffer: Buffer; caption: string }[] = []
-  data.photo_urls.forEach((url, i) => {
-    if (url && data.photo_visible[i] && photoBuffers[i]) {
-      visiblePhotos.push({ buffer: photoBuffers[i]!, caption: data.photo_captions[i] || "" })
-    }
-  })
 
   // Edge totals
   const edges = data.measurement_data?.edge_totals
@@ -158,7 +141,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
         {/* Top accent bar */}
         <View style={s.coverAccentBar} fixed />
 
-        {logoBuffer && <Image style={s.coverLogo} src={bufferToSrc(logoBuffer)} />}
+        {logoUrl && <Image style={s.coverLogo} src={logoUrl} />}
         <Text style={s.coverCompany}>{data.company_name}</Text>
         {data.company_tagline ? <Text style={s.coverTagline}>{data.company_tagline}</Text> : null}
         <Text style={s.coverTitle}>ROOFING PROPOSAL</Text>
@@ -197,7 +180,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
 
       {/* ===== PROPERTY DETAILS + MEASUREMENTS ===== */}
       <Page size="A4" style={s.page}>
-        <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
+        <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
         <PageFooter data={data} styles={s} />
 
         <Text style={s.sectionTitle}>Property Details</Text>
@@ -296,14 +279,14 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {/* ===== PHOTO GALLERY (conditional) ===== */}
       {visiblePhotos.length > 0 ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
+          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
           <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Property Photos</Text>
           <View style={s.photoGrid}>
             {visiblePhotos.map((photo, i) => (
               <View key={i} style={s.photoContainer}>
-                <Image style={s.photo} src={bufferToSrc(photo.buffer)} />
+                <Image style={s.photo} src={photo.url} />
                 {photo.caption ? <Text style={s.photoCaption}>{photo.caption}</Text> : null}
               </View>
             ))}
@@ -314,7 +297,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {/* ===== SCOPE OF WORK + MATERIALS ===== */}
       {(data.scope_of_work || data.material) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
+          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
           <PageFooter data={data} styles={s} />
 
           {data.scope_of_work ? (
@@ -391,7 +374,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {/* ===== PRICING ===== */}
       {(lineItems.length > 0 || tiers.length > 0 || data.price_quote) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
+          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
           <PageFooter data={data} styles={s} />
 
           <Text style={s.sectionTitle}>Pricing</Text>
@@ -455,7 +438,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
       {/* ===== RECOMMENDATIONS, NOTES, TERMS ===== */}
       {(data.recommendations || data.notes) ? (
         <Page size="A4" style={s.page}>
-          <PageHeader companyName={data.company_name} logoBuffer={logoBuffer} styles={s} />
+          <PageHeader companyName={data.company_name} logoUrl={logoUrl} styles={s} />
           <PageFooter data={data} styles={s} />
 
           {data.recommendations ? (

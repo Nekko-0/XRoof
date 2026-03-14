@@ -27,17 +27,26 @@ export async function GET(req: Request) {
         .single()
 
       if (sentEvent) {
-        // Only record one "opened" event per document to avoid counting contractor previews
-        const { data: existing } = await supabase
-          .from("document_events")
-          .select("id")
-          .eq("document_id", sentEvent.document_id)
-          .eq("document_type", sentEvent.document_type)
-          .eq("event_type", "opened")
-          .limit(1)
+        // Skip tracking if the opener is the contractor (compare against contractor's email)
+        let contractorEmail: string | null = null
+        if (sentEvent.job_id) {
+          const { data: job } = await supabase
+            .from("jobs")
+            .select("contractor_id")
+            .eq("id", sentEvent.job_id)
+            .single()
+          if (job?.contractor_id) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("email")
+              .eq("id", job.contractor_id)
+              .single()
+            contractorEmail = profile?.email || null
+          }
+        }
 
-        if (existing && existing.length > 0) {
-          // Already recorded an open — skip duplicate
+        // If the recipient email matches the contractor's email, skip tracking
+        if (contractorEmail && sentEvent.recipient_email?.toLowerCase() === contractorEmail.toLowerCase()) {
           return new NextResponse(PIXEL, {
             headers: {
               "Content-Type": "image/gif",
@@ -46,6 +55,7 @@ export async function GET(req: Request) {
           })
         }
 
+        // Record every customer open
         await supabase.from("document_events").insert({
           job_id: sentEvent.job_id,
           document_type: sentEvent.document_type,
@@ -55,25 +65,36 @@ export async function GET(req: Request) {
           metadata: { tracking_event_id: eventId },
         })
 
-        // Fire estimate_viewed automation trigger
+        // Fire estimate_viewed automation only on the first open
         if (sentEvent.document_type === "report" && sentEvent.job_id) {
-          const { data: job } = await supabase
-            .from("jobs")
-            .select("contractor_id")
-            .eq("id", sentEvent.job_id)
-            .single()
-          if (job?.contractor_id) {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-            fetch(`${appUrl}/api/automations/trigger`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                trigger: "estimate_viewed",
-                job_id: sentEvent.job_id,
-                contractor_id: job.contractor_id,
-                internal_secret: process.env.CRON_SECRET,
-              }),
-            }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
+          const { data: priorOpens } = await supabase
+            .from("document_events")
+            .select("id")
+            .eq("document_id", sentEvent.document_id)
+            .eq("document_type", sentEvent.document_type)
+            .eq("event_type", "opened")
+            .limit(2)
+
+          // Only fire automation on first open (the one we just inserted)
+          if (priorOpens && priorOpens.length <= 1) {
+            const { data: job } = await supabase
+              .from("jobs")
+              .select("contractor_id")
+              .eq("id", sentEvent.job_id)
+              .single()
+            if (job?.contractor_id) {
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+              fetch(`${appUrl}/api/automations/trigger`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  trigger: "estimate_viewed",
+                  job_id: sentEvent.job_id,
+                  contractor_id: job.contractor_id,
+                  internal_secret: process.env.CRON_SECRET,
+                }),
+              }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
+            }
           }
         }
       }
