@@ -1213,7 +1213,9 @@ function JobCard({
                       <div key={a.id} className="flex items-start gap-1.5 rounded-md bg-secondary/30 px-2 py-1">
                         <span className="mt-0.5 flex-shrink-0 text-muted-foreground/40">{activityIcon(a.type)}</span>
                         <span className="text-[10px] text-foreground/70 flex-1">{a.content}</span>
-                        <span className="text-[9px] text-muted-foreground/30 flex-shrink-0">{timeAgo(a.created_at)}</span>
+                        <span className="text-[9px] text-muted-foreground/30 flex-shrink-0">
+                          {timeAgo(a.created_at)} · {new Date(a.created_at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })} {new Date(a.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </span>
                       </div>
                     ))
                   ) : (
