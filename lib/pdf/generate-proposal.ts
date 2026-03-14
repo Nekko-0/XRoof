@@ -1,10 +1,12 @@
 import { renderToBuffer } from "@react-pdf/renderer"
+import sharp from "sharp"
 import { ProposalDocument, type ProposalData } from "./proposal-document"
 import React from "react"
 
 /**
- * Fetch an image URL and return it as a base64 data URI.
- * Returns null on any failure (timeout, bad status, too small).
+ * Fetch an image URL and return it as a base64 data URI (PNG).
+ * Converts WebP → PNG since react-pdf only supports PNG/JPEG.
+ * Returns null on any failure.
  */
 async function fetchAsDataUri(url: string): Promise<string | null> {
   if (!url) return null
@@ -15,13 +17,21 @@ async function fetchAsDataUri(url: string): Promise<string | null> {
       return null
     }
     const contentType = res.headers.get("content-type") || "image/jpeg"
-    const buf = Buffer.from(await res.arrayBuffer())
+    let buf = Buffer.from(await res.arrayBuffer())
     if (buf.byteLength < 100) {
       console.error(`[PDF] Image too small (${buf.byteLength} bytes) — ${url}`)
       return null
     }
-    console.log(`[PDF] Image fetched OK: ${url} (${buf.byteLength} bytes, ${contentType})`)
-    return `data:${contentType};base64,${buf.toString("base64")}`
+
+    // react-pdf only supports PNG and JPEG — convert WebP (and any other format) to PNG
+    if (contentType.includes("webp") || !contentType.includes("png") && !contentType.includes("jpeg") && !contentType.includes("jpg")) {
+      console.log(`[PDF] Converting ${contentType} → PNG for: ${url}`)
+      buf = await sharp(buf).png().toBuffer()
+    }
+
+    const finalType = contentType.includes("jpeg") || contentType.includes("jpg") ? "image/jpeg" : "image/png"
+    console.log(`[PDF] Image ready: ${url} (${buf.byteLength} bytes, ${finalType})`)
+    return `data:${finalType};base64,${buf.toString("base64")}`
   } catch (err) {
     console.error(`[PDF] Image fetch error for ${url}:`, err)
     return null
