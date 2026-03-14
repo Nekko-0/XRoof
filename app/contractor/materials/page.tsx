@@ -108,9 +108,9 @@ export default function MaterialsPage() {
   const handleExportToEstimate = (materials: MaterialLine[]) => {
     // Store materials data in sessionStorage for the report builder to pick up
     const estimateItems = materials.map((m) => ({
-      description: `${m.item} (${m.quantity} ${m.unit})`,
-      quantity: 1,
-      unit_price: m.total,
+      description: m.item,
+      quantity: m.quantity,
+      unit_price: m.unitPrice,
     }))
     sessionStorage.setItem("material_estimate_items", JSON.stringify(estimateItems))
     toast.success("Material costs copied! Open Report Builder to paste into estimate.")
