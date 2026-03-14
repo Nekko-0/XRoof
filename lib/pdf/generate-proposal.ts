@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { ProposalDocument, type ProposalData } from "./proposal-document"
 import React from "react"
 
+const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -27,36 +28,41 @@ function parseStorageUrl(url: string): { bucket: string; path: string } | null {
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   if (!url) return null
 
+  console.log(`[PDF] fetchImageBuffer called with URL: ${url} (serviceKey: ${hasServiceKey})`)
+
   try {
-    // Try Supabase storage download first (bypasses RLS)
+    // Try Supabase storage admin download first (bypasses RLS)
     const parsed = parseStorageUrl(url)
-    if (parsed) {
-      console.log(`[PDF] Downloading via Supabase admin: ${parsed.bucket}/${parsed.path}`)
+    if (parsed && hasServiceKey) {
+      console.log(`[PDF] Trying Supabase admin download: ${parsed.bucket}/${parsed.path}`)
       const { data, error } = await supabaseAdmin.storage
         .from(parsed.bucket)
         .download(parsed.path)
-      if (error || !data) {
-        console.error(`[PDF] Supabase download failed: ${error?.message} — ${url}`)
-        return null
+      if (!error && data) {
+        const arrayBuf = await data.arrayBuffer()
+        if (arrayBuf.byteLength > 100) {
+          console.log(`[PDF] Supabase download OK: ${parsed.bucket}/${parsed.path} (${arrayBuf.byteLength} bytes)`)
+          return Buffer.from(arrayBuf)
+        }
+        console.warn(`[PDF] Supabase download too small (${arrayBuf.byteLength} bytes), trying raw fetch`)
+      } else {
+        console.warn(`[PDF] Supabase download failed: ${error?.message} — falling back to raw fetch`)
       }
-      const arrayBuf = await data.arrayBuffer()
-      console.log(`[PDF] Supabase download OK: ${parsed.bucket}/${parsed.path} (${arrayBuf.byteLength} bytes)`)
-      return Buffer.from(arrayBuf)
     }
 
-    // Fallback: raw fetch for external URLs
-    console.log(`[PDF] Fetching image: ${url}`)
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    // Raw fetch — works for public bucket URLs and external URLs
+    console.log(`[PDF] Fetching image via raw fetch: ${url}`)
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
+    console.log(`[PDF] Raw fetch response: ${res.status} ${res.statusText} (content-type: ${res.headers.get("content-type")})`)
     if (!res.ok) {
       console.error(`[PDF] Image fetch failed: ${res.status} ${res.statusText} — ${url}`)
       return null
     }
-    const contentType = res.headers.get("content-type") || ""
-    if (!contentType.startsWith("image/")) {
-      console.error(`[PDF] Not an image (${contentType}) — ${url}`)
+    const arrayBuf = await res.arrayBuffer()
+    if (arrayBuf.byteLength < 100) {
+      console.error(`[PDF] Image too small (${arrayBuf.byteLength} bytes) — ${url}`)
       return null
     }
-    const arrayBuf = await res.arrayBuffer()
     console.log(`[PDF] Image fetched OK: ${url} (${arrayBuf.byteLength} bytes)`)
     return Buffer.from(arrayBuf)
   } catch (err) {
@@ -132,6 +138,7 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
     material: (report.material || "") as string,
     notes: (report.notes || "") as string,
     pricing_tiers: (report.pricing_tiers as ProposalData["pricing_tiers"]) || null,
+    accepted_tier_index: (report.accepted_tier_index as number) ?? null,
     deposit_percent: (report.deposit_percent as number) || null,
     estimate_line_items: (report.estimate_line_items as ProposalData["estimate_line_items"]) || null,
     worker_name: (report.worker_name || "") as string,

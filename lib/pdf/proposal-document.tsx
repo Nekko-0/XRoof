@@ -52,6 +52,7 @@ export interface ProposalData {
   notes: string
   // Pricing
   pricing_tiers: PricingTier[] | null
+  accepted_tier_index: number | null
   deposit_percent: number | null
   estimate_line_items: EstimateLineItem[] | null
   // Prepared by
@@ -423,7 +424,7 @@ export function ProposalDocument({ data, primaryColor, logoBuffer, photoBuffers 
           {tiers.length > 0 ? (
             <View style={s.tierContainer}>
               {tiers.map((tier, i) => (
-                <View key={i} style={i === 1 ? s.tierCardPopular : s.tierCard}>
+                <View key={i} style={data.accepted_tier_index != null && i === data.accepted_tier_index ? s.tierCardPopular : s.tierCard}>
                   <Text style={s.tierName}>{tier.name}</Text>
                   {tier.description ? <Text style={s.tierDesc}>{tier.description}</Text> : null}
                   <Text style={s.tierPrice}>{tier.price != null ? formatDollars(tier.price) : "—"}</Text>

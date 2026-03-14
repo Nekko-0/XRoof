@@ -64,11 +64,15 @@ export default function MaterialsPage() {
             pitch: job.measurement_data.pitch || "4/12",
           })
         } else if (job?.address) {
-          // Try matching a report by customer address
+          // Build a fuzzy pattern from the house number for address matching
+          const houseNum = job.address.match(/^(\d+)/)?.[1] || ""
+          const fuzzyPattern = houseNum ? `%${houseNum}%` : `%${job.address.split(" ").slice(0, 2).join("%")}%`
+
+          // Try matching a report by customer address (fuzzy)
           const { data: addrReport } = await supabase
             .from("reports")
             .select("roof_squares, roof_pitch, measurement_data")
-            .eq("customer_address", job.address)
+            .ilike("customer_address", fuzzyPattern)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle()
@@ -78,6 +82,21 @@ export default function MaterialsPage() {
               roofArea: addrReport.measurement_data?.total_area || area,
               pitch: addrReport.roof_pitch || "4/12",
             })
+          } else {
+            // Try matching a saved measurement by address (fuzzy)
+            const { data: measurement } = await supabase
+              .from("measurements")
+              .select("adjusted_area, pitch")
+              .ilike("address", fuzzyPattern)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+            if (measurement?.adjusted_area) {
+              setJobData({
+                roofArea: measurement.adjusted_area,
+                pitch: measurement.pitch || "4/12",
+              })
+            }
           }
         }
       }
