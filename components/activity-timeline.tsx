@@ -65,13 +65,16 @@ function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr)
   const diffMs = now.getTime() - date.getTime()
   const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return "just now"
-  if (diffMin < 60) return `${diffMin}m ago`
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  const datepart = date.toLocaleDateString("en-US", { month: "numeric", day: "numeric" })
+  const stamp = `${datepart} ${time}`
+  if (diffMin < 1) return `just now · ${stamp}`
+  if (diffMin < 60) return `${diffMin}m ago · ${stamp}`
   const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
+  if (diffHr < 24) return `${diffHr}h ago · ${stamp}`
   const diffDay = Math.floor(diffHr / 24)
-  if (diffDay < 7) return `${diffDay}d ago`
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  if (diffDay < 7) return `${diffDay}d ago · ${stamp}`
+  return stamp
 }
 
 export function ActivityTimeline({ jobId }: { jobId: string }) {
