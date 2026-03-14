@@ -26,7 +26,7 @@ async function fetchAsDataUri(url: string): Promise<string | null> {
     // react-pdf only supports PNG and JPEG — convert WebP (and any other format) to PNG
     if (contentType.includes("webp") || !contentType.includes("png") && !contentType.includes("jpeg") && !contentType.includes("jpg")) {
       console.log(`[PDF] Converting ${contentType} → PNG for: ${url}`)
-      buf = await sharp(buf).png().toBuffer()
+      buf = await sharp(buf).png().toBuffer() as Buffer
     }
 
     const finalType = contentType.includes("jpeg") || contentType.includes("jpg") ? "image/jpeg" : "image/png"
