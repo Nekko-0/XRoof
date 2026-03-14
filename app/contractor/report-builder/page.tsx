@@ -38,7 +38,7 @@ function ReportBuilderInner() {
       <ReportBuilder
         reportId={reportId}
         onSaved={() => {}}
-        onPreview={(id) => window.open(`/admin/report-view/${id}`, "_blank")}
+        onPreview={(id) => window.open(`/contractor/report-view/${id}`, "_blank")}
       />
     </div>
   )
