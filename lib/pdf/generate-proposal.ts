@@ -94,7 +94,10 @@ export async function generateProposalPdf({ report, profile }: GenerateOptions):
 
   // Fetch logo and visible photos in parallel
   const photoUrls: string[] = (report.photo_urls as string[]) || []
-  const photoVisible: boolean[] = (report.photo_visible as boolean[]) || []
+  // Default all photos to visible if photo_visible is null/empty (matches estimate page behavior)
+  const photoVisible: boolean[] = (report.photo_visible as boolean[])?.length
+    ? (report.photo_visible as boolean[])
+    : photoUrls.map(() => true)
 
   const logoUrl = profile.logo_url || (report.logo_url as string) || ""
   const visiblePhotoUrls = photoUrls.filter((u, i) => u && photoVisible[i])

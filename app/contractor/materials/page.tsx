@@ -68,34 +68,35 @@ export default function MaterialsPage() {
           const houseNum = job.address.match(/^(\d+)/)?.[1] || ""
           const fuzzyPattern = houseNum ? `%${houseNum}%` : `%${job.address.split(" ").slice(0, 2).join("%")}%`
 
-          // Try matching a report by customer address (fuzzy)
-          const { data: addrReport } = await supabase
-            .from("reports")
-            .select("roof_squares, roof_pitch, measurement_data")
-            .ilike("customer_address", fuzzyPattern)
+          // Check measurements table FIRST (where the Measure tool saves data)
+          const { data: measurement } = await supabase
+            .from("measurements")
+            .select("adjusted_area, pitch")
+            .ilike("address", fuzzyPattern)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle()
-          if (addrReport) {
-            const area = addrReport.roof_squares ? addrReport.roof_squares * 100 : 0
+
+          if (measurement?.adjusted_area) {
             setJobData({
-              roofArea: addrReport.measurement_data?.total_area || area,
-              pitch: addrReport.roof_pitch || "4/12",
+              roofArea: measurement.adjusted_area,
+              pitch: measurement.pitch || "4/12",
             })
           } else {
-            // Try matching a saved measurement by address (fuzzy)
-            const { data: measurement } = await supabase
-              .from("measurements")
-              .select("adjusted_area, pitch")
-              .ilike("address", fuzzyPattern)
+            // Fall back to report address match (only if it has useful data)
+            const { data: addrReport } = await supabase
+              .from("reports")
+              .select("roof_squares, roof_pitch, measurement_data")
+              .ilike("customer_address", fuzzyPattern)
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle()
-            if (measurement?.adjusted_area) {
-              setJobData({
-                roofArea: measurement.adjusted_area,
-                pitch: measurement.pitch || "4/12",
-              })
+            if (addrReport) {
+              const area = addrReport.roof_squares ? addrReport.roof_squares * 100 : 0
+              const total = addrReport.measurement_data?.total_area || area
+              if (total > 0) {
+                setJobData({ roofArea: total, pitch: addrReport.roof_pitch || "4/12" })
+              }
             }
           }
         }
