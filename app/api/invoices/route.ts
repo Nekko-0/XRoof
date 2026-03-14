@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, invoice_number, customer_name, customer_email, customer_phone, address, job_type, amount, status, notes, discount, payment_methods, line_items, scope, extra_photo_urls, logo_url, contractor_id, job_id, created_at")
+      .select("id, invoice_number, customer_name, customer_email, customer_phone, address, job_type, amount, status, notes, discount, payment_methods, line_items, milestones, hidden_fields, scope, extra_photo_urls, logo_url, contractor_id, job_id, created_at")
       .eq("id", id)
       .single()
 
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     // Get company name for the invoice display
     const { data: profile } = await supabase
       .from("profiles")
-      .select("company_name, widget_color, logo_url")
+      .select("company_name, widget_color, logo_url, stripe_connect_account_id")
       .eq("id", data.contractor_id)
       .single()
 
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       } catch {}
     })()
 
-    return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", photo_urls, description })
+    return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", stripe_connected: !!profile?.stripe_connect_account_id, photo_urls, description })
   }
 
   // Authenticated: list invoices for contractor

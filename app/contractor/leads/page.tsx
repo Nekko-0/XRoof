@@ -298,6 +298,11 @@ export default function MyJobsPage() {
   const [invoiceModal, setInvoiceModal] = useState<Job | null>(null)
   const [createdPayUrl, setCreatedPayUrl] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [stripeConnected, setStripeConnected] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    authFetch("/api/stripe/connect").then(r => r.json()).then(d => setStripeConnected(!!d.connected)).catch(() => setStripeConnected(false))
+  }, [])
   const [invoiceForm, setInvoiceForm] = useState({
     customer_name: "",
     customer_phone: "",
@@ -1315,6 +1320,11 @@ export default function MyJobsPage() {
                   </label>
                 ))}
               </div>
+              {stripeConnected === false && invoiceForm.payment_methods.includes("card") && (
+                <div className="mt-2 rounded-lg border border-amber-700/30 bg-amber-900/20 px-3 py-2.5 text-xs text-amber-400">
+                  Card payments require Stripe Connect. <a href="/contractor/billing" className="underline font-semibold">Connect your Stripe account</a> in Billing, or deselect &quot;Card (Stripe)&quot; and use other payment methods.
+                </div>
+              )}
             </div>
 
             {/* Milestone Payments */}
@@ -1385,10 +1395,15 @@ export default function MyJobsPage() {
             {/* Actions / Created Link */}
             {createdPayUrl ? (
               <div className="mt-6">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
                   <span className="text-sm font-bold text-emerald-400">Invoice Created!</span>
                 </div>
+                {invoiceForm.customer_email ? (
+                  <p className="text-xs text-muted-foreground mb-3">Invoice emailed to {invoiceForm.customer_email}</p>
+                ) : (
+                  <p className="text-xs text-amber-400 mb-3">No email sent — add a customer email to auto-send invoices.</p>
+                )}
                 <div className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground break-all select-all mb-3">
                   {createdPayUrl}
                 </div>

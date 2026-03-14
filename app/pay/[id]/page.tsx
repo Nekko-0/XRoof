@@ -41,6 +41,7 @@ type Invoice = {
   milestones: Milestone[]
   brand_color: string
   brand_logo_url: string | null
+  stripe_connected: boolean
 }
 
 export default function PayInvoicePage() {
@@ -128,7 +129,8 @@ export default function PayInvoicePage() {
   const hasDiscount = discountCents > 0
   const hasLineItems = lineItems.length > 0
   const paymentMethods = invoice.payment_methods || ["card"]
-  const hasCard = paymentMethods.includes("card")
+  const hasCard = paymentMethods.includes("card") && invoice.stripe_connected !== false
+  const cardUnavailable = paymentMethods.includes("card") && invoice.stripe_connected === false
   const altMethods = paymentMethods.filter((m) => m !== "card")
   const hidden = new Set(invoice.hidden_fields || [])
   const date = new Date(invoice.created_at).toLocaleDateString("en-US", {
@@ -403,10 +405,20 @@ export default function PayInvoicePage() {
                     ) : null
                   )}
 
+                  {cardUnavailable && (
+                    <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 print:hidden">
+                      <CreditCard className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600">Card payment unavailable</p>
+                        <p className="text-xs text-gray-400">Please use one of the payment methods below, or contact your contractor.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Alternative payment methods */}
                   {altMethods.length > 0 && (
-                    <div className={`${hasCard ? "mt-4" : ""}`}>
-                      {hasCard && altMethods.length > 0 && (
+                    <div className={`${hasCard || cardUnavailable ? "mt-4" : ""}`}>
+                      {(hasCard || cardUnavailable) && altMethods.length > 0 && (
                         <div className="flex items-center gap-3 mb-3">
                           <div className="h-px flex-1 bg-gray-200" />
                           <span className="text-xs font-medium text-gray-400">or pay with</span>
