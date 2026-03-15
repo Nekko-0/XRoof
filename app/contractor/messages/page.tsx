@@ -43,6 +43,7 @@ export default function ContractorMessagesPage() {
   const [newSmsPhone, setNewSmsPhone] = useState("")
   const [newSmsMessage, setNewSmsMessage] = useState("")
   const [showNewSms, setShowNewSms] = useState(false)
+  const [leads, setLeads] = useState<{ id: string; customer_name: string; customer_phone: string }[]>([])
   const threadEndRef = useRef<HTMLDivElement>(null)
 
   // Admin messaging state
@@ -54,7 +55,21 @@ export default function ContractorMessagesPage() {
   useEffect(() => {
     loadConversations()
     loadAdminChat()
+    loadLeads()
   }, [])
+
+  const loadLeads = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, customer_name, customer_phone")
+      .eq("contractor_id", session.user.id)
+      .not("customer_phone", "is", null)
+      .neq("customer_phone", "")
+      .order("created_at", { ascending: false })
+    setLeads(data || [])
+  }
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -253,11 +268,28 @@ export default function ContractorMessagesPage() {
             {/* New SMS Form */}
             {showNewSms && (
               <div className="p-3 border-b border-border bg-primary/5 space-y-2">
+                {leads.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const lead = leads.find((l) => l.id === e.target.value)
+                      if (lead) setNewSmsPhone(lead.customer_phone)
+                    }}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Select a lead...</option>
+                    {leads.map((lead) => (
+                      <option key={lead.id} value={lead.id}>
+                        {lead.customer_name} — {lead.customer_phone}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="tel"
                   value={newSmsPhone}
                   onChange={(e) => setNewSmsPhone(e.target.value)}
-                  placeholder="Phone number"
+                  placeholder="Or enter phone number"
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <textarea

@@ -39,7 +39,7 @@ const contractorNav: NavItem[] = [
   { label: "Materials", href: "/contractor/materials", icon: Calculator },
   { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true },
   { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true },
-  { label: "Support", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
   { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true },
   { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true },
   { label: "Profile", href: "/contractor/profile", icon: User },
