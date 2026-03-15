@@ -42,6 +42,8 @@ type Invoice = {
   brand_color: string
   brand_logo_url: string | null
   stripe_connected: boolean
+  contractor_email: string
+  contractor_phone: string
 }
 
 export default function PayInvoicePage() {
@@ -55,7 +57,8 @@ export default function PayInvoicePage() {
 
   useEffect(() => {
     const fetchInvoice = async () => {
-      const res = await fetch(`/api/invoices?id=${id}`)
+      const isPreview = searchParams.get("preview") === "true"
+      const res = await fetch(`/api/invoices?id=${id}${isPreview ? "&preview=true" : ""}`)
       if (res.ok) {
         const data = await res.json()
         setInvoice(data)
@@ -440,6 +443,39 @@ export default function PayInvoicePage() {
                             </div>
                           )
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact Contractor */}
+                  {(invoice.contractor_email || invoice.contractor_phone) && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-px flex-1 bg-gray-200" />
+                        <span className="text-xs font-medium text-gray-400">or contact contractor directly</span>
+                        <div className="h-px flex-1 bg-gray-200" />
+                      </div>
+                      <div className="flex gap-2">
+                        {invoice.contractor_email && (
+                          <a
+                            href={`mailto:${invoice.contractor_email}`}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors hover:bg-opacity-10"
+                            style={{ borderColor: brandColor, color: brandColor }}
+                          >
+                            <Mail className="h-4 w-4" />
+                            Email
+                          </a>
+                        )}
+                        {invoice.contractor_phone && (
+                          <a
+                            href={`tel:${invoice.contractor_phone}`}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors hover:bg-opacity-10"
+                            style={{ borderColor: brandColor, color: brandColor }}
+                          >
+                            <Phone className="h-4 w-4" />
+                            Call
+                          </a>
+                        )}
                       </div>
                     </div>
                   )}

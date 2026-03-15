@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     // Get company name for the invoice display
     const { data: profile } = await supabase
       .from("profiles")
-      .select("company_name, widget_color, logo_url, stripe_connect_account_id")
+      .select("company_name, widget_color, logo_url, stripe_connect_account_id, email, phone")
       .eq("id", data.contractor_id)
       .single()
 
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
     })()
     }
 
-    return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", stripe_connected: !!profile?.stripe_connect_account_id, photo_urls, description })
+    return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", stripe_connected: !!profile?.stripe_connect_account_id, contractor_email: profile?.email || "", contractor_phone: profile?.phone || "", photo_urls, description })
   }
 
   // Authenticated: list invoices for contractor

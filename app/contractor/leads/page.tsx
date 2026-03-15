@@ -101,6 +101,11 @@ export default function MyJobsPage() {
 
   const handleDelete = async (jobId: string) => {
     if (!confirm("Are you sure you want to delete this lead? This cannot be undone.")) return
+    // Clean up dependent records before deleting the job
+    await supabase.from("document_events").delete().eq("job_id", jobId)
+    await supabase.from("invoices").delete().eq("job_id", jobId)
+    await supabase.from("contracts").delete().eq("job_id", jobId)
+    await supabase.from("reports").update({ job_id: null }).eq("job_id", jobId)
     const { error } = await supabase.from("jobs").delete().eq("id", jobId)
     if (error) {
       toast.error("Error deleting lead: " + error.message)
