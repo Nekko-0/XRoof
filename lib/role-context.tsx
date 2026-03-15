@@ -81,15 +81,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           })
         }
       } catch {
-        // Fallback: treat as owner if API fails
+        // Fallback: grant minimal viewer access if API fails (never grant owner)
         setRoleInfo({
-          role: "admin",
-          granularRole: "owner",
+          role: "viewer",
+          granularRole: "viewer",
           accountId: uid,
           userId: uid,
-          isOwner: true,
+          isOwner: false,
           loading: false,
-          can: () => true,
+          can: (p: Permission) => hasPermission("viewer" as Role, p),
         })
       }
     }
