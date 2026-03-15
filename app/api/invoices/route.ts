@@ -54,7 +54,9 @@ export async function GET(req: Request) {
       if (job?.description) description = job.description
     }
 
-    // Record "viewed" event (fire-and-forget, deduplicate by checking recent views)
+    // Record "viewed" event (skip if contractor preview, deduplicate by checking recent views)
+    const isPreview = searchParams.get("preview") === "true"
+    if (!isPreview) {
     ;(async () => {
       try {
         const { data: recent } = await supabase.from("document_events")
@@ -75,6 +77,7 @@ export async function GET(req: Request) {
         }
       } catch {}
     })()
+    }
 
     return NextResponse.json({ ...data, company_name: profile?.company_name || "", brand_color: profile?.widget_color || "#059669", brand_logo_url: profile?.logo_url || "", stripe_connected: !!profile?.stripe_connect_account_id, photo_urls, description })
   }

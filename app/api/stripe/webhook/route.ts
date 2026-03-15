@@ -105,8 +105,21 @@ export async function POST(req: Request) {
               .eq("id", invoiceId)
           }
 
+          // Record "paid" event for activity feed
+          const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id, amount, customer_name, customer_email").eq("id", invoiceId).single()
+          if (inv) {
+            try {
+              await supabase.from("document_events").insert({
+                job_id: inv.job_id || null,
+                document_type: "invoice",
+                document_id: invoiceId,
+                event_type: "paid",
+                recipient_email: inv.customer_email || inv.customer_name || "",
+              })
+            } catch {}
+          }
+
           // Auto-advance pipeline: Completed (only when ALL invoices for this job are paid)
-          const { data: inv } = await supabase.from("invoices").select("job_id, contractor_id, amount, customer_name").eq("id", invoiceId).single()
           if (inv?.job_id) {
             const { data: allInvoices } = await supabase.from("invoices").select("status").eq("job_id", inv.job_id)
             if (allInvoices?.every((i: any) => i.status === "paid")) {

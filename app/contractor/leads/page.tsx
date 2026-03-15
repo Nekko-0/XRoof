@@ -50,6 +50,7 @@ export default function MyJobsPage() {
   const [hiddenJobs, setHiddenJobs] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<FilterTab>("All")
   const [jobCosts, setJobCosts] = useState<Record<string, number>>({})
+  const [jobInvoices, setJobInvoices] = useState<Record<string, string>>({})
 
   // Advanced filters
   const [searchText, setSearchText] = useState("")
@@ -153,6 +154,20 @@ export default function MyJobsPage() {
           costMap[c.job_id] = (costMap[c.job_id] || 0) + Number(c.amount)
         }
         setJobCosts(costMap)
+      }
+
+      // Fetch invoices per job for "View Invoice" links
+      const { data: invoiceRows } = await supabase
+        .from("invoices")
+        .select("id, job_id")
+        .in("job_id", jobsRaw.map((j: any) => j.id))
+        .order("created_at", { ascending: false })
+      if (invoiceRows) {
+        const invMap: Record<string, string> = {}
+        for (const inv of invoiceRows) {
+          if (!invMap[inv.job_id]) invMap[inv.job_id] = inv.id // keep latest
+        }
+        setJobInvoices(invMap)
       }
     }
 
@@ -426,6 +441,9 @@ export default function MyJobsPage() {
       } else {
         const payUrl = `${window.location.origin}/pay/${data.id}`
         setCreatedPayUrl(payUrl)
+        if (invoiceModal) {
+          setJobInvoices((prev) => ({ ...prev, [invoiceModal.id]: data.id }))
+        }
       }
     } catch {
       toast.error("Failed to create invoice")
@@ -966,6 +984,17 @@ export default function MyJobsPage() {
                       <Receipt className="h-3.5 w-3.5" />
                       Invoice
                     </button>
+                    {jobInvoices[job.id] && (
+                      <a
+                        href={`/pay/${jobInvoices[job.id]}?preview=true`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-900/30"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        View Invoice
+                      </a>
+                    )}
                     {job.status !== "Completed" ? (
                       <button
                         onClick={() => handleComplete(job.id)}
@@ -1430,7 +1459,7 @@ export default function MyJobsPage() {
                     </a>
                   )}
                   <a
-                    href={createdPayUrl}
+                    href={`${createdPayUrl}?preview=true`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"

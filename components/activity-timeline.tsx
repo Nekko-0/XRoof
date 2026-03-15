@@ -36,6 +36,7 @@ const iconMap: Record<string, typeof Clock> = {
   viewed: Eye,
   interested: CheckCircle,
   signed: CheckCircle,
+  paid: DollarSign,
   reminder_sent: Mail,
 }
 
@@ -51,12 +52,13 @@ const colorMap: Record<string, string> = {
   viewed: "text-amber-400",
   interested: "text-emerald-400",
   signed: "text-emerald-400",
+  paid: "text-emerald-400",
   reminder_sent: "text-orange-400",
 }
 
 const docEventLabels: Record<string, Record<string, string>> = {
   report: { sent: "Estimate sent", opened: "Estimate email opened", interested: "Estimate accepted" },
-  invoice: { sent: "Invoice created", viewed: "Invoice viewed", reminder_sent: "Payment reminder sent", opened: "Reminder email opened" },
+  invoice: { sent: "Invoice created", viewed: "Invoice viewed", paid: "Invoice paid", reminder_sent: "Payment reminder sent", opened: "Reminder email opened" },
   contract: { sent: "Contract sent", opened: "Contract email opened", signed: "Contract signed" },
 }
 
