@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { getRoleLabel } from "@/lib/permissions"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   const joinUrl = `${appUrl}/auth/join?token=${token}`
 
-  const roleLabel = member.role === "admin" ? "Admin" : member.role === "sales" ? "Sales" : "Viewer"
+  const roleLabel = getRoleLabel(member.role)
 
   // Send email via Resend
   try {

@@ -46,6 +46,8 @@ export async function POST(req: Request) {
   }
 
   // 2. Set parent_account_id on the new user's profile
+  // Brief delay to ensure auth trigger has created the profile
+  await new Promise(r => setTimeout(r, 500))
   const { error: profileErr } = await supabase
     .from("profiles")
     .update({ parent_account_id: invite.account_id })

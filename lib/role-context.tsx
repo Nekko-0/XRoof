@@ -55,12 +55,28 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
       if (profile?.parent_account_id) {
         // Team member — look up their role from team_members
-        const { data: member } = await supabase
+        let { data: member } = await supabase
           .from("team_members")
-          .select("role")
+          .select("role, id")
           .eq("user_id", uid)
           .eq("account_id", profile.parent_account_id)
           .single()
+
+        // Fallback: if user_id wasn't set during activation, try matching by email
+        if (!member && session.user.email) {
+          const { data: memberByEmail } = await supabase
+            .from("team_members")
+            .select("role, id")
+            .eq("account_id", profile.parent_account_id)
+            .eq("invited_email", session.user.email)
+            .eq("status", "active")
+            .single()
+          if (memberByEmail) {
+            // Self-heal: set the missing user_id
+            await supabase.from("team_members").update({ user_id: uid }).eq("id", memberByEmail.id)
+            member = memberByEmail
+          }
+        }
 
         const memberRole = (member?.role || "viewer") as string
         // Map granular roles to legacy role for backward compatibility
