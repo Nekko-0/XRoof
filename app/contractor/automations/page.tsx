@@ -61,6 +61,17 @@ const DEFAULT_STEPS: Step[] = [
 
 const PLACEHOLDERS = ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{contract_link}", "{invoice_link}", "{portal_link}"]
 
+const TRIGGER_PLACEHOLDERS: Record<string, string[]> = {
+  new_lead: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{portal_link}"],
+  estimate_sent: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{portal_link}"],
+  estimate_viewed: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{portal_link}"],
+  contract_signed: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{contract_link}", "{portal_link}"],
+  payment_received: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{contract_link}", "{invoice_link}", "{portal_link}"],
+  job_completed: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{portal_link}"],
+  invoice_overdue: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{invoice_link}", "{portal_link}"],
+  appointment_reminder: ["{customer_name}", "{address}", "{company_name}", "{phone}", "{portal_link}"],
+}
+
 const PRESET_TEMPLATES = [
   {
     name: "New Lead Nurture",
@@ -68,7 +79,7 @@ const PRESET_TEMPLATES = [
     steps: [
       { day: 0, type: "email" as const, subject: "Thank you for reaching out!", message: "Hi {customer_name}, thank you for requesting a roofing estimate for {address}. We'll review your project and get back to you shortly. Feel free to reply with any questions!" },
       { day: 1, type: "sms" as const, subject: "", message: "Hi {customer_name}, this is {company_name}. We received your roofing request for {address} and will have an estimate ready soon!" },
-      { day: 3, type: "email" as const, subject: "Your estimate is ready", message: "Hi {customer_name}, your roofing estimate for {address} is ready. Click here to view it: {estimate_link}. We're happy to walk you through it anytime." },
+      { day: 3, type: "email" as const, subject: "Update on your roofing project", message: "Hi {customer_name}, just checking in on your roofing project at {address}. We're working on your estimate and will have it ready soon. Feel free to reach out with any questions!" },
       { day: 7, type: "reminder" as const, subject: "", message: "Follow up with {customer_name} about estimate for {address} — no response yet after 7 days." },
       { day: 14, type: "email" as const, subject: "Still interested in your roofing project?", message: "Hi {customer_name}, just checking in about the estimate we sent for {address}. We'd love to help — feel free to reach out with any questions!" },
     ],
@@ -328,6 +339,13 @@ export default function AutomationsPage() {
         </div>
       </div>
 
+      {/* Disclaimer */}
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+        <p className="text-xs text-amber-200/80">
+          <strong className="text-amber-300">Tip:</strong> Automations are triggered by events (estimate sent, contract signed, etc.). Each trigger only shows placeholders guaranteed to exist at that point — so your emails never have broken links. Use our ready-made templates or build your own.
+        </p>
+      </div>
+
       {/* Create Form */}
       {showCreate && (
         <div className="rounded-2xl border border-primary/20 bg-card p-5 shadow-sm">
@@ -396,7 +414,7 @@ export default function AutomationsPage() {
           {/* Placeholders hint */}
           <div className="mt-3 rounded-lg bg-secondary/50 px-3 py-2">
             <p className="text-[10px] font-medium text-muted-foreground">
-              Available placeholders: {PLACEHOLDERS.map((p) => (
+              Available placeholders: {(TRIGGER_PLACEHOLDERS[newTrigger] || PLACEHOLDERS).map((p) => (
                 <code key={p} className="mx-0.5 rounded bg-secondary px-1 py-0.5 text-[10px] font-bold text-foreground">{p}</code>
               ))}
             </p>

@@ -143,6 +143,23 @@ export async function GET(req: Request) {
         portal_link: `${appUrl}/portal/${item.job_id}`,
       }
 
+      // Safety check: skip if message uses document link placeholders that resolved to empty
+      const docLinks = [
+        { placeholder: "{estimate_link}", value: vars.estimate_link },
+        { placeholder: "{contract_link}", value: vars.contract_link },
+        { placeholder: "{invoice_link}", value: vars.invoice_link },
+      ]
+      const hasEmptyDocLink = docLinks.some(
+        (dl) => item.message.includes(dl.placeholder) && !dl.value
+      )
+      if (hasEmptyDocLink) {
+        await supabase.from("scheduled_automations")
+          .update({ status: "skipped", error: "Document link not available yet" })
+          .eq("id", item.id)
+        failed++
+        continue
+      }
+
       const message = replacePlaceholders(item.message, vars)
       const subject = item.subject ? replacePlaceholders(item.subject, vars) : ""
 
