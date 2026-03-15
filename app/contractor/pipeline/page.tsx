@@ -9,7 +9,7 @@ import {
   MapPin, Phone, DollarSign, MessageSquare, Clock, ChevronDown,
   Send, CheckCircle, ArrowRight, Zap, Plus, X,
   Filter, ArrowUpDown, Mail, FileText, PenTool, Receipt, Calendar,
-  AlertCircle, Trash2, TrendingUp,
+  AlertCircle, Trash2, TrendingUp, ExternalLink,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -1099,6 +1099,14 @@ function JobCard({
                 <CheckCircle className="h-3 w-3" /> Work Order
               </a>
             )}
+            <a
+              href={`/portal/${job.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 rounded-lg bg-secondary/60 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" /> Portal
+            </a>
           </div>
 
           {/* Move Stage */}
