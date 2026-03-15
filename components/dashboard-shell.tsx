@@ -12,6 +12,7 @@ import { NAV_PERMISSIONS } from "@/lib/permissions"
 import { NotificationBell } from "@/components/notification-bell"
 import { CommandPalette } from "@/components/command-palette"
 import { useRole } from "@/lib/role-context"
+import { getRoleLabel } from "@/lib/permissions"
 
 interface NavItem {
   label: string
@@ -68,7 +69,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { role: teamRole, accountId, can } = useRole()
+  const { role: teamRole, granularRole, isOwner, accountId, can } = useRole()
   const isContractor = role === "contractor"
 
   // Search
@@ -113,7 +114,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     })
   }, [role, teamRole, can])
 
-  const roleLabel = role === "admin" ? "Admin" : teamRole === "admin" ? "Owner" : "Contractor"
+  const roleLabel = isOwner ? "Owner" : getRoleLabel(granularRole)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
