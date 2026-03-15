@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { hasPermission, type Role, type Permission } from "@/lib/permissions"
+import { authFetch } from "@/lib/auth-fetch"
 
 type RoleInfo = {
   role: "admin" | "sales" | "viewer"
@@ -46,57 +47,41 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
       const uid = session.user.id
 
-      // Check if user has a parent_account_id (team member)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("parent_account_id")
-        .eq("id", uid)
-        .single()
+      // Fetch role from server-side API (bypasses RLS)
+      try {
+        const res = await authFetch("/api/team/my-role")
+        const data = await res.json()
 
-      if (profile?.parent_account_id) {
-        // Team member — look up their role from team_members
-        let { data: member } = await supabase
-          .from("team_members")
-          .select("role, id")
-          .eq("user_id", uid)
-          .eq("account_id", profile.parent_account_id)
-          .single()
+        if (data.isOwner) {
+          setRoleInfo({
+            role: "admin",
+            granularRole: "owner",
+            accountId: data.accountId || uid,
+            userId: uid,
+            isOwner: true,
+            loading: false,
+            can: () => true,
+          })
+        } else {
+          const memberRole = (data.role || "viewer") as string
+          const legacyRole: "admin" | "sales" | "viewer" =
+            ["admin", "office_manager"].includes(memberRole) ? "admin" :
+            ["sales"].includes(memberRole) ? "sales" :
+            "viewer"
+          const granular = memberRole as Role
 
-        // Fallback: if user_id wasn't set during activation, try matching by email
-        if (!member && session.user.email) {
-          const { data: memberByEmail } = await supabase
-            .from("team_members")
-            .select("role, id")
-            .eq("account_id", profile.parent_account_id)
-            .eq("invited_email", session.user.email)
-            .eq("status", "active")
-            .single()
-          if (memberByEmail) {
-            // Self-heal: set the missing user_id
-            await supabase.from("team_members").update({ user_id: uid }).eq("id", memberByEmail.id)
-            member = memberByEmail
-          }
+          setRoleInfo({
+            role: legacyRole,
+            granularRole: granular,
+            accountId: data.accountId || uid,
+            userId: uid,
+            isOwner: false,
+            loading: false,
+            can: (p: Permission) => hasPermission(granular, p),
+          })
         }
-
-        const memberRole = (member?.role || "viewer") as string
-        // Map granular roles to legacy role for backward compatibility
-        const legacyRole: "admin" | "sales" | "viewer" =
-          ["admin", "office_manager"].includes(memberRole) ? "admin" :
-          ["sales"].includes(memberRole) ? "sales" :
-          "viewer"
-        const granular = memberRole as Role
-
-        setRoleInfo({
-          role: legacyRole,
-          granularRole: granular,
-          accountId: profile.parent_account_id,
-          userId: uid,
-          isOwner: false,
-          loading: false,
-          can: (p: Permission) => hasPermission(granular, p),
-        })
-      } else {
-        // Account owner
+      } catch {
+        // Fallback: treat as owner if API fails
         setRoleInfo({
           role: "admin",
           granularRole: "owner",

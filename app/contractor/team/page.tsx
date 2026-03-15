@@ -45,6 +45,8 @@ export default function TeamPage() {
   const [inviteError, setInviteError] = useState("")
   const [resending, setResending] = useState<string | null>(null)
   const [showPermissions, setShowPermissions] = useState(false)
+  const [ownerName, setOwnerName] = useState("")
+  const [ownerEmail, setOwnerEmail] = useState("")
 
   useEffect(() => {
     if (!accountId) return
@@ -55,6 +57,13 @@ export default function TeamPage() {
       setLoading(false)
     }
     fetchMembers()
+    // Fetch owner profile
+    supabase.from("profiles").select("username, email").eq("id", accountId).single().then(({ data }) => {
+      if (data) {
+        setOwnerName(data.username || "Owner")
+        setOwnerEmail(data.email || "")
+      }
+    })
   }, [accountId])
 
   const handleInvite = async () => {
@@ -306,6 +315,25 @@ export default function TeamPage() {
           <Users className="h-4 w-4 text-muted-foreground" />
           Team Members ({members.length})
         </h3>
+
+        {/* Owner row */}
+        {ownerName && (
+          <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-sm mb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-sm font-bold text-amber-400">
+              {ownerName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">{ownerName}</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Mail className="h-3 w-3" /> {ownerEmail}
+              </p>
+            </div>
+            <span className="rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 border border-amber-500/20">
+              <Crown className="h-3 w-3 inline mr-1" />
+              Owner
+            </span>
+          </div>
+        )}
 
         {members.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-border/40 p-8 text-center">
