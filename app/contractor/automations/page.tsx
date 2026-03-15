@@ -53,11 +53,45 @@ const STEP_TYPES = [
   { value: "notification", label: "Notification", icon: BellRing, color: "text-purple-400", bg: "bg-purple-500/10" },
 ]
 
-const DEFAULT_STEPS: Step[] = [
-  { day: 1, type: "email", subject: "Thank you for your time", message: "Thank you for allowing us to provide an estimate for your roofing project. Please don't hesitate to reach out with any questions." },
-  { day: 3, type: "sms", subject: "", message: "Hi {customer_name}, just following up on the estimate we sent for {address}. Happy to answer any questions!" },
-  { day: 7, type: "reminder", subject: "", message: "It's been a week since the estimate was sent to {customer_name}. Consider giving them a call." },
-]
+const TRIGGER_DEFAULT_STEPS: Record<string, Step[]> = {
+  estimate_sent: [
+    { day: 1, type: "email", subject: "Thank you for your time", message: "Hi {customer_name}, thank you for allowing us to provide an estimate for your roofing project at {address}. Please don't hesitate to reach out with any questions." },
+    { day: 3, type: "sms", subject: "", message: "Hi {customer_name}, just following up on the estimate we sent for {address}. Happy to answer any questions!" },
+    { day: 7, type: "reminder", subject: "", message: "It's been a week since the estimate was sent to {customer_name}. Consider giving them a call." },
+  ],
+  new_lead: [
+    { day: 0, type: "email", subject: "Thank you for reaching out!", message: "Hi {customer_name}, thank you for requesting a roofing estimate for {address}. We'll review your project and get back to you shortly. Feel free to reply with any questions!" },
+    { day: 1, type: "sms", subject: "", message: "Hi {customer_name}, this is {company_name}. We received your roofing request for {address} and will have an estimate ready soon!" },
+    { day: 7, type: "reminder", subject: "", message: "Follow up with {customer_name} about their roofing project at {address} — no response yet after 7 days." },
+  ],
+  estimate_viewed: [
+    { day: 0, type: "sms", subject: "", message: "Hi {customer_name}, we noticed you checked out the estimate for {address}. Have any questions? We're happy to walk you through it!" },
+    { day: 3, type: "email", subject: "Any questions about your estimate?", message: "Hi {customer_name}, I wanted to follow up since you viewed the estimate for {address}. Would you like to schedule a call to go over the details?" },
+  ],
+  contract_signed: [
+    { day: 0, type: "email", subject: "Thank you for signing!", message: "Hi {customer_name}, thank you for signing the contract for {address}. We're excited to get started on your project! We'll be in touch soon with next steps." },
+    { day: 1, type: "sms", subject: "", message: "Hi {customer_name}, thanks again for choosing {company_name}! We'll reach out shortly to schedule your project." },
+  ],
+  payment_received: [
+    { day: 0, type: "email", subject: "Payment received — thank you!", message: "Hi {customer_name}, we've received your payment for {address}. Thank you! If you have any questions, don't hesitate to reach out." },
+    { day: 7, type: "email", subject: "How was your experience with {company_name}?", message: "Hi {customer_name}, we hope you're happy with the work at {address}. A quick Google review would mean the world to us!" },
+  ],
+  job_completed: [
+    { day: 1, type: "email", subject: "How was your experience with {company_name}?", message: "Hi {customer_name}, congratulations on your new roof at {address}! We'd love to hear about your experience. A quick Google review would mean the world to us." },
+    { day: 5, type: "sms", subject: "", message: "Hi {customer_name}! We hope you're enjoying your new roof. If you have a moment, we'd appreciate a quick Google review. Thank you!" },
+  ],
+  invoice_overdue: [
+    { day: 0, type: "email", subject: "Friendly reminder: Invoice pending", message: "Hi {customer_name}, this is a friendly reminder that your invoice for {address} is now overdue. You can pay online here: {invoice_link}. Please let us know if you have any questions." },
+    { day: 3, type: "sms", subject: "", message: "Hi {customer_name}, gentle reminder that your roofing invoice is pending. Pay online: {invoice_link}" },
+    { day: 7, type: "reminder", subject: "", message: "Invoice for {customer_name} at {address} is 7+ days overdue. Consider a phone call." },
+  ],
+  appointment_reminder: [
+    { day: 0, type: "sms", subject: "", message: "Hi {customer_name}, this is {company_name}. Just a reminder about your appointment tomorrow at {address}. See you then!" },
+    { day: 0, type: "email", subject: "Appointment reminder — tomorrow", message: "Hi {customer_name}, just a reminder that your roofing appointment at {address} is scheduled for tomorrow. Please let us know if you need to reschedule." },
+  ],
+}
+
+const DEFAULT_STEPS: Step[] = TRIGGER_DEFAULT_STEPS.estimate_sent
 
 const PLACEHOLDERS = ["{customer_name}", "{address}", "{company_name}", "{phone}", "{estimate_link}", "{contract_link}", "{invoice_link}", "{portal_link}"]
 
@@ -342,7 +376,7 @@ export default function AutomationsPage() {
       {/* Disclaimer */}
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
         <p className="text-xs text-amber-200/80">
-          <strong className="text-amber-300">Tip:</strong> Automations are triggered by events (estimate sent, contract signed, etc.). Each trigger only shows placeholders guaranteed to exist at that point — so your emails never have broken links. Use our ready-made templates or build your own.
+          <strong className="text-amber-300">Tip:</strong> Automations are triggered by events (estimate sent, contract signed, etc.). Each trigger only shows placeholders guaranteed to exist at that point — so your emails never have broken links. Use our ready-made templates or build your own with caution.
         </p>
       </div>
 
@@ -401,7 +435,7 @@ export default function AutomationsPage() {
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Trigger Event</label>
               <select
                 value={newTrigger}
-                onChange={(e) => setNewTrigger(e.target.value)}
+                onChange={(e) => { setNewTrigger(e.target.value); setNewSteps((TRIGGER_DEFAULT_STEPS[e.target.value] || DEFAULT_STEPS).map((s) => ({ ...s }))) }}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground"
               >
                 {TRIGGERS.map((t) => (
