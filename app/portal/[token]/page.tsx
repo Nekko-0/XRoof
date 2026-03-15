@@ -487,7 +487,7 @@ export default function HomeownerPortal() {
                     <a key={inv.id} href={`/pay/${inv.id}`} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3 hover:bg-gray-800 transition-colors">
                       <div className="flex items-center gap-3">
                         <CreditCard className="h-4 w-4 text-amber-400" />
-                        <div><p className="text-sm font-semibold text-white">Pay Invoice — ${inv.amount.toLocaleString()}</p><p className="text-[10px] text-gray-400">{inv.invoice_number || formatDate(inv.created_at)}</p></div>
+                        <div><p className="text-sm font-semibold text-white">Pay Invoice — ${(inv.amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p><p className="text-[10px] text-gray-400">{inv.invoice_number || formatDate(inv.created_at)}</p></div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-500" />
                     </a>
@@ -687,7 +687,7 @@ export default function HomeownerPortal() {
                     return (
                       <div key={inv.id} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3">
                         <div>
-                          <p className="text-sm font-semibold text-white">${inv.amount.toLocaleString()}{inv.invoice_number && <span className="ml-2 text-xs text-gray-500">#{inv.invoice_number}</span>}</p>
+                          <p className="text-sm font-semibold text-white">${(inv.amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}{inv.invoice_number && <span className="ml-2 text-xs text-gray-500">#{inv.invoice_number}</span>}</p>
                           <p className="text-[10px] text-gray-500">{formatDate(inv.created_at)}</p>
                         </div>
                         <div className="flex items-center gap-2">
