@@ -2,25 +2,44 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
+
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
+    const checkRole = (session: any) => {
+      if (!session) {
         router.push("/auth")
-      } else {
+        return false
+      }
+      if (session.user.email?.toLowerCase() === ADMIN_EMAIL) {
+        router.push("/admin/dashboard")
+        return false
+      }
+      return true
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (checkRole(session)) {
         setChecked(true)
       }
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        router.push("/auth")
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        if (!checkRole(session)) {
+          setChecked(false)
+        }
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [router])
 
   if (!checked) {

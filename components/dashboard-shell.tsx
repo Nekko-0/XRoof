@@ -2,65 +2,139 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut } from "lucide-react"
-import { useState } from "react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck, Globe } from "lucide-react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabaseClient"
+import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { NAV_PERMISSIONS } from "@/lib/permissions"
+import { NotificationBell } from "@/components/notification-bell"
+import { CommandPalette } from "@/components/command-palette"
+import { useRole } from "@/lib/role-context"
 
 interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
+  adminOnly?: boolean
 }
 
 interface DashboardShellProps {
   children: React.ReactNode
-  role: "homeowner" | "contractor"
+  role: "contractor" | "admin"
 }
-
-const homeownerNav: NavItem[] = [
-  { label: "Dashboard", href: "/homeowner/dashboard", icon: Home },
-  { label: "Post Job", href: "/homeowner/post-job", icon: FileText },
-  { label: "Messages", href: "/homeowner/messages", icon: MessageSquare },
-  { label: "Profile", href: "/homeowner/profile", icon: User },
-]
 
 const contractorNav: NavItem[] = [
   { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
-  { label: "View Leads", href: "/contractor/leads", icon: FileText },
-  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+  { label: "My Jobs", href: "/contractor/leads", icon: FileText },
+  { label: "Customers", href: "/contractor/customers", icon: UserCircle },
+  { label: "Measure", href: "/contractor/measure", icon: Ruler },
+  { label: "Reports", href: "/contractor/reports", icon: FileText },
+  { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
+  { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
+  { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true },
+  { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true },
+  { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true },
+  { label: "Materials", href: "/contractor/materials", icon: Calculator },
+  { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true },
+  { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true },
+  { label: "Support", href: "/contractor/messages", icon: MessageSquare },
+  { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true },
+  { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true },
   { label: "Profile", href: "/contractor/profile", icon: User },
+]
+
+const adminNav: NavItem[] = [
+  { label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
+  { label: "Leads", href: "/admin/jobs", icon: ClipboardList },
+  { label: "Contractors", href: "/admin/contractors", icon: Users },
+  { label: "Measure", href: "/admin/measure", icon: Ruler },
+  { label: "Reports", href: "/admin/reports", icon: FileText },
+  { label: "Measurements", href: "/admin/measurement-requests", icon: Crosshair },
+  { label: "Support", href: "/admin/messages", icon: MessageSquare },
+]
+
+// Bottom tab bar items for contractor mobile
+const contractorTabs: NavItem[] = [
+  { label: "Home", href: "/contractor/dashboard", icon: Home },
+  { label: "Jobs", href: "/contractor/leads", icon: FileText },
+  { label: "Field", href: "/contractor/field", icon: Smartphone },
+  { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
+  { label: "More", href: "/contractor/profile", icon: Menu },
 ]
 
 export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const navItems = role === "homeowner" ? homeownerNav : contractorNav
-  const roleLabel = role === "homeowner" ? "Homeowner" : "Contractor"
+  const { role: teamRole, accountId, can } = useRole()
+  const isContractor = role === "contractor"
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<{ type: string; label: string; sub: string; href: string }[]>([])
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim() || !accountId) { setSearchResults([]); return }
+    try {
+      const res = await authFetch(`/api/search?q=${encodeURIComponent(q)}&contractor_id=${accountId}`)
+      const data = await res.json()
+      setSearchResults(data.results || [])
+    } catch { setSearchResults([]) }
+  }, [accountId])
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (!searchQuery.trim()) { setSearchResults([]); return }
+    searchTimer.current = setTimeout(() => doSearch(searchQuery), 300)
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [searchQuery, doSearch])
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false)
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
+
+  // Filter nav items based on granular permissions
+  const navItems = useMemo(() => {
+    const items = role === "admin" ? adminNav : contractorNav
+    if (role === "admin" || teamRole === "admin") return items
+    return items.filter((item) => {
+      const requiredPerm = NAV_PERMISSIONS[item.href]
+      if (!requiredPerm) return !item.adminOnly // fallback to legacy check
+      return can(requiredPerm)
+    })
+  }, [role, teamRole, can])
+
+  const roleLabel = role === "admin" ? "Admin" : teamRole === "admin" ? "Owner" : "Contractor"
 
   const handleLogout = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
     await supabase.auth.signOut()
     router.push("/")
   }
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile overlay */}
-      {mobileOpen && (
+      <CommandPalette />
+      {/* Mobile overlay — admin only */}
+      {mobileOpen && !isContractor && (
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — hidden on mobile for contractor, hamburger for admin */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
+          isContractor
+            ? "-translate-x-full lg:translate-x-0"
+            : mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
@@ -69,7 +143,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
               <Home className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold text-sidebar-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-              RoofConnect
+              XRoof
             </span>
           </Link>
           <button
@@ -84,12 +158,44 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {roleLabel} Portal
           </p>
+          {isContractor && (
+            <div ref={searchRef} className="relative mb-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true) }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search jobs, customers..."
+                  className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/50"
+                />
+              </div>
+              {searchOpen && searchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+                  {searchResults.map((r, i) => (
+                    <Link
+                      key={i}
+                      href={r.href}
+                      onClick={() => { setSearchOpen(false); setSearchQuery(""); setMobileOpen(false) }}
+                      className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-secondary transition-colors"
+                    >
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary">{r.type}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">{r.label}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 px-4 py-2">
           <ul className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
               return (
                 <li key={item.href}>
                   <Link
@@ -124,22 +230,61 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-8">
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground lg:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-4 w-4" />
-          </button>
+        <header className={cn(
+          "flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:h-16 lg:px-8",
+          isContractor && "lg:flex"
+        )}>
+          {/* Hamburger — admin mobile only */}
+          {!isContractor && (
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          )}
           <h1
-            className="text-lg font-semibold text-foreground"
+            className={cn(
+              "flex-1 text-lg font-semibold text-foreground",
+              isContractor && "text-center lg:text-left"
+            )}
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {navItems.find((item) => item.href === pathname)?.label || "Dashboard"}
+            {navItems.find((item) => item.href === pathname || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings")))?.label || "Dashboard"}
           </h1>
+          <NotificationBell />
         </header>
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className={cn(
+          "flex-1 p-4 lg:p-8",
+          isContractor && "pb-24 lg:pb-8"
+        )}>
+          {children}
+        </main>
       </div>
+
+      {/* Bottom tab bar — contractor mobile only */}
+      {isContractor && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom lg:hidden">
+          {contractorTabs.map((tab) => {
+            const isActive = pathname === tab.href || (tab.href === "/contractor/dashboard" && pathname.startsWith("/contractor/leads"))
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <tab.icon className={cn("h-6 w-6", isActive && "text-primary")} />
+                {tab.label}
+              </Link>
+            )
+          })}
+        </nav>
+      )}
     </div>
   )
 }
