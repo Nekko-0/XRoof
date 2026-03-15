@@ -156,7 +156,7 @@ export default function PipelinePage() {
     const loadRelated = async () => {
       const [contractsRes, invoicesRes, reportsRes, followupsRes] = await Promise.all([
         supabase.from("contracts").select("job_id, status, customer_signed_at").in("job_id", jobIds),
-        supabase.from("invoices").select("job_id, status, amount").in("job_id", jobIds),
+        supabase.from("invoices").select("job_id, status, amount, milestones").in("job_id", jobIds),
         supabase.from("reports").select("job_id, report_completed, viewing_token").in("job_id", jobIds),
         supabase.from("followups").select("job_id, due_date, completed").in("job_id", jobIds).eq("completed", false),
       ])
@@ -173,10 +173,18 @@ export default function PipelinePage() {
         if (!invoices[inv.job_id]) invoices[inv.job_id] = { total: 0, paid: 0, count: 0, paidCount: 0 }
         const amt = (inv.amount || 0) / 100 // cents to dollars
         invoices[inv.job_id].total += amt
-        invoices[inv.job_id].count += 1
-        if (inv.status === "paid") {
-          invoices[inv.job_id].paid += amt
-          invoices[inv.job_id].paidCount += 1
+        const milestones = Array.isArray(inv.milestones) && inv.milestones.length > 0 ? inv.milestones : null
+        if (milestones) {
+          invoices[inv.job_id].count += milestones.length
+          invoices[inv.job_id].paidCount += milestones.filter((m: any) => m.paid).length
+          const paidAmt = milestones.filter((m: any) => m.paid).reduce((sum: number, m: any) => sum + (m.amount || 0), 0) / 100
+          invoices[inv.job_id].paid += paidAmt
+        } else {
+          invoices[inv.job_id].count += 1
+          if (inv.status === "paid") {
+            invoices[inv.job_id].paid += amt
+            invoices[inv.job_id].paidCount += 1
+          }
         }
       }
 
