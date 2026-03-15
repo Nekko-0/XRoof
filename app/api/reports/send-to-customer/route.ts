@@ -80,6 +80,8 @@ export async function POST(req: Request) {
         This link expires on ${expiryDate}
       </p>
 
+      ${report.job_id ? `<p style="font-size:12px;text-align:center;margin:0 0 20px;"><a href="${appUrl}/portal/${report.job_id}" style="color:#22c55e;text-decoration:underline;">View Your Project Portal</a></p>` : ""}
+
       <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
         <p style="font-size:11px;color:#aaa;margin:0;">
           ${report.company_name || ""}
@@ -126,7 +128,7 @@ export async function POST(req: Request) {
         job_address: report.customer_address || "",
         estimate_link: viewUrl,
         invoice_link: "",
-        portal_link: `${appUrl}/portal`,
+        portal_link: `${appUrl}/portal/${report.job_id || ""}`,
         price: report.price_quote ? `$${Number(report.price_quote).toLocaleString()}` : "",
       }
       emailSubject = renderTemplate(custom.subject, data)

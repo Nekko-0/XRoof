@@ -193,6 +193,8 @@ export async function POST(req: Request) {
                 <a href="${payLink}" style="display:inline-block;padding:14px 40px;background:#166534;color:white;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold;">View & Pay Invoice</a>
               </div>
 
+              ${data.job_id ? `<p style="font-size:12px;text-align:center;margin:20px 0 0;"><a href="${appUrl}/portal/${data.job_id}" style="color:#166534;text-decoration:underline;">View Your Project Portal</a></p>` : ""}
+
               <p style="font-size:11px;color:#888;text-align:center;margin-top:30px;">
                 This invoice was sent via <a href="https://www.xroof.io" style="color:#166534;">XRoof</a>
               </p>

@@ -85,6 +85,8 @@ export async function POST(req: Request) {
         This link expires on ${expiryDate}
       </p>
 
+      ${contract.job_id ? `<p style="font-size:12px;text-align:center;margin:0 0 20px;"><a href="${appUrl}/portal/${contract.job_id}" style="color:${branding.primary_color};text-decoration:underline;">View Your Project Portal</a></p>` : ""}
+
       <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
         <p style="font-size:11px;color:#aaa;margin:0;">
           ${contract.contractor_name}${contract.contractor_company ? ` | ${contract.contractor_company}` : ""}
