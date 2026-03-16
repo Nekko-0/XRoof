@@ -48,6 +48,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  // Auto-create customer record (or link to existing)
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("contractor_id", contractor_id)
+    .or(`phone.eq.${phone}${email ? `,email.eq.${email}` : ""}`)
+    .limit(1)
+    .maybeSingle()
+
+  if (!existingCustomer) {
+    await supabase.from("customers").insert({
+      contractor_id,
+      name,
+      phone,
+      email: email || null,
+      address,
+    })
+  }
+
   // Increment conversions on landing page
   if (page_id) {
     const { data: pg } = await supabase.from("landing_pages").select("conversions").eq("id", page_id).single()
