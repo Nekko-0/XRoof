@@ -65,7 +65,7 @@ const contractorTabs: NavItem[] = [
   { label: "Jobs", href: "/contractor/leads", icon: FileText },
   { label: "Field", href: "/contractor/field", icon: Smartphone },
   { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
-  { label: "More", href: "/contractor/profile", icon: Menu },
+  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
 ]
 
 export function DashboardShell({ children, role }: DashboardShellProps) {
@@ -277,18 +277,24 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
         <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom md:hidden">
           {contractorTabs.map((tab) => {
             const isActive = pathname === tab.href || (tab.href === "/contractor/dashboard" && pathname.startsWith("/contractor/leads"))
+            const showBadge = tab.label === "Messages" && unreadPortalCount > 0
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
+                  "relative flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
                 <tab.icon className={cn("h-6 w-6", isActive && "text-primary")} />
+                {showBadge && (
+                  <span className="absolute top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    {unreadPortalCount > 9 ? "9+" : unreadPortalCount}
+                  </span>
+                )}
                 {tab.label}
               </Link>
             )

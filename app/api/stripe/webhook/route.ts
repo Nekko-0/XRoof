@@ -3,6 +3,9 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { getQBClient, syncCustomerToQB, syncInvoiceToQB, syncPaymentToQB } from "@/lib/quickbooks"
 import { emitToUser } from "@/lib/event-emitter"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
   const stripe = getStripe()
@@ -143,6 +146,59 @@ export async function POST(req: Request) {
                 `Payment Received — ${inv.customer_name}`,
                 `${amountStr} payment received from ${inv.customer_name}`
               ).catch((err: unknown) => console.error("[XRoof] payment notification error:", err))
+
+              // Send receipt email to homeowner
+              if (inv.customer_email) {
+                const { getContractorBranding } = await import("@/lib/branding")
+                const branding = await getContractorBranding(inv.contractor_id)
+                const paidAmount = session.amount_total
+                  ? `$${(session.amount_total / 100).toLocaleString()}`
+                  : amountStr
+                const paidDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                const milestoneLabel = milestoneIdx !== undefined && milestones[milestoneIdx]
+                  ? ` — ${milestones[milestoneIdx].label || `Milestone ${milestoneIdx + 1}`}`
+                  : ""
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+                const portalLink = inv.job_id ? `${appUrl}/portal/${inv.job_id}` : ""
+
+                const receiptHtml = `
+                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
+                    <div style="text-align:center;border-bottom:2px solid #e5e5e5;padding-bottom:15px;margin-bottom:20px;">
+                      <h1 style="font-size:22px;margin:0;color:${branding.primary_color};">Payment Receipt</h1>
+                      <p style="font-size:12px;color:#888;margin:5px 0 0;">From ${branding.company_name}</p>
+                    </div>
+                    <p style="font-size:14px;margin:0 0 15px;">Hi ${inv.customer_name},</p>
+                    <p style="font-size:13px;color:#555;margin:0 0 20px;">
+                      Thank you for your payment. Here are the details:
+                    </p>
+                    <div style="background:#f9f9f9;border-radius:8px;padding:15px;margin-bottom:20px;">
+                      <p style="font-size:13px;margin:3px 0;"><strong>Amount Paid:</strong> ${paidAmount}</p>
+                      <p style="font-size:13px;margin:3px 0;"><strong>Date:</strong> ${paidDate}</p>
+                      ${milestoneLabel ? `<p style="font-size:13px;margin:3px 0;"><strong>Milestone:</strong> ${milestoneLabel.replace(" — ", "")}</p>` : ""}
+                      <p style="font-size:13px;margin:3px 0;"><strong>Contractor:</strong> ${branding.company_name}</p>
+                    </div>
+                    ${portalLink ? `
+                      <div style="text-align:center;margin:25px 0;">
+                        <a href="${portalLink}" style="display:inline-block;background:${branding.primary_color};color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-size:14px;font-weight:bold;">
+                          View Project Portal
+                        </a>
+                      </div>
+                    ` : ""}
+                    <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
+                      <p style="font-size:11px;color:#aaa;margin:0;">
+                        ${branding.company_name} | Sent via XRoof
+                      </p>
+                    </div>
+                  </div>
+                `
+
+                resend.emails.send({
+                  from: `${branding.company_name} via XRoof <receipts@xroof.io>`,
+                  to: inv.customer_email,
+                  subject: `Payment Receipt — ${paidAmount}${milestoneLabel} | ${branding.company_name}`,
+                  html: receiptHtml,
+                }).catch((err: unknown) => console.error("[XRoof] receipt email error:", err))
+              }
             }
 
             // Fire payment_received automation trigger
