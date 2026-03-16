@@ -354,17 +354,13 @@ export default function MyJobsPage() {
   ]
 
   const openInvoiceModal = (job: Job) => {
-    if (!job.budget) {
-      toast.error("Please set a budget/amount on this job before sending an invoice.")
-      return
-    }
     setInvoiceForm({
       customer_name: job.customer_name || "",
       customer_phone: job.customer_phone || "",
       customer_email: "",
       address: job.address || "",
       job_type: job.job_type || "",
-      amount: String(job.budget || 0),
+      amount: job.budget ? String(job.budget) : "",
       discount: "",
       discountType: "dollar",
       scope: job.description || "",
