@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/api-auth"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,7 +55,10 @@ export async function GET(
     return NextResponse.json({ ...report, contractor_name: contractorName, brand_color: brandColor, brand_logo_url: logoUrl, google_review_url: googleReviewUrl, google_reviews_cache: googleReviewsCache })
   }
 
-  // Standard ID-based lookup
+  // Standard ID-based lookup — requires authentication
+  const auth = await requireAuth(request)
+  if (auth instanceof NextResponse) return auth
+
   const { data, error } = await supabaseAdmin
     .from("reports")
     .select("*")
@@ -63,6 +67,10 @@ export async function GET(
 
   if (error || !data) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 })
+  }
+
+  if (data.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   let contractorName = "Unknown"

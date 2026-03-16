@@ -28,6 +28,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Contract not found" }, { status: 404 })
   }
 
+  if (contract.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const branding = contract.contractor_id
     ? await getContractorBranding(contract.contractor_id)
     : { company_name: contract.contractor_company || "XRoof", primary_color: "#22c55e" }

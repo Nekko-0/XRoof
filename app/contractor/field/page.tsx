@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
@@ -9,9 +9,10 @@ import { EmptyState } from "@/components/empty-state"
 import {
   MapPin, Phone, Camera, Clock, CheckCircle,
   Smartphone, StickyNote, Navigation, Cloud,
-  Sun, CloudRain, CloudSnow, Thermometer,
+  Sun, CloudRain, CloudSnow,
   MessageSquare, Play, MapPinned, ChevronDown,
-  ChevronUp, Loader2, Image,
+  ChevronUp, Loader2, ChevronLeft, ChevronRight,
+  ClipboardList, AlertTriangle,
 } from "lucide-react"
 
 type Job = {
@@ -36,20 +37,71 @@ type Appointment = {
   job_id?: string
 }
 
+type WorkOrder = {
+  id: string
+  title: string
+  description: string | null
+  priority: string
+  status: string
+  due_date: string | null
+  assigned_to: string | null
+  assigned_name: string | null
+  job_id: string | null
+  jobs?: { customer_name: string; address: string } | null
+}
+
 type Weather = {
   temp: number
   description: string
   icon: string
 }
 
+function getWeekRange(offset: number) {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek === 0 ? 7 : dayOfWeek) - 1) + offset * 7)
+  monday.setHours(0, 0, 0, 0)
+
+  const days: string[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    days.push(d.toISOString().slice(0, 10))
+  }
+  return days
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
+  urgent: "bg-red-500",
+  high: "bg-amber-500",
+  normal: "bg-blue-500",
+  low: "bg-gray-500",
+}
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+function formatDayHeader(dateStr: string, today: string) {
+  const d = new Date(dateStr + "T12:00:00")
+  const dayName = DAY_NAMES[d.getDay()]
+  const month = MONTH_NAMES[d.getMonth()]
+  const day = d.getDate()
+  const isToday = dateStr === today
+  return { label: `${dayName}, ${month} ${day}`, isToday }
+}
+
 export default function FieldModePage() {
   const { accountId } = useRole()
   const toast = useToast()
   const [loading, setLoading] = useState(true)
-  const [todayJobs, setTodayJobs] = useState<Job[]>([])
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [weekJobs, setWeekJobs] = useState<Job[]>([])
   const [activeJobs, setActiveJobs] = useState<Job[]>([])
-  const [todayAppts, setTodayAppts] = useState<Appointment[]>([])
+  const [weekAppts, setWeekAppts] = useState<Appointment[]>([])
+  const [weekWorkOrders, setWeekWorkOrders] = useState<WorkOrder[]>([])
   const [expandedJob, setExpandedJob] = useState<string | null>(null)
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [weather, setWeather] = useState<Weather | null>(null)
 
   // Quick note
@@ -74,33 +126,42 @@ export default function FieldModePage() {
 
   const today = new Date().toISOString().slice(0, 10)
   const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  const weekDays = useMemo(() => getWeekRange(weekOffset), [weekOffset])
+  const weekStart = weekDays[0]
+  const weekEnd = weekDays[6]
 
   useEffect(() => {
     if (!accountId) return
     const load = async () => {
-      // Fetch today's scheduled jobs + active (non-completed, non-lost) jobs
-      const [scheduledRes, activeRes, apptsRes] = await Promise.all([
+      setLoading(true)
+
+      const [scheduledRes, activeRes, apptsRes, woRes] = await Promise.all([
         supabase.from("jobs")
           .select("id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget")
           .eq("contractor_id", accountId)
-          .eq("scheduled_date", today)
-          .order("created_at", { ascending: true }),
+          .gte("scheduled_date", weekStart)
+          .lte("scheduled_date", weekEnd)
+          .order("scheduled_date", { ascending: true }),
         supabase.from("jobs")
           .select("id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget")
           .eq("contractor_id", accountId)
           .in("status", ["In Progress"])
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(10),
         authFetch(`/api/appointments?contractor_id=${accountId}`).then((r) => r.json()),
+        authFetch(`/api/work-orders?contractor_id=${accountId}`).then((r) => r.json()),
       ])
 
       const scheduled = scheduledRes.data || []
       const active = (activeRes.data || []).filter((j) => !scheduled.find((s) => s.id === j.id))
-      setTodayJobs(scheduled)
+      setWeekJobs(scheduled)
       setActiveJobs(active)
-      setTodayAppts(
-        (Array.isArray(apptsRes) ? apptsRes : []).filter((a: any) => a.date === today)
-      )
+
+      const allAppts = Array.isArray(apptsRes) ? apptsRes : []
+      setWeekAppts(allAppts.filter((a: Appointment) => a.date >= weekStart && a.date <= weekEnd))
+
+      const allWo = Array.isArray(woRes) ? woRes : []
+      setWeekWorkOrders(allWo.filter((wo: WorkOrder) => wo.due_date && wo.due_date >= weekStart && wo.due_date <= weekEnd && wo.status !== "completed" && wo.status !== "cancelled"))
 
       // Fetch active time entries
       try {
@@ -117,9 +178,8 @@ export default function FieldModePage() {
         }
       } catch {}
 
-      // Auto-expand first active job
-      const firstActive = scheduled.find((j) => j.status !== "Completed") || active[0]
-      if (firstActive) setExpandedJob(firstActive.id)
+      // Auto-expand today
+      setExpandedDays(new Set([today]))
 
       // Fetch weather from first job's zip
       const firstAddr = (scheduled[0] || active[0])?.address
@@ -139,7 +199,32 @@ export default function FieldModePage() {
       setLoading(false)
     }
     load()
-  }, [accountId, today])
+  }, [accountId, weekStart, weekEnd, today])
+
+  // Build day data
+  const dayData = useMemo(() => {
+    const result: Record<string, { jobs: Job[]; appts: Appointment[]; workOrders: WorkOrder[] }> = {}
+    for (const day of weekDays) {
+      result[day] = {
+        jobs: weekJobs.filter((j) => j.scheduled_date === day),
+        appts: weekAppts.filter((a) => a.date === day),
+        workOrders: weekWorkOrders.filter((wo) => wo.due_date === day),
+      }
+    }
+    return result
+  }, [weekDays, weekJobs, weekAppts, weekWorkOrders])
+
+  const toggleDay = useCallback((day: string) => {
+    setExpandedDays((prev) => {
+      const next = new Set(prev)
+      if (next.has(day)) next.delete(day)
+      else next.add(day)
+      return next
+    })
+  }, [])
+
+  // Count total items this week
+  const totalWeekItems = weekJobs.length + weekAppts.length + weekWorkOrders.length + activeJobs.length
 
   // --- Actions ---
 
@@ -148,7 +233,6 @@ export default function FieldModePage() {
 
   const handleNavigate = (address: string) => {
     const encoded = encodeURIComponent(address)
-    // Use Google Maps on Android, Apple Maps on iOS, fallback to Google Maps
     const ua = navigator.userAgent.toLowerCase()
     if (ua.includes("iphone") || ua.includes("ipad")) {
       window.location.href = `maps://maps.apple.com/?q=${encoded}`
@@ -186,7 +270,6 @@ export default function FieldModePage() {
 
     await supabase.from("jobs").update(updates).eq("id", jobId)
 
-    // Log activity
     await authFetch("/api/activities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -197,7 +280,6 @@ export default function FieldModePage() {
       }),
     }).catch(() => {})
 
-    // Fire automation if completed
     if (newStatus === "Completed") {
       authFetch("/api/automations/trigger", {
         method: "POST",
@@ -206,9 +288,8 @@ export default function FieldModePage() {
       }).catch(() => {})
     }
 
-    // Update local state
     const updateJob = (j: Job) => j.id === jobId ? { ...j, status: newStatus } : j
-    setTodayJobs((prev) => prev.map(updateJob))
+    setWeekJobs((prev) => prev.map(updateJob))
     setActiveJobs((prev) => prev.map(updateJob))
 
     toast.success(`Job marked as ${newStatus}`)
@@ -224,7 +305,6 @@ export default function FieldModePage() {
     const file = e.target.files?.[0]
     if (!file || !photoJobId || !accountId) return
 
-    // Validate file size and type
     if (file.size > 10 * 1024 * 1024) {
       toast.error("File too large (max 10MB)")
       return
@@ -346,19 +426,7 @@ export default function FieldModePage() {
     setClockingIn(null)
   }
 
-  // --- Render ---
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
-
-  const allJobs = [...todayJobs, ...activeJobs]
-  const pendingJobs = allJobs.filter((j) => j.status !== "Completed")
-  const completedToday = todayJobs.filter((j) => j.status === "Completed")
+  // --- Render helpers ---
 
   const weatherIcon = (desc: string) => {
     const d = desc.toLowerCase()
@@ -383,6 +451,210 @@ export default function FieldModePage() {
         ]
     }
   }
+
+  const renderJobCard = (job: Job) => {
+    const isExpanded = expandedJob === job.id
+    const actions = statusActions(job)
+
+    return (
+      <div key={job.id} className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <button
+          className="w-full text-left p-4 active:bg-secondary/30 transition-colors"
+          onClick={() => setExpandedJob(isExpanded ? null : job.id)}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-base font-bold text-foreground truncate">{job.customer_name}</p>
+                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex-shrink-0 ${
+                  job.status === "In Progress" ? "bg-blue-500" :
+                  job.status === "Scheduled" ? "bg-blue-600" :
+                  job.status === "Completed" ? "bg-emerald-500" :
+                  "bg-amber-500"
+                }`}>{job.status}</span>
+              </div>
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                <MapPin className="h-3 w-3 flex-shrink-0" /> {job.address}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {job.job_type}
+                </span>
+                {job.budget && (
+                  <span className="text-[11px] font-bold text-emerald-500">${job.budget.toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+          </div>
+        </button>
+
+        {isExpanded && (
+          <div className="border-t border-border p-4 space-y-3">
+            <div className="grid grid-cols-4 gap-2">
+              {job.customer_phone && (
+                <button
+                  onClick={() => handleCall(job.customer_phone)}
+                  className="flex flex-col items-center gap-1.5 rounded-xl bg-emerald-500/10 p-3 text-emerald-400 active:bg-emerald-500/20 transition-colors"
+                >
+                  <Phone className="h-6 w-6" />
+                  <span className="text-[10px] font-bold">Call</span>
+                </button>
+              )}
+              {job.customer_phone && (
+                <button
+                  onClick={() => handleText(job.customer_phone)}
+                  className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-500/10 p-3 text-blue-400 active:bg-blue-500/20 transition-colors"
+                >
+                  <MessageSquare className="h-6 w-6" />
+                  <span className="text-[10px] font-bold">Text</span>
+                </button>
+              )}
+              <button
+                onClick={() => handleNavigate(job.address)}
+                className="flex flex-col items-center gap-1.5 rounded-xl bg-purple-500/10 p-3 text-purple-400 active:bg-purple-500/20 transition-colors"
+              >
+                <Navigation className="h-6 w-6" />
+                <span className="text-[10px] font-bold">Navigate</span>
+              </button>
+              <button
+                onClick={() => handlePhotoCapture(job.id)}
+                disabled={uploading}
+                className="flex flex-col items-center gap-1.5 rounded-xl bg-amber-500/10 p-3 text-amber-400 active:bg-amber-500/20 transition-colors disabled:opacity-50"
+              >
+                {uploading && photoJobId === job.id ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Camera className="h-6 w-6" />
+                )}
+                <span className="text-[10px] font-bold">Photo</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setNoteJobId(noteJobId === job.id ? null : job.id)}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition-colors ${
+                  noteJobId === job.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-foreground active:bg-secondary"
+                }`}
+              >
+                <StickyNote className="h-4 w-4" />
+                Note
+              </button>
+              <button
+                onClick={() => handleGPSCheckin(job.id)}
+                disabled={checkingIn === job.id}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-bold text-foreground active:bg-secondary transition-colors disabled:opacity-50"
+              >
+                {checkingIn === job.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPinned className="h-4 w-4" />
+                )}
+                GPS
+              </button>
+              {activeTimers[job.id] ? (
+                <button
+                  onClick={() => handleClockOut(job.id)}
+                  disabled={clockingIn === job.id}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-400 active:bg-red-500/20 transition-colors disabled:opacity-50"
+                >
+                  {clockingIn === job.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Clock className="h-4 w-4" />
+                  )}
+                  Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleClockIn(job.id)}
+                  disabled={clockingIn === job.id}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-bold text-emerald-400 active:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                >
+                  {clockingIn === job.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Clock className="h-4 w-4" />
+                  )}
+                  In
+                </button>
+              )}
+            </div>
+
+            {activeTimers[job.id] && (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                Timer running since {new Date(activeTimers[job.id].started_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              </div>
+            )}
+
+            {noteJobId === job.id && (
+              <div className="flex gap-2">
+                <input
+                  value={quickNote}
+                  onChange={(e) => setQuickNote(e.target.value)}
+                  placeholder="Type a note..."
+                  autoFocus
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveNote()}
+                />
+                <button
+                  onClick={handleSaveNote}
+                  disabled={!quickNote.trim() || savingNote}
+                  className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {savingNote ? "..." : "Save"}
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {actions.map((action) => (
+                <button
+                  key={action.status}
+                  onClick={() => handleStatusUpdate(job.id, action.status)}
+                  disabled={updatingStatus === job.id}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-xl ${action.color} px-4 py-3 text-sm font-bold text-white active:opacity-80 transition-opacity disabled:opacity-50`}
+                >
+                  {updatingStatus === job.id ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <action.icon className="h-5 w-5" />
+                  )}
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // --- Main Render ---
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  const weekLabel = (() => {
+    const s = new Date(weekStart + "T12:00:00")
+    const e = new Date(weekEnd + "T12:00:00")
+    if (s.getMonth() === e.getMonth()) {
+      return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${e.getDate()}`
+    }
+    return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}`
+  })()
 
   return (
     <div className="flex flex-col gap-4 max-w-lg mx-auto pb-4">
@@ -413,13 +685,8 @@ export default function FieldModePage() {
             </p>
             <div className="mt-2 flex items-center gap-2">
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
-                {pendingJobs.length} active
+                {totalWeekItems} this week
               </span>
-              {completedToday.length > 0 && (
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-500">
-                  {completedToday.length} done
-                </span>
-              )}
             </div>
           </div>
           {weather && (
@@ -432,253 +699,166 @@ export default function FieldModePage() {
         </div>
       </div>
 
-      {/* Today's Schedule */}
-      {todayAppts.length > 0 && (
-        <div>
-          <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-            <Clock className="h-3 w-3" /> Schedule
-          </h3>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {todayAppts.map((a) => (
-              <div key={a.id} className="flex-shrink-0 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 min-w-[140px]">
-                <p className="text-sm font-bold text-blue-400">{a.time || "TBD"}</p>
-                <p className="text-xs font-medium text-foreground truncate">{a.title}</p>
-                <span className="text-[9px] text-muted-foreground capitalize">{a.type.replace("_", " ")}</span>
-              </div>
-            ))}
-          </div>
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between px-1">
+        <button
+          onClick={() => setWeekOffset((p) => p - 1)}
+          className="rounded-xl border border-border bg-background p-2 active:bg-secondary transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-bold text-foreground">{weekLabel}</p>
+          {weekOffset !== 0 && (
+            <button
+              onClick={() => setWeekOffset(0)}
+              className="text-[11px] text-primary font-semibold"
+            >
+              Back to this week
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Active Jobs */}
-      <div>
-        <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-          <MapPin className="h-3 w-3" /> Jobs ({pendingJobs.length})
-        </h3>
-
-        {pendingJobs.length === 0 ? (
-          <EmptyState
-            icon={Smartphone}
-            title="No active jobs"
-            description="Schedule jobs from the Calendar or Pipeline to see them here."
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {pendingJobs.map((job) => {
-              const isExpanded = expandedJob === job.id
-              const actions = statusActions(job)
-
-              return (
-                <div key={job.id} className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-                  {/* Job Header — tappable */}
-                  <button
-                    className="w-full text-left p-4 active:bg-secondary/30 transition-colors"
-                    onClick={() => setExpandedJob(isExpanded ? null : job.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-base font-bold text-foreground truncate">{job.customer_name}</p>
-                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex-shrink-0 ${
-                            job.status === "In Progress" ? "bg-blue-500" :
-                            job.status === "Scheduled" ? "bg-blue-600" :
-                            job.status === "Completed" ? "bg-emerald-500" :
-                            "bg-amber-500"
-                          }`}>{job.status}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3 flex-shrink-0" /> {job.address}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                            {job.job_type}
-                          </span>
-                          {job.budget && (
-                            <span className="text-[11px] font-bold text-emerald-500">${job.budget.toLocaleString()}</span>
-                          )}
-                        </div>
-                      </div>
-                      {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
-                    </div>
-                  </button>
-
-                  {/* Expanded Actions */}
-                  {isExpanded && (
-                    <div className="border-t border-border p-4 space-y-3">
-                      {/* Quick Actions Grid — large touch targets */}
-                      <div className="grid grid-cols-4 gap-2">
-                        {job.customer_phone && (
-                          <button
-                            onClick={() => handleCall(job.customer_phone)}
-                            className="flex flex-col items-center gap-1.5 rounded-xl bg-emerald-500/10 p-3 text-emerald-400 active:bg-emerald-500/20 transition-colors"
-                          >
-                            <Phone className="h-6 w-6" />
-                            <span className="text-[10px] font-bold">Call</span>
-                          </button>
-                        )}
-                        {job.customer_phone && (
-                          <button
-                            onClick={() => handleText(job.customer_phone)}
-                            className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-500/10 p-3 text-blue-400 active:bg-blue-500/20 transition-colors"
-                          >
-                            <MessageSquare className="h-6 w-6" />
-                            <span className="text-[10px] font-bold">Text</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleNavigate(job.address)}
-                          className="flex flex-col items-center gap-1.5 rounded-xl bg-purple-500/10 p-3 text-purple-400 active:bg-purple-500/20 transition-colors"
-                        >
-                          <Navigation className="h-6 w-6" />
-                          <span className="text-[10px] font-bold">Navigate</span>
-                        </button>
-                        <button
-                          onClick={() => handlePhotoCapture(job.id)}
-                          disabled={uploading}
-                          className="flex flex-col items-center gap-1.5 rounded-xl bg-amber-500/10 p-3 text-amber-400 active:bg-amber-500/20 transition-colors disabled:opacity-50"
-                        >
-                          {uploading && photoJobId === job.id ? (
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                          ) : (
-                            <Camera className="h-6 w-6" />
-                          )}
-                          <span className="text-[10px] font-bold">Photo</span>
-                        </button>
-                      </div>
-
-                      {/* Secondary actions */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <button
-                          onClick={() => setNoteJobId(noteJobId === job.id ? null : job.id)}
-                          className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition-colors ${
-                            noteJobId === job.id
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-background text-foreground active:bg-secondary"
-                          }`}
-                        >
-                          <StickyNote className="h-4 w-4" />
-                          Note
-                        </button>
-                        <button
-                          onClick={() => handleGPSCheckin(job.id)}
-                          disabled={checkingIn === job.id}
-                          className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-bold text-foreground active:bg-secondary transition-colors disabled:opacity-50"
-                        >
-                          {checkingIn === job.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <MapPinned className="h-4 w-4" />
-                          )}
-                          GPS
-                        </button>
-                        {activeTimers[job.id] ? (
-                          <button
-                            onClick={() => handleClockOut(job.id)}
-                            disabled={clockingIn === job.id}
-                            className="flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-400 active:bg-red-500/20 transition-colors disabled:opacity-50"
-                          >
-                            {clockingIn === job.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Clock className="h-4 w-4" />
-                            )}
-                            Out
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleClockIn(job.id)}
-                            disabled={clockingIn === job.id}
-                            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-bold text-emerald-400 active:bg-emerald-500/20 transition-colors disabled:opacity-50"
-                          >
-                            {clockingIn === job.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Clock className="h-4 w-4" />
-                            )}
-                            In
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Active timer indicator */}
-                      {activeTimers[job.id] && (
-                        <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
-                          <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                          </span>
-                          Timer running since {new Date(activeTimers[job.id].started_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                        </div>
-                      )}
-
-                      {/* Quick Note Input */}
-                      {noteJobId === job.id && (
-                        <div className="flex gap-2">
-                          <input
-                            value={quickNote}
-                            onChange={(e) => setQuickNote(e.target.value)}
-                            placeholder="Type a note..."
-                            autoFocus
-                            className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveNote()}
-                          />
-                          <button
-                            onClick={handleSaveNote}
-                            disabled={!quickNote.trim() || savingNote}
-                            className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                          >
-                            {savingNote ? "..." : "Save"}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Status Update Buttons — most prominent */}
-                      <div className="flex gap-2">
-                        {actions.map((action) => (
-                          <button
-                            key={action.status}
-                            onClick={() => handleStatusUpdate(job.id, action.status)}
-                            disabled={updatingStatus === job.id}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-xl ${action.color} px-4 py-3 text-sm font-bold text-white active:opacity-80 transition-opacity disabled:opacity-50`}
-                          >
-                            {updatingStatus === job.id ? (
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                              <action.icon className="h-5 w-5" />
-                            )}
-                            {action.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <button
+          onClick={() => setWeekOffset((p) => p + 1)}
+          className="rounded-xl border border-border bg-background p-2 active:bg-secondary transition-colors"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Completed Today */}
-      {completedToday.length > 0 && (
+      {/* Active In-Progress Jobs (always visible) */}
+      {activeJobs.length > 0 && (
         <div>
-          <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-            <CheckCircle className="h-3 w-3 text-emerald-400" /> Done Today ({completedToday.length})
+          <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-blue-400 px-1">
+            <Play className="h-3 w-3" /> In Progress
           </h3>
-          <div className="flex flex-col gap-2">
-            {completedToday.map((j) => (
-              <div key={j.id} className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 opacity-70">
-                <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{j.customer_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{j.address}</p>
-                </div>
-                {j.budget && <span className="text-xs font-bold text-emerald-500">${j.budget.toLocaleString()}</span>}
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            {activeJobs.map(renderJobCard)}
           </div>
         </div>
       )}
+
+      {/* Week Days */}
+      {weekDays.map((day) => {
+        const { label, isToday } = formatDayHeader(day, today)
+        const data = dayData[day]
+        const itemCount = data.jobs.length + data.appts.length + data.workOrders.length
+        const isOpen = expandedDays.has(day)
+        const completedJobs = data.jobs.filter((j) => j.status === "Completed")
+        const pendingJobs = data.jobs.filter((j) => j.status !== "Completed")
+
+        if (itemCount === 0 && !isToday) return null
+
+        return (
+          <div key={day}>
+            <button
+              onClick={() => toggleDay(day)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                isToday
+                  ? "bg-primary/10 border border-primary/20"
+                  : "bg-secondary/30 border border-border"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${isToday ? "text-primary" : "text-foreground"}`}>
+                  {label}
+                </span>
+                {isToday && (
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold text-primary-foreground">
+                    TODAY
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {itemCount > 0 && (
+                  <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                    {itemCount}
+                  </span>
+                )}
+                {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="mt-2 flex flex-col gap-3">
+                {/* Appointments */}
+                {data.appts.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {data.appts.map((a) => (
+                      <div key={a.id} className="flex-shrink-0 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 min-w-[140px]">
+                        <p className="text-sm font-bold text-blue-400">{a.time || "TBD"}</p>
+                        <p className="text-xs font-medium text-foreground truncate">{a.title}</p>
+                        <span className="text-[9px] text-muted-foreground capitalize">{a.type.replace("_", " ")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Work Orders */}
+                {data.workOrders.map((wo) => (
+                  <div key={wo.id} className="rounded-xl border border-border bg-card px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <ClipboardList className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-foreground truncate">{wo.title}</p>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold text-white flex-shrink-0 ${PRIORITY_COLORS[wo.priority] || "bg-blue-500"}`}>
+                            {wo.priority}
+                          </span>
+                        </div>
+                        {wo.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{wo.description}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1">
+                          {wo.assigned_name && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPinned className="h-3 w-3" /> {wo.assigned_name}
+                            </span>
+                          )}
+                          {wo.jobs?.address && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {wo.jobs.address}
+                            </span>
+                          )}
+                        </div>
+                        {wo.priority === "urgent" && (
+                          <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-red-400">
+                            <AlertTriangle className="h-3 w-3" /> Urgent
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Scheduled Jobs */}
+                {pendingJobs.map(renderJobCard)}
+
+                {/* Completed Jobs */}
+                {completedJobs.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {completedJobs.map((j) => (
+                      <div key={j.id} className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 opacity-70">
+                        <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{j.customer_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{j.address}</p>
+                        </div>
+                        {j.budget && <span className="text-xs font-bold text-emerald-500">${j.budget.toLocaleString()}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty day */}
+                {itemCount === 0 && isToday && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nothing scheduled for today</p>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

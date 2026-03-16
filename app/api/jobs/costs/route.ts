@@ -10,6 +10,13 @@ export async function GET(req: Request) {
   if (!jobId) return NextResponse.json({ error: "Missing job_id" }, { status: 400 })
 
   const supabase = getServiceSupabase()
+
+  // Verify job ownership
+  const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", jobId).single()
+  if (!job || job.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const { data, error } = await supabase
     .from("job_costs")
     .select("*")
@@ -31,6 +38,13 @@ export async function POST(req: Request) {
   }
 
   const supabase = getServiceSupabase()
+
+  // Verify job ownership
+  const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", job_id).single()
+  if (!job || job.contractor_id !== auth.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const { data, error } = await supabase
     .from("job_costs")
     .insert({ job_id, category, description: description || null, amount })

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, DM_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ToastWrapper } from '@/components/toast-wrapper'
+import { CookieConsent } from '@/components/cookie-consent'
 import './globals.css'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -50,12 +51,20 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <script
+            defer
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
       </head>
       <body className={`${inter.variable} ${dmSans.variable} font-sans antialiased`}>
         <ToastWrapper>
           {children}
         </ToastWrapper>
         <Analytics />
+        <CookieConsent />
         <script
           dangerouslySetInnerHTML={{
             __html: `
