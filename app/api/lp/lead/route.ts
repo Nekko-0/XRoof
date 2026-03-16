@@ -48,23 +48,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Auto-create customer record (or link to existing)
+  // Auto-create customer record (skip if one with same phone already exists)
   const { data: existingCustomer } = await supabase
     .from("customers")
     .select("id")
     .eq("contractor_id", contractor_id)
-    .or(`phone.eq.${phone}${email ? `,email.eq.${email}` : ""}`)
+    .eq("phone", phone)
     .limit(1)
     .maybeSingle()
 
   if (!existingCustomer) {
-    await supabase.from("customers").insert({
+    const { error: custError } = await supabase.from("customers").insert({
       contractor_id,
       name,
       phone,
       email: email || null,
       address,
     })
+    if (custError) console.error("[XRoof] customer auto-create error:", custError.message)
   }
 
   // Increment conversions on landing page
