@@ -126,12 +126,23 @@ export async function POST(req: Request) {
               await supabase.from("jobs").update({ status: "Completed", completed_at: new Date().toISOString() }).eq("id", inv.job_id)
             }
 
-            // Emit real-time SSE event
+            // Emit real-time SSE event + notify owner/admin
             if (inv.contractor_id) {
               emitToUser(inv.contractor_id, {
                 type: "payment_received",
                 payload: { amount: inv.amount, customerName: inv.customer_name },
               })
+
+              // Notify owner + admin via in-app + push + email
+              const { notifyRecipients } = await import("@/lib/notify")
+              const amountStr = `$${(Number(inv.amount) / 100).toLocaleString()}`
+              notifyRecipients(
+                inv.contractor_id,
+                "owner_admin",
+                "payment_received",
+                `Payment Received — ${inv.customer_name}`,
+                `${amountStr} payment received from ${inv.customer_name}`
+              ).catch((err: unknown) => console.error("[XRoof] payment notification error:", err))
             }
 
             // Fire payment_received automation trigger

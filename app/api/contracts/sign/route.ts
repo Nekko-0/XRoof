@@ -98,6 +98,16 @@ export async function POST(req: Request) {
       type: "contract_signed",
       payload: { customerName: contract.customer_name, address: contract.project_address },
     })
+
+    // Notify owner + admin via in-app + push + email
+    const { notifyRecipients } = await import("@/lib/notify")
+    notifyRecipients(
+      contract.contractor_id,
+      "owner_admin",
+      "contract_signed",
+      `Contract Signed — ${contract.customer_name}`,
+      `${contract.customer_name} signed the contract for ${contract.project_address}`
+    ).catch((err) => console.error("[XRoof] contract signed notification error:", err))
   }
 
   // Fire contract_signed automation trigger

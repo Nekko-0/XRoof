@@ -55,6 +55,18 @@ export async function POST(req: Request) {
       .in("status", ["New", "Estimate Sent"])
   }
 
+  // Notify owner + admin via in-app + push + email
+  if (report.contractor_id) {
+    const { notifyRecipients } = await import("@/lib/notify")
+    notifyRecipients(
+      report.contractor_id,
+      "owner_admin",
+      "estimate_viewed",
+      `Estimate Accepted — ${report.customer_name}`,
+      `${report.customer_name} accepted your estimate for ${report.customer_address}`
+    ).catch((err) => console.error("[XRoof] estimate accepted notification error:", err))
+  }
+
   // Determine contractor email — use company_email from report, or look up via contractor_id
   let contractorEmail = report.company_email
   let contractorName = report.company_name || "Contractor"

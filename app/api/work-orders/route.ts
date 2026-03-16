@@ -57,6 +57,21 @@ export async function POST(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify assigned crew member
+  if (data && assigned_to) {
+    const { notifyRecipients } = await import("@/lib/notify")
+    const jobInfo = data.jobs ? ` — ${data.jobs.address}` : ""
+    notifyRecipients(
+      contractor_id,
+      "assigned",
+      "work_order_assigned",
+      `New Work Order — ${title}`,
+      `You've been assigned: ${title}${jobInfo}`,
+      assigned_to
+    ).catch((err) => console.error("[XRoof] work order notification error:", err))
+  }
+
   return NextResponse.json(data)
 }
 
@@ -86,6 +101,21 @@ export async function PATCH(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify new assignee when work order is reassigned
+  if (data && updates.assigned_to) {
+    const { notifyRecipients } = await import("@/lib/notify")
+    const jobInfo = data.jobs ? ` — ${data.jobs.address}` : ""
+    notifyRecipients(
+      data.contractor_id,
+      "assigned",
+      "work_order_assigned",
+      `Work Order Assigned — ${data.title}`,
+      `You've been assigned: ${data.title}${jobInfo}`,
+      updates.assigned_to
+    ).catch((err) => console.error("[XRoof] work order reassign notification error:", err))
+  }
+
   return NextResponse.json(data)
 }
 

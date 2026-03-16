@@ -25,6 +25,7 @@ function getNotificationLink(type: string): string | null {
     case "contract_signed": return "/contractor/leads"
     case "payment_received": return "/contractor/leads"
     case "estimate_viewed": return "/contractor/leads"
+    case "work_order_assigned": return "/contractor/work-orders"
     case "automation_triggered": return "/contractor/automations"
     default: return null
   }

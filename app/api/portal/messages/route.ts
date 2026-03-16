@@ -81,20 +81,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Notify contractor for every homeowner portal message
+    // Notify owner + admin + office manager for every homeowner portal message
     if (job.contractor_id) {
       const isVisitRequest = message.includes("Visit Request")
-      await supabase.from("notifications").insert({
-        user_id: job.contractor_id,
-        type: isVisitRequest ? "visit_request" : "portal_message",
-        title: isVisitRequest ? "Visit Request" : "New Portal Message",
-        body: isVisitRequest
+      const { notifyRecipients } = await import("@/lib/notify")
+      await notifyRecipients(
+        job.contractor_id,
+        "owner_admin_office",
+        isVisitRequest ? "visit_request" : "portal_message",
+        isVisitRequest ? "Visit Request" : "New Portal Message",
+        isVisitRequest
           ? `${job.customer_name || "A customer"} is requesting a site visit`
-          : `${job.customer_name || "A customer"}: ${message.slice(0, 80)}`,
-        read: false,
-      }).then(({ error: nErr }) => {
-        if (nErr) console.error("[XRoof] portal message notification error:", nErr.message)
-      })
+          : `${job.customer_name || "A customer"}: ${message.slice(0, 80)}`
+      ).catch((err) => console.error("[XRoof] portal notification error:", err))
     }
 
     return NextResponse.json({ message: row })
