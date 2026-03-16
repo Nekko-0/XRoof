@@ -12,7 +12,7 @@ export function getServiceSupabase() {
 }
 
 // Verify the caller's JWT and return their user ID (resolves team member → account owner)
-export async function requireAuth(req: Request): Promise<{ userId: string } | NextResponse> {
+export async function requireAuth(req: Request): Promise<{ userId: string; email: string } | NextResponse> {
   // Try Authorization header first (Bearer token)
   const authHeader = req.headers.get("authorization")
   let token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
@@ -56,5 +56,12 @@ export async function requireAuth(req: Request): Promise<{ userId: string } | Ne
 
   return {
     userId: teamMember?.account_id || user.id,
+    email: user.email || "",
   }
+}
+
+// Check if the authenticated user is the XRoof platform admin
+export function isAdmin(auth: { email?: string }): boolean {
+  const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()
+  return !!adminEmail && auth.email?.toLowerCase() === adminEmail
 }

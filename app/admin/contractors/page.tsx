@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
-import { MapPin, Mail, Phone, Briefcase, Search, ScrollText, ChevronDown, ChevronUp } from "lucide-react"
+import { MapPin, Mail, Phone, Briefcase, Search, ScrollText, ChevronDown, ChevronUp, ExternalLink, Users } from "lucide-react"
+
+const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
+const TEAM_MEMBER_PRICE = 39
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  trialing: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  past_due: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  canceled: "bg-red-500/15 text-red-400 border-red-500/30",
+}
 
 type ContractorProfile = {
   id: string
@@ -14,6 +24,12 @@ type ContractorProfile = {
   service_zips: string[]
   license_number: string
   active_jobs: number
+  created_at: string
+  plan: string
+  sub_status: string
+  stripe_customer_id: string
+  team_count: number
+  mrr: number
 }
 
 export default function AdminContractorsPage() {
@@ -31,7 +47,7 @@ export default function AdminContractorsPage() {
       // Fetch all contractor profiles
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, company_name, email, phone, service_zips, license_number, role")
+        .select("id, username, company_name, email, phone, service_zips, license_number, role, created_at")
         .eq("role", "Contractor")
         .order("username")
 
@@ -40,29 +56,47 @@ export default function AdminContractorsPage() {
         return
       }
 
-      // Count active jobs per contractor
+      // Count active jobs per contractor + subscriptions + team members
       const contractorIds = profiles.map((p: any) => p.id)
-      const { data: jobs } = await supabase
-        .from("jobs")
-        .select("contractor_id")
-        .in("contractor_id", contractorIds)
-        .in("status", ["Assigned", "Accepted"])
+      const [{ data: jobs }, { data: subs }, { data: teamMembers }] = await Promise.all([
+        supabase.from("jobs").select("contractor_id").in("contractor_id", contractorIds).in("status", ["Assigned", "Accepted"]),
+        supabase.from("subscriptions").select("user_id, plan, status, stripe_customer_id").in("user_id", contractorIds),
+        supabase.from("team_members").select("account_id").in("account_id", contractorIds).eq("status", "active"),
+      ])
 
       const jobCounts: Record<string, number> = {}
       for (const j of jobs || []) {
         jobCounts[j.contractor_id] = (jobCounts[j.contractor_id] || 0) + 1
       }
 
-      setContractors(profiles.map((p: any) => ({
-        id: p.id,
-        username: p.username || "Unknown",
-        company_name: p.company_name || "",
-        email: p.email || "",
-        phone: p.phone || "",
-        service_zips: p.service_zips || [],
-        license_number: p.license_number || "",
-        active_jobs: jobCounts[p.id] || 0,
-      })))
+      const subMap = new Map((subs || []).map(s => [s.user_id, s]))
+      const teamCounts: Record<string, number> = {}
+      for (const t of teamMembers || []) {
+        teamCounts[t.account_id] = (teamCounts[t.account_id] || 0) + 1
+      }
+
+      setContractors(profiles.map((p: any) => {
+        const sub = subMap.get(p.id)
+        const teamCount = teamCounts[p.id] || 0
+        const planPrice = sub ? (PLAN_PRICES[sub.plan] || PLAN_PRICES.monthly) : 0
+        const mrr = sub?.status === "active" ? planPrice + teamCount * TEAM_MEMBER_PRICE : 0
+        return {
+          id: p.id,
+          username: p.username || "Unknown",
+          company_name: p.company_name || "",
+          email: p.email || "",
+          phone: p.phone || "",
+          service_zips: p.service_zips || [],
+          license_number: p.license_number || "",
+          active_jobs: jobCounts[p.id] || 0,
+          created_at: p.created_at || "",
+          plan: sub?.plan || "",
+          sub_status: sub?.status || "",
+          stripe_customer_id: sub?.stripe_customer_id || "",
+          team_count: teamCount,
+          mrr,
+        }
+      }))
 
       setLoading(false)
     }
@@ -168,10 +202,41 @@ export default function AdminContractorsPage() {
                 )}
               </div>
 
+              {/* Subscription info */}
+              {c.sub_status && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_COLORS[c.sub_status] || "bg-muted text-muted-foreground border-border"}`}>
+                    {c.sub_status.replace("_", " ")}
+                  </span>
+                  <span className="text-muted-foreground capitalize">{c.plan}</span>
+                  {c.team_count > 0 && (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Users className="h-3 w-3" /> {c.team_count} member{c.team_count !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  {c.mrr > 0 && (
+                    <span className="font-medium text-emerald-400">${c.mrr}/mo</span>
+                  )}
+                  {c.stripe_customer_id && (
+                    <a href={`https://dashboard.stripe.com/customers/${c.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" title="View in Stripe">
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              )}
+              {!c.sub_status && (
+                <p className="mt-2 text-[10px] text-muted-foreground/60">No subscription</p>
+              )}
+
               <div className="mt-3 flex items-center gap-2">
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   {c.active_jobs} active job{c.active_jobs !== 1 ? "s" : ""}
                 </span>
+                {c.created_at && (
+                  <span className="text-[10px] text-muted-foreground">
+                    Since {new Date(c.created_at).toLocaleDateString()}
+                  </span>
+                )}
                 <button
                   onClick={() => handleToggleContracts(c.id)}
                   className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"

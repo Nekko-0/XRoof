@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { requireAuth, getServiceSupabase, isAdmin } from "@/lib/api-auth"
 
 export async function GET(req: Request, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params
@@ -67,8 +67,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
     .eq("id", jobId)
     .maybeSingle()
 
-  // Verify the authenticated user owns this job
-  if (job && job.contractor_id !== auth.userId) {
+  // Verify the authenticated user owns this job (admin can view all)
+  if (job && job.contractor_id !== auth.userId && !isAdmin(auth)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 

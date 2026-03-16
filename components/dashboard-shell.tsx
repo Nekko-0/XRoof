@@ -161,7 +161,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
         <div className="px-4 pt-4">
           <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {roleLabel} Portal
+            {isContractor ? `${roleLabel} Portal` : "XRoof Owner Portal"}
           </p>
           {isContractor && (
             <div ref={searchRef} className="relative mb-2">
