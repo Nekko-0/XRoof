@@ -82,13 +82,12 @@ export async function POST(req: Request) {
     }
 
     // Send notification to contractor for visit requests
-    if (message.startsWith("📅 Visit Request") && job.contractor_id) {
+    if (message.includes("Visit Request") && job.contractor_id) {
       await supabase.from("notifications").insert({
         user_id: job.contractor_id,
         type: "visit_request",
         title: "Visit Request",
         body: `${job.customer_name || "A customer"} is requesting a site visit`,
-        link: `/contractor/leads`,
         read: false,
       }).then(({ error: nErr }) => {
         if (nErr) console.error("[XRoof] visit request notification error:", nErr.message)

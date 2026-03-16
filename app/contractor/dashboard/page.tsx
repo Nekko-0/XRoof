@@ -83,7 +83,7 @@ export default function ContractorDashboard() {
   // Attention items
   const [overdueFollowups, setOverdueFollowups] = useState<Followup[]>([])
   const [staleJobs, setStaleJobs] = useState<Job[]>([])
-  const [visitRequests, setVisitRequests] = useState<{ id: string; body: string; link: string; created_at: string }[]>([])
+  const [visitRequests, setVisitRequests] = useState<{ id: string; body: string; created_at: string }[]>([])
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
   const [recentJobs, setRecentJobs] = useState<Job[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -181,7 +181,7 @@ export default function ContractorDashboard() {
       // Visit requests (unread notifications)
       const { data: visitReqs } = await supabase
         .from("notifications")
-        .select("id, body, link, created_at")
+        .select("id, body, created_at")
         .eq("user_id", uid)
         .eq("type", "visit_request")
         .eq("read", false)
@@ -695,7 +695,7 @@ export default function ContractorDashboard() {
           </h3>
           <div className="flex flex-col gap-2">
             {visitRequests.map((vr) => (
-              <Link key={vr.id} href={vr.link || "/contractor/messages"}
+              <Link key={vr.id} href="/contractor/messages"
                 className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">
                 <Calendar className="h-4 w-4 text-blue-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
