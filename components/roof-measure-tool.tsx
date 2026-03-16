@@ -141,7 +141,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
   // Touch device detection
   const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const touchStartRef = useRef<{ x: number; y: number; lat: number; lng: number } | null>(null)
   useEffect(() => {
     setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0)
   }, [])
@@ -172,16 +171,9 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   // Keep refs in sync
   useEffect(() => {
     drawingActiveRef.current = drawingActive
-    // Crosshair cursor while drawing (desktop only)
-    if (mapInstanceRef.current && !isTouchDevice) {
+    // Crosshair cursor while drawing
+    if (mapInstanceRef.current) {
       mapInstanceRef.current.setOptions({ draggableCursor: drawingActive ? "crosshair" : null })
-    }
-    // Touch devices: lock map gestures during drawing so single-finger pan works via our handler
-    if (mapInstanceRef.current && isTouchDevice) {
-      mapInstanceRef.current.setOptions({
-        gestureHandling: drawingActive ? "none" : "auto",
-        zoomControl: !drawingActive,
-      })
     }
     // Remove preview line when drawing stops
     if (!drawingActive && previewLineRef.current) {
@@ -193,7 +185,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       angleIndicatorRef.current = null
       setAngleIndicator(null)
     }
-  }, [drawingActive, isTouchDevice])
+  }, [drawingActive])
   useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
   useEffect(() => { activeEdgeToolRef.current = activeEdgeTool }, [activeEdgeTool])
   useEffect(() => { satPitchActiveRef.current = satPitchActive }, [satPitchActive])
@@ -300,7 +292,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       addPointToPlane(lat, lng)
     })
 
-    // Mousemove handler for preview line + magnifier
+    // Mousemove handler for preview line + magnifier (desktop only — mousemove doesn't fire on touch)
     map.addListener("mousemove", (e: any) => {
       // Update magnifier center
       if (magnifierInstanceRef.current) {
@@ -609,61 +601,6 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       return updated
     })
   }
-
-  // Touch drawing helpers — place point at map center, zoom in/out
-  const placePointAtCenter = useCallback(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
-    const center = map.getCenter()
-    if (!center) return
-    addPointToPlane(center.lat(), center.lng())
-  }, [])
-
-  const touchZoomIn = useCallback(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
-    map.setZoom((map.getZoom() || 20) + 1)
-  }, [])
-
-  const touchZoomOut = useCallback(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
-    map.setZoom((map.getZoom() || 20) - 1)
-  }, [])
-
-  // Touch-based panning when Google Maps gestures are disabled (drawing mode on touch)
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!drawingActive || !isTouchDevice || !mapInstanceRef.current) return
-    if (e.touches.length !== 1) return
-    const touch = e.touches[0]
-    const center = mapInstanceRef.current.getCenter()
-    if (!center) return
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY, lat: center.lat(), lng: center.lng() }
-  }, [drawingActive, isTouchDevice])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current || !mapInstanceRef.current) return
-    if (e.touches.length !== 1) return
-    e.preventDefault()
-    const touch = e.touches[0]
-    const map = mapInstanceRef.current
-    const zoom = map.getZoom() || 20
-    // Approximate degrees per pixel at current zoom level
-    const scale = 156543.03392 * Math.cos((touchStartRef.current.lat * Math.PI) / 180) / Math.pow(2, zoom)
-    const dx = touch.clientX - touchStartRef.current.x
-    const dy = touch.clientY - touchStartRef.current.y
-    // Convert pixel delta to lat/lng delta (invert because dragging right should move map left)
-    const lngDelta = -(dx * scale) / 111320
-    const latDelta = (dy * scale) / 110540
-    map.setCenter({
-      lat: touchStartRef.current.lat + latDelta,
-      lng: touchStartRef.current.lng + lngDelta,
-    })
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    touchStartRef.current = null
-  }, [])
 
   // Calculate polygon area using Google Maps geometry
   const calculatePolygonArea = (points: { lat: number; lng: number }[]): number => {
@@ -1447,47 +1384,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           {/* Satellite View */}
           <div className={activeTab === "satellite" ? "block" : "hidden"}>
             <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-              <div
-                className="relative"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
+              <div className="relative">
                 <div ref={mapRef} className="h-[400px] sm:h-[500px] w-full" />
-
-                {/* Touch crosshair overlay — shown when drawing on touch devices */}
-                {drawingActive && isTouchDevice && (
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 45 }}>
-                    <div className="absolute h-14 w-px bg-red-500/80" />
-                    <div className="absolute w-14 h-px bg-red-500/80" />
-                    <div className="absolute h-6 w-6 rounded-full border-2 border-red-500/80" />
-                  </div>
-                )}
-
-                {/* Touch drawing controls — Place Point + Zoom */}
-                {drawingActive && isTouchDevice && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2" style={{ zIndex: 46 }}>
-                    <button
-                      onClick={touchZoomOut}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white text-xl font-bold shadow-lg active:bg-black/90"
-                    >
-                      −
-                    </button>
-                    <button
-                      onClick={placePointAtCenter}
-                      className="rounded-full bg-emerald-600 px-6 py-3 text-base font-bold text-white shadow-lg active:bg-emerald-700"
-                    >
-                      <MapPin className="mr-1.5 inline h-4 w-4" />
-                      Place Point
-                    </button>
-                    <button
-                      onClick={touchZoomIn}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white text-xl font-bold shadow-lg active:bg-black/90"
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
 
                 <canvas
                   ref={satCanvasRef}
@@ -1600,7 +1498,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 {drawingActive && (
                   <p className="mb-3 text-xs text-muted-foreground">
                     {isTouchDevice
-                      ? "Drag the map to align the crosshair on a roof corner, then tap \"Place Point\". Add at least 3 points."
+                      ? "Tap on roof corners to place points. Use two fingers to zoom and pan. Add at least 3 points."
                       : "Click on the roof corners to draw a polygon. Add at least 3 points to calculate area."}
                   </p>
                 )}
