@@ -106,7 +106,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   // Filter nav items based on granular permissions
   const navItems = useMemo(() => {
     const items = role === "admin" ? adminNav : contractorNav
-    if (role === "admin" || teamRole === "admin") return items
+    if (role === "admin" || isOwner) return items
     return items.filter((item) => {
       const requiredPerm = NAV_PERMISSIONS[item.href]
       if (!requiredPerm) return !item.adminOnly // fallback to legacy check

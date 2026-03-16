@@ -155,5 +155,7 @@ export const NAV_PERMISSIONS: Record<string, Permission> = {
   "/contractor/billing": "manage_billing",
   "/contractor/settings": "manage_settings",
   "/contractor/field": "use_field_mode",
+  "/contractor/reports": "view_analytics",
+  "/contractor/landing-pages": "manage_automations",
   "/contractor/profile": "view_dashboard", // everyone can see their own profile
 }
