@@ -467,12 +467,12 @@ export default function ContractorDashboard() {
         <OnboardingWizard userId={dashUserId} onComplete={() => setShowOnboarding(false)} />
       )}
 
-      {/* B) Pipeline Ticker -- live scrolling activity */}
-      {tickerItems.length > 0 && <PipelineTicker items={tickerItems} />}
+      {/* B) Pipeline Ticker -- live scrolling activity (tablet+) */}
+      {tickerItems.length > 0 && <div className="hidden md:block"><PipelineTicker items={tickerItems} /></div>}
 
-      {/* Getting Started Checklist */}
+      {/* Getting Started Checklist (tablet+) */}
       {showGettingStarted && (
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="hidden md:block rounded-2xl border border-border bg-card p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>Getting Started</h3>
@@ -566,8 +566,8 @@ export default function ContractorDashboard() {
         </Link>
       </div>
 
-      {/* Pipeline Summary + Close Rate */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* Pipeline Summary + Close Rate (tablet+) */}
+      <div className="hidden md:grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Conversion Funnel */}
         <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -613,9 +613,9 @@ export default function ContractorDashboard() {
         </div>
       </div>
 
-      {/* Conversion Funnel Analytics (30-day) */}
+      {/* Conversion Funnel Analytics (30-day, tablet+) */}
       {funnelData && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="hidden md:grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Conversion Rates */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -730,9 +730,9 @@ export default function ContractorDashboard() {
         </div>
       )}
 
-      {/* Analytics */}
+      {/* Analytics (tablet+) */}
       {analytics && (
-        <div className="flex flex-col gap-4">
+        <div className="hidden md:flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <TrendingUp className="h-3.5 w-3.5" /> Performance

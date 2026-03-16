@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { Briefcase, CheckCircle, LogOut, Package, Plus, Trash2, Settings } from "lucide-react"
+import { Briefcase, CheckCircle, LogOut, Package, Plus, Trash2, Settings, Smartphone, Download, Share } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/lib/toast-context"
@@ -179,6 +179,37 @@ export default function ContractorProfilePage() {
         </div>
         <span className="text-muted-foreground">&rsaquo;</span>
       </Link>
+
+      {/* Install App */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <Smartphone className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-bold text-foreground">Install XRoof App</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Add XRoof to your home screen for faster access, offline mode, and push notifications.
+        </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-3 rounded-xl bg-secondary/40 px-4 py-3">
+            <Download className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Android / Chrome</p>
+              <p className="text-[10px] text-muted-foreground">
+                Tap the browser menu (three dots) and select &quot;Install app&quot; or &quot;Add to Home screen&quot;.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl bg-secondary/40 px-4 py-3">
+            <Share className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">iPhone / iPad (Safari)</p>
+              <p className="text-[10px] text-muted-foreground">
+                Tap the <strong>Share</strong> button, then select <strong>Add to Home Screen</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Material Pricing */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">

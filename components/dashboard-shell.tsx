@@ -13,12 +13,14 @@ import { NotificationBell } from "@/components/notification-bell"
 import { CommandPalette } from "@/components/command-palette"
 import { useRole } from "@/lib/role-context"
 import { getRoleLabel } from "@/lib/permissions"
+import { InstallPrompt } from "@/components/install-prompt"
 
 interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   adminOnly?: boolean
+  desktopOnly?: boolean
 }
 
 interface DashboardShellProps {
@@ -34,15 +36,15 @@ const contractorNav: NavItem[] = [
   { label: "Estimates", href: "/contractor/reports", icon: FileText },
   { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
   { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
-  { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true },
-  { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true },
-  { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true },
+  { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true, desktopOnly: true },
+  { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true, desktopOnly: true },
+  { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true, desktopOnly: true },
   { label: "Materials", href: "/contractor/materials", icon: Calculator },
-  { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true },
-  { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true },
+  { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true, desktopOnly: true },
+  { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true, desktopOnly: true },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
-  { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true },
-  { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true },
+  { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true, desktopOnly: true },
+  { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true, desktopOnly: true },
   { label: "Profile", href: "/contractor/profile", icon: User },
 ]
 
@@ -126,13 +128,13 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       <CommandPalette />
       {/* Mobile overlay — admin only */}
       {mobileOpen && !isContractor && (
-        <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Sidebar — hidden on mobile for contractor, hamburger for admin */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 md:static md:translate-x-0",
           isContractor
             ? "-translate-x-full lg:translate-x-0"
             : mobileOpen ? "translate-x-0" : "-translate-x-full"
@@ -148,7 +150,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
             </span>
           </Link>
           <button
-            className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground md:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -198,7 +200,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
               return (
-                <li key={item.href}>
+                <li key={item.href} className={cn(item.desktopOnly && "hidden lg:block")}>
                   <Link
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
@@ -232,13 +234,13 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         <header className={cn(
-          "flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:h-16 lg:px-8",
-          isContractor && "lg:flex"
+          "flex h-14 items-center gap-4 border-b border-border bg-card px-4 md:h-16 md:px-8",
+          isContractor && "md:flex"
         )}>
           {/* Hamburger — admin mobile only */}
           {!isContractor && (
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground lg:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground md:hidden"
               onClick={() => setMobileOpen(true)}
             >
               <Menu className="h-4 w-4" />
@@ -247,7 +249,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           <h1
             className={cn(
               "flex-1 text-lg font-semibold text-foreground",
-              isContractor && "text-center lg:text-left"
+              isContractor && "text-center md:text-left"
             )}
             style={{ fontFamily: "var(--font-heading)" }}
           >
@@ -256,8 +258,8 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           <NotificationBell />
         </header>
         <main className={cn(
-          "flex-1 p-4 lg:p-8",
-          isContractor && "pb-24 lg:pb-8"
+          "flex-1 p-4 md:p-8",
+          isContractor && "pb-24 md:pb-8"
         )}>
           {children}
         </main>
@@ -265,7 +267,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
       {/* Bottom tab bar — contractor mobile only */}
       {isContractor && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom lg:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom md:hidden">
           {contractorTabs.map((tab) => {
             const isActive = pathname === tab.href || (tab.href === "/contractor/dashboard" && pathname.startsWith("/contractor/leads"))
             return (
@@ -286,6 +288,9 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           })}
         </nav>
       )}
+
+      {/* PWA Install Prompt — contractor only */}
+      {isContractor && <InstallPrompt />}
     </div>
   )
 }
