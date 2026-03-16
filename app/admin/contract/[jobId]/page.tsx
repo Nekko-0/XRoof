@@ -75,7 +75,7 @@ export default function AdminContractViewPage() {
         setDocEvents(events || [])
       } catch (err) {
         console.error("Failed to fetch contract:", err)
-        setDebugInfo({ fetchError: String(err) })
+        // error already logged above
       }
 
       setLoading(false)
