@@ -31,7 +31,7 @@ const ROLES = [
 ]
 
 export default function TeamPage() {
-  const { accountId, role: myRole } = useRole()
+  const { accountId, role: myRole, isOwner } = useRole()
   const toast = useToast()
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -175,13 +175,15 @@ export default function TeamPage() {
             Manage your team members and their permissions
           </p>
         </div>
-        <button
-          onClick={() => setShowInvite(!showInvite)}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <UserPlus className="h-4 w-4" />
-          Invite Member
-        </button>
+        {isOwner && (
+          <button
+            onClick={() => setShowInvite(!showInvite)}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <UserPlus className="h-4 w-4" />
+            Invite Member
+          </button>
+        )}
       </div>
 
       {/* Role legend */}
@@ -304,6 +306,14 @@ export default function TeamPage() {
             </div>
           </div>
 
+          {inviteRole === "admin" && (
+            <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-xs font-medium text-amber-400">
+                Admin has full control of your account — same access as you. Only 1 Admin seat allowed. Use for a trusted business partner only.
+              </p>
+            </div>
+          )}
+
           {!hasSubscription && (
             <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
               <p className="text-xs font-medium text-amber-400">
@@ -421,25 +431,33 @@ export default function TeamPage() {
                     </button>
                   )}
 
-                  {/* Role selector */}
-                  <select
-                    value={m.role}
-                    onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                    className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
+                  {/* Role selector — owner only */}
+                  {isOwner ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                      className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground">
+                      {roleConfig.label}
+                    </span>
+                  )}
 
-                  {/* Remove */}
-                  <button
-                    onClick={() => handleRemove(m.id)}
-                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    title="Remove member"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {/* Remove — owner only */}
+                  {isOwner && (
+                    <button
+                      onClick={() => handleRemove(m.id)}
+                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      title="Remove member"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               )
             })}

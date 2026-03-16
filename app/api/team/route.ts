@@ -32,6 +32,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  // Only the account owner can invite team members
+  const { data: inviterProfile } = await supabase
+    .from("profiles")
+    .select("parent_account_id")
+    .eq("id", userId)
+    .single()
+
+  if (inviterProfile?.parent_account_id) {
+    return NextResponse.json(
+      { error: "Only the account owner can invite team members." },
+      { status: 403 }
+    )
+  }
+
+  // Admin role limited to 1 seat
+  if (role === "admin") {
+    const { count: adminCount } = await supabase
+      .from("team_members")
+      .select("id", { count: "exact", head: true })
+      .eq("account_id", userId)
+      .eq("role", "admin")
+      .in("status", ["active", "invited"])
+
+    if ((adminCount ?? 0) >= 1) {
+      return NextResponse.json(
+        { error: "Only one Admin seat is allowed. Use Office Manager for additional team members." },
+        { status: 403 }
+      )
+    }
+  }
+
   // Require active subscription to add team members
   const { data: sub } = await supabase
     .from("subscriptions")
@@ -139,6 +170,38 @@ export async function PATCH(req: Request) {
 
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
+  // Only the account owner can change team member roles
+  const { data: patcherProfile } = await supabase
+    .from("profiles")
+    .select("parent_account_id")
+    .eq("id", userId)
+    .single()
+
+  if (patcherProfile?.parent_account_id) {
+    return NextResponse.json(
+      { error: "Only the account owner can manage team members." },
+      { status: 403 }
+    )
+  }
+
+  // Admin role limited to 1 seat
+  if (updates.role === "admin") {
+    const { count: adminCount } = await supabase
+      .from("team_members")
+      .select("id", { count: "exact", head: true })
+      .eq("account_id", userId)
+      .eq("role", "admin")
+      .in("status", ["active", "invited"])
+      .neq("id", id)
+
+    if ((adminCount ?? 0) >= 1) {
+      return NextResponse.json(
+        { error: "Only one Admin seat is allowed." },
+        { status: 403 }
+      )
+    }
+  }
+
   // Verify the team member belongs to the authenticated user's account
   const { data: member } = await supabase
     .from("team_members")
@@ -174,6 +237,20 @@ export async function DELETE(req: Request) {
   const id = searchParams.get("id")
 
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+  // Only the account owner can remove team members
+  const { data: deleterProfile } = await supabase
+    .from("profiles")
+    .select("parent_account_id")
+    .eq("id", userId)
+    .single()
+
+  if (deleterProfile?.parent_account_id) {
+    return NextResponse.json(
+      { error: "Only the account owner can remove team members." },
+      { status: 403 }
+    )
+  }
 
   // Verify the team member belongs to the authenticated user's account
   const { data: member } = await supabase
