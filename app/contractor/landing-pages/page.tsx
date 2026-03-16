@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Plus, Globe, Copy, ExternalLink, Trash2, BarChart3, Eye, Pencil, X, Check, ToggleLeft, ToggleRight } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
+import { useState, useEffect, useRef } from "react"
+import { Plus, Globe, Copy, ExternalLink, Trash2, Eye, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download } from "lucide-react"
 import { authFetch } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 
@@ -17,6 +16,9 @@ type LandingPage = {
   active: boolean
   views: number
   conversions: number
+  services: string[] | null
+  trust_badges: string[] | null
+  testimonials: { quote: string; name: string }[] | null
   created_at: string
 }
 
@@ -25,6 +27,9 @@ const TEMPLATES = [
   { id: "modern", name: "Modern", description: "Full-width hero with floating form" },
   { id: "minimal", name: "Minimal", description: "Clean white design with trust badges" },
 ]
+
+const DEFAULT_SERVICES = ["Roof Replacement", "Storm Damage", "Roof Repair", "Free Inspection"]
+const DEFAULT_BADGES = ["Licensed & Insured", "5-Star Reviews", "Free Estimates"]
 
 export default function LandingPagesPage() {
   const { accountId } = useRole()
@@ -35,6 +40,8 @@ export default function LandingPagesPage() {
   const [copied, setCopied] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState("")
+  const [qrSlug, setQrSlug] = useState<string | null>(null)
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -43,7 +50,16 @@ export default function LandingPagesPage() {
     cta_text: "Get My Free Quote",
     hero_image_url: "",
     template: "standard",
+    services: [...DEFAULT_SERVICES],
+    trust_badges: [...DEFAULT_BADGES],
+    testimonials: [] as { quote: string; name: string }[],
   })
+
+  // Temp inputs for adding items
+  const [newService, setNewService] = useState("")
+  const [newBadge, setNewBadge] = useState("")
+  const [newTestimonialQuote, setNewTestimonialQuote] = useState("")
+  const [newTestimonialName, setNewTestimonialName] = useState("")
 
   const fetchPages = async () => {
     const res = await authFetch("/api/landing-pages")
@@ -58,6 +74,19 @@ export default function LandingPagesPage() {
     if (accountId) fetchPages()
   }, [accountId])
 
+  const resetForm = () => {
+    setForm({
+      title: "Get Your Free Roof Estimate",
+      subtitle: "Licensed & insured roofing professionals serving your area.",
+      cta_text: "Get My Free Quote",
+      hero_image_url: "",
+      template: "standard",
+      services: [...DEFAULT_SERVICES],
+      trust_badges: [...DEFAULT_BADGES],
+      testimonials: [],
+    })
+  }
+
   const handleCreate = async () => {
     setSaving(true)
     setFormError("")
@@ -69,7 +98,7 @@ export default function LandingPagesPage() {
     if (res.ok) {
       await fetchPages()
       setShowCreate(false)
-      setForm({ title: "Get Your Free Roof Estimate", subtitle: "Licensed & insured roofing professionals serving your area.", cta_text: "Get My Free Quote", hero_image_url: "", template: "standard" })
+      resetForm()
     } else {
       const data = await res.json().catch(() => ({}))
       setFormError(data.error || "Failed to create landing page")
@@ -121,7 +150,38 @@ export default function LandingPagesPage() {
       cta_text: page.cta_text,
       hero_image_url: page.hero_image_url || "",
       template: page.template || "standard",
+      services: page.services?.length ? [...page.services] : [...DEFAULT_SERVICES],
+      trust_badges: page.trust_badges?.length ? [...page.trust_badges] : [...DEFAULT_BADGES],
+      testimonials: page.testimonials?.length ? [...page.testimonials] : [],
     })
+  }
+
+  const showQrCode = async (slug: string) => {
+    setQrSlug(slug)
+    // Dynamically import qrcode to generate on client
+    try {
+      const QRCode = (await import("qrcode")).default
+      const url = `${window.location.origin}/lp/${slug}`
+      setTimeout(() => {
+        if (qrCanvasRef.current) {
+          QRCode.toCanvas(qrCanvasRef.current, url, {
+            width: 280,
+            margin: 2,
+            color: { dark: "#000000", light: "#ffffff" },
+          })
+        }
+      }, 100)
+    } catch {
+      // fallback — qrcode not installed
+    }
+  }
+
+  const downloadQr = () => {
+    if (!qrCanvasRef.current) return
+    const link = document.createElement("a")
+    link.download = `qr-${qrSlug}.png`
+    link.href = qrCanvasRef.current.toDataURL("image/png")
+    link.click()
   }
 
   if (loading) {
@@ -141,14 +201,14 @@ export default function LandingPagesPage() {
           <p className="text-sm text-muted-foreground">Create lead capture pages to share with potential customers</p>
         </div>
         <button
-          onClick={() => { setShowCreate(true); setEditingId(null) }}
+          onClick={() => { setShowCreate(true); setEditingId(null); resetForm() }}
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" /> New Page
         </button>
       </div>
 
-      {/* Create / Edit Modal */}
+      {/* Create / Edit Form */}
       {(showCreate || editingId) && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
@@ -206,6 +266,118 @@ export default function LandingPagesPage() {
             </div>
           </div>
 
+          {/* Services */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Services (shown on Modern template, max 6)</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.services.map((s, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
+                  {s}
+                  <button onClick={() => setForm({ ...form, services: form.services.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {form.services.length < 6 && (
+              <div className="flex gap-2">
+                <input
+                  value={newService}
+                  onChange={(e) => setNewService(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && newService.trim()) { setForm({ ...form, services: [...form.services, newService.trim()] }); setNewService("") } }}
+                  placeholder="Add service..."
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <button
+                  onClick={() => { if (newService.trim()) { setForm({ ...form, services: [...form.services, newService.trim()] }); setNewService("") } }}
+                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Trust Badges */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Trust Badges (max 5)</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.trust_badges.map((b, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
+                  {b}
+                  <button onClick={() => setForm({ ...form, trust_badges: form.trust_badges.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {form.trust_badges.length < 5 && (
+              <div className="flex gap-2">
+                <input
+                  value={newBadge}
+                  onChange={(e) => setNewBadge(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && newBadge.trim()) { setForm({ ...form, trust_badges: [...form.trust_badges, newBadge.trim()] }); setNewBadge("") } }}
+                  placeholder="Add badge..."
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <button
+                  onClick={() => { if (newBadge.trim()) { setForm({ ...form, trust_badges: [...form.trust_badges, newBadge.trim()] }); setNewBadge("") } }}
+                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Testimonials */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Testimonials (shown on Minimal template, max 5)</label>
+            {form.testimonials.length > 0 && (
+              <div className="space-y-2 mb-2">
+                {form.testimonials.map((t, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-lg bg-secondary p-2.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-foreground">&ldquo;{t.quote}&rdquo;</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">— {t.name}</p>
+                    </div>
+                    <button onClick={() => setForm({ ...form, testimonials: form.testimonials.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {form.testimonials.length < 5 && (
+              <div className="flex gap-2">
+                <input
+                  value={newTestimonialQuote}
+                  onChange={(e) => setNewTestimonialQuote(e.target.value)}
+                  placeholder="Quote..."
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <input
+                  value={newTestimonialName}
+                  onChange={(e) => setNewTestimonialName(e.target.value)}
+                  placeholder="Name"
+                  className="w-28 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <button
+                  onClick={() => {
+                    if (newTestimonialQuote.trim()) {
+                      setForm({ ...form, testimonials: [...form.testimonials, { quote: newTestimonialQuote.trim(), name: newTestimonialName.trim() || "Homeowner" }] })
+                      setNewTestimonialQuote("")
+                      setNewTestimonialName("")
+                    }
+                  }}
+                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2">
             <button
               onClick={() => { setShowCreate(false); setEditingId(null) }}
@@ -224,6 +396,36 @@ export default function LandingPagesPage() {
           {formError && (
             <p className="mt-2 text-xs text-red-400">{formError}</p>
           )}
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrSlug && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setQrSlug(null)}>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-foreground">QR Code</h3>
+              <button onClick={() => setQrSlug(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="flex justify-center mb-3">
+              <canvas ref={qrCanvasRef} />
+            </div>
+            <p className="text-[10px] text-center text-muted-foreground mb-4 break-all">{window.location.origin}/lp/{qrSlug}</p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={downloadQr}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Download className="h-3 w-3" /> Download PNG
+              </button>
+              <button
+                onClick={() => copyLink(qrSlug!)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-secondary"
+              >
+                <Copy className="h-3 w-3" /> Copy Link
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -285,6 +487,12 @@ export default function LandingPagesPage() {
                   >
                     {copied === page.slug ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                     {copied === page.slug ? "Copied!" : "Copy Link"}
+                  </button>
+                  <button
+                    onClick={() => showQrCode(page.slug)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <QrCode className="h-3 w-3" /> QR Code
                   </button>
                   <a
                     href={`/lp/${page.slug}`}

@@ -13,6 +13,9 @@ type LandingPage = {
   cta_text: string
   hero_image_url: string | null
   template: string
+  services: string[] | null
+  trust_badges: string[] | null
+  testimonials: { quote: string; name: string }[] | null
   utm_source: string | null
   utm_campaign: string | null
 }
@@ -122,6 +125,13 @@ export default function LandingPageView() {
   const brandColor = branding.widget_color || "#3b82f6"
   const companyName = branding.company_name || "Roofing Company"
   const template = page.template || "standard"
+  const services = page.services?.length ? page.services : ["Roof Replacement", "Storm Damage", "Roof Repair", "Free Inspection"]
+  const trustBadges = page.trust_badges?.length ? page.trust_badges : ["Licensed & Insured", "5-Star Reviews", "Free Estimates"]
+  const testimonials = page.testimonials?.length ? page.testimonials : [
+    { quote: "Fast, professional, and fair pricing. Highly recommend!", name: "Homeowner" },
+    { quote: "They showed up on time and did excellent work on our roof.", name: "Homeowner" },
+    { quote: "Best roofing experience we've ever had. 5 stars!", name: "Homeowner" },
+  ]
 
   const LeadForm = ({ dark = true }: { dark?: boolean }) => (
     step === "form" ? (
@@ -178,13 +188,15 @@ export default function LandingPageView() {
 
   const TrustBadges = ({ dark = true }: { dark?: boolean }) => (
     <div className={`flex flex-wrap items-center justify-center gap-4 text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
-      <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" style={{ color: brandColor }} /> Licensed &amp; Insured</span>
-      {branding.google_reviews_cache?.rating ? (
+      {branding.google_reviews_cache?.rating && (
         <GoogleReviewsBadge rating={branding.google_reviews_cache.rating} reviewCount={branding.google_reviews_cache.reviewCount} reviewUrl={branding.google_review_url} />
-      ) : (
-        <span className="flex items-center gap-1.5"><Star className="h-4 w-4" style={{ color: brandColor }} /> 5-Star Reviews</span>
       )}
-      <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4" style={{ color: brandColor }} /> Free Estimates</span>
+      {trustBadges.map((badge, i) => (
+        <span key={i} className="flex items-center gap-1.5">
+          {i === 0 ? <Shield className="h-4 w-4" style={{ color: brandColor }} /> : i === 1 ? <Star className="h-4 w-4" style={{ color: brandColor }} /> : <CheckCircle className="h-4 w-4" style={{ color: brandColor }} />}
+          {badge}
+        </span>
+      ))}
     </div>
   )
 
@@ -214,7 +226,7 @@ export default function LandingPageView() {
               <div className="mt-6"><TrustBadges /></div>
               {/* Services grid */}
               <div className="mt-8 grid grid-cols-2 gap-3">
-                {["Roof Replacement", "Storm Damage", "Roof Repair", "Free Inspection"].map((s) => (
+                {services.map((s) => (
                   <div key={s} className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm">
                     <CheckCircle className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
                     {s}
@@ -246,10 +258,11 @@ export default function LandingPageView() {
           <div className="mx-auto max-w-2xl px-6 text-center">
             <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Trusted by Homeowners</p>
             <div className="grid gap-4 sm:grid-cols-3">
-              {["Fast, professional, and fair pricing. Highly recommend!", "They showed up on time and did excellent work on our roof.", "Best roofing experience we&apos;ve ever had. 5 stars!"].map((t, i) => (
+              {testimonials.map((t, i) => (
                 <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
                   <div className="flex justify-center gap-0.5 mb-2">{[1,2,3,4,5].map(s => <Star key={s} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}</div>
-                  <p>&ldquo;{t}&rdquo;</p>
+                  <p>&ldquo;{t.quote}&rdquo;</p>
+                  {t.name && <p className="mt-2 text-xs font-medium text-gray-400">— {t.name}</p>}
                 </div>
               ))}
             </div>

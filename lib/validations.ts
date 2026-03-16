@@ -92,6 +92,9 @@ export const LandingPageCreateSchema = z.object({
   cta_text: z.string().max(100).optional(),
   hero_image_url: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().max(2000).optional()),
   template: z.string().max(50).optional(),
+  services: z.array(z.string().max(50)).max(6).optional(),
+  trust_badges: z.array(z.string().max(50)).max(5).optional(),
+  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50) })).max(5).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
 })
@@ -105,6 +108,9 @@ export const LandingPageUpdateSchema = z.object({
   slug: z.string().max(100).optional(),
   published: z.boolean().optional(),
   template: z.string().max(50).optional(),
+  services: z.array(z.string().max(50)).max(6).optional(),
+  trust_badges: z.array(z.string().max(50)).max(5).optional(),
+  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50) })).max(5).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
 })
