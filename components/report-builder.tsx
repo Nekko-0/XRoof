@@ -466,7 +466,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
   const handleSave = async () => {
     setSaving(true)
     const id = await doSave()
-    if (id) toast.success("Report saved!")
+    if (id) toast.success("Estimate saved!")
     setSaving(false)
   }
 
@@ -517,7 +517,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
-          {saving ? "Saving..." : "Save Report"}
+          {saving ? "Saving..." : "Save Estimate"}
         </button>
         <button
           onClick={() => setShowSaveTemplate(!showSaveTemplate)}
@@ -615,7 +615,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
       {activityEvents.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4">
           <h4 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Activity className="h-3.5 w-3.5" /> Report Activity
+            <Activity className="h-3.5 w-3.5" /> Estimate Activity
           </h4>
           <div className="space-y-2">
             {activityEvents.map((evt) => {

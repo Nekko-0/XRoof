@@ -92,14 +92,14 @@ export default function ReportsListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>Reports</h1>
+          <h1 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>Estimates</h1>
           <p className="mt-1 text-xs text-muted-foreground">View and manage your sent estimates and proposals.</p>
         </div>
         <Link
           href="/contractor/report-builder"
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          <Plus className="h-4 w-4" /> New Report
+          <Plus className="h-4 w-4" /> New Estimate
         </Link>
       </div>
 
@@ -112,10 +112,10 @@ export default function ReportsListPage() {
       ) : reports.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-16">
           <FileText className="mb-3 h-10 w-10 text-muted-foreground/30" />
-          <p className="text-sm font-medium text-muted-foreground">No reports yet</p>
+          <p className="text-sm font-medium text-muted-foreground">No estimates yet</p>
           <p className="mt-1 text-xs text-muted-foreground/60">Create your first estimate to get started.</p>
           <Link href="/contractor/report-builder" className="mt-4 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
-            Create Report
+            Create Estimate
           </Link>
         </div>
       ) : (
