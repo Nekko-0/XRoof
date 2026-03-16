@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { getStripe } from "@/lib/stripe"
 
 export async function GET(req: Request) {
   const auth = await requireAuth(req)
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   if (auth instanceof NextResponse) return auth
   const { userId } = auth
   const supabase = getServiceSupabase()
+  const stripe = getStripe()
 
   const body = await req.json()
   const { invited_email, role, invited_name } = body
@@ -30,24 +32,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  // Check seat limit
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("max_team_seats")
-    .eq("id", userId)
-    .single()
+  // Require active subscription to add team members
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("stripe_subscription_id, status")
+    .eq("user_id", userId)
+    .in("status", ["active", "trialing", "past_due"])
+    .in("plan", ["monthly", "annual"])
+    .maybeSingle()
 
-  const maxSeats = profile?.max_team_seats ?? 3
-
-  const { count: currentMembers } = await supabase
-    .from("team_members")
-    .select("id", { count: "exact", head: true })
-    .eq("account_id", userId)
-    .in("status", ["active", "invited"])
-
-  if ((currentMembers ?? 0) >= maxSeats) {
+  if (!sub?.stripe_subscription_id) {
     return NextResponse.json(
-      { error: `Team member limit reached (${maxSeats} seats). Upgrade your plan or contact support to add more seats.` },
+      { error: "Active subscription required to add team members. Go to Billing to subscribe." },
       { status: 403 }
     )
   }
@@ -64,6 +60,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This email has already been invited" }, { status: 409 })
   }
 
+  // Add team seat to Stripe subscription
+  const seatPriceId = process.env.STRIPE_TEAM_SEAT_PRICE_ID
+  if (!seatPriceId) {
+    return NextResponse.json({ error: "Team seat pricing not configured" }, { status: 500 })
+  }
+
+  try {
+    // Check if seat line item already exists on the subscription
+    const subData = await stripe.subscriptions.retrieve(sub.stripe_subscription_id, {
+      expand: ["items.data"],
+    })
+    const seatItem = subData.items.data.find(
+      (item) => item.price.id === seatPriceId
+    )
+
+    if (seatItem) {
+      // Increment existing seat quantity
+      await stripe.subscriptionItems.update(seatItem.id, {
+        quantity: (seatItem.quantity || 1) + 1,
+        proration_behavior: "create_prorations",
+      })
+    } else {
+      // Add new seat line item
+      await stripe.subscriptionItems.create({
+        subscription: sub.stripe_subscription_id,
+        price: seatPriceId,
+        quantity: 1,
+        proration_behavior: "create_prorations",
+      })
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Unknown error"
+    console.error("Stripe seat billing error:", msg)
+    return NextResponse.json({ error: "Failed to add team seat to billing. Please try again." }, { status: 500 })
+  }
+
+  // Insert team member
   const { data, error } = await supabase
     .from("team_members")
     .insert({
@@ -135,6 +168,7 @@ export async function DELETE(req: Request) {
   if (auth instanceof NextResponse) return auth
   const { userId } = auth
   const supabase = getServiceSupabase()
+  const stripe = getStripe()
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
@@ -151,6 +185,45 @@ export async function DELETE(req: Request) {
 
   if (!member) {
     return NextResponse.json({ error: "Team member not found" }, { status: 404 })
+  }
+
+  // Decrement Stripe seat billing
+  const seatPriceId = process.env.STRIPE_TEAM_SEAT_PRICE_ID
+  if (seatPriceId) {
+    try {
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", userId)
+        .in("status", ["active", "trialing", "past_due"])
+        .maybeSingle()
+
+      if (sub?.stripe_subscription_id) {
+        const subData = await stripe.subscriptions.retrieve(sub.stripe_subscription_id, {
+          expand: ["items.data"],
+        })
+        const seatItem = subData.items.data.find(
+          (item) => item.price.id === seatPriceId
+        )
+
+        if (seatItem) {
+          const newQty = (seatItem.quantity || 1) - 1
+          if (newQty <= 0) {
+            await stripe.subscriptionItems.del(seatItem.id, {
+              proration_behavior: "create_prorations",
+            })
+          } else {
+            await stripe.subscriptionItems.update(seatItem.id, {
+              quantity: newQty,
+              proration_behavior: "create_prorations",
+            })
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Stripe seat decrement error:", e)
+      // Still allow deletion — don't block removing members due to billing error
+    }
   }
 
   const { error } = await supabase

@@ -47,6 +47,8 @@ export default function TeamPage() {
   const [showPermissions, setShowPermissions] = useState(false)
   const [ownerName, setOwnerName] = useState("")
   const [ownerEmail, setOwnerEmail] = useState("")
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     if (!accountId) return
@@ -64,12 +66,28 @@ export default function TeamPage() {
         setOwnerEmail(data.email || "")
       }
     })
+    // Check subscription status
+    supabase.from("subscriptions")
+      .select("status")
+      .eq("user_id", accountId)
+      .in("status", ["active", "trialing", "past_due"])
+      .in("plan", ["monthly", "annual"])
+      .maybeSingle()
+      .then(({ data }) => setHasSubscription(!!data))
   }, [accountId])
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return
+
+    // Show billing confirmation first
+    if (!showConfirm) {
+      setShowConfirm(true)
+      return
+    }
+
     setInviting(true)
     setInviteError("")
+    setShowConfirm(false)
 
     const res = await authFetch("/api/team", {
       method: "POST",
@@ -286,21 +304,39 @@ export default function TeamPage() {
             </div>
           </div>
 
+          {!hasSubscription && (
+            <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-xs font-medium text-amber-400">
+                Active subscription required to invite team members.{" "}
+                <a href="/contractor/billing" className="underline hover:text-amber-300">Go to Billing</a>
+              </p>
+            </div>
+          )}
+
           {inviteError && (
             <p className="mt-2 text-xs text-red-400">{inviteError}</p>
+          )}
+
+          {showConfirm && (
+            <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <p className="text-sm font-medium text-foreground">
+                Adding a team member costs <span className="text-primary font-bold">$39/mo</span> (prorated to your billing cycle).
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Click "Confirm & Send Invite" to proceed.</p>
+            </div>
           )}
 
           <div className="mt-4 flex gap-2">
             <button
               onClick={handleInvite}
-              disabled={!inviteEmail.trim() || inviting}
+              disabled={!inviteEmail.trim() || inviting || !hasSubscription}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               <Mail className="h-4 w-4" />
-              {inviting ? "Sending..." : "Send Invite"}
+              {inviting ? "Sending..." : showConfirm ? "Confirm & Send Invite" : "Send Invite"}
             </button>
             <button
-              onClick={() => setShowInvite(false)}
+              onClick={() => { setShowInvite(false); setShowConfirm(false) }}
               className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary"
             >
               Cancel
