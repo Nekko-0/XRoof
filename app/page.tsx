@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { AuthRedirect } from "@/components/auth-redirect"
 import {
   ArrowRight, BarChart3, Satellite, Smartphone, Zap, FileText,
   CreditCard, Users, Shield, Check, Star,
@@ -80,6 +81,7 @@ const pricingFeatures = [
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <AuthRedirect />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
