@@ -34,6 +34,7 @@ export default function LandingPagesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState("")
 
   // Form state
   const [form, setForm] = useState({
@@ -59,6 +60,7 @@ export default function LandingPagesPage() {
 
   const handleCreate = async () => {
     setSaving(true)
+    setFormError("")
     const res = await authFetch("/api/landing-pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,6 +70,9 @@ export default function LandingPagesPage() {
       await fetchPages()
       setShowCreate(false)
       setForm({ title: "Get Your Free Roof Estimate", subtitle: "Licensed & insured roofing professionals serving your area.", cta_text: "Get My Free Quote", hero_image_url: "", template: "standard" })
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setFormError(data.error || "Failed to create landing page")
     }
     setSaving(false)
   }
@@ -216,6 +221,9 @@ export default function LandingPagesPage() {
               {saving ? "Saving..." : editingId ? "Update" : "Create Page"}
             </button>
           </div>
+          {formError && (
+            <p className="mt-2 text-xs text-red-400">{formError}</p>
+          )}
         </div>
       )}
 
