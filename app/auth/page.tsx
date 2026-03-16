@@ -15,6 +15,7 @@ function AuthForm() {
   const [username, setUsername] = useState("")
   const [serviceZips, setServiceZips] = useState("")
   const [isSignUp, setIsSignUp] = useState(true)
+  const [forgotMode, setForgotMode] = useState(false)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -64,6 +65,24 @@ function AuthForm() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setMessage("Please enter your email address")
+      return
+    }
+    setLoading(true)
+    setMessage("")
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/auth/reset-password",
+    })
+    setLoading(false)
+    if (error) {
+      setMessage(error.message)
+    } else {
+      setMessage("Check your email for a password reset link!")
+    }
+  }
+
   const handleLogin = async () => {
     if (!email || !password) {
       setMessage("Please fill in all fields")
@@ -109,17 +128,17 @@ function AuthForm() {
             className="mt-1 text-lg font-bold text-foreground"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {isSignUp ? "Join XRoof" : "Welcome Back"}
+            {forgotMode ? "Reset Password" : isSignUp ? "Join XRoof" : "Welcome Back"}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {isSignUp ? "Sign up as a contractor to receive leads" : "Sign in to manage your leads"}
+            {forgotMode ? "Enter your email to receive a reset link" : isSignUp ? "Sign up as a contractor to receive leads" : "Sign in to manage your leads"}
           </p>
         </div>
 
         {/* Form */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4">
-            {isSignUp && (
+            {!forgotMode && isSignUp && (
               <>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-foreground">Name</label>
@@ -154,23 +173,35 @@ function AuthForm() {
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">Password</label>
-              <input
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
+            {!forgotMode && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Password</label>
+                <input
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
+
+            {!forgotMode && !isSignUp && (
+              <button
+                type="button"
+                onClick={() => { setForgotMode(true); setMessage("") }}
+                className="self-end text-xs font-medium text-primary hover:text-primary/80 -mt-2"
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button
-              onClick={isSignUp ? handleSignUp : handleLogin}
+              onClick={forgotMode ? handleForgotPassword : isSignUp ? handleSignUp : handleLogin}
               disabled={loading}
               className="mt-1 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Please wait..." : isSignUp ? "Sign Up" : "Login"}
+              {loading ? "Please wait..." : forgotMode ? "Send Reset Link" : isSignUp ? "Sign Up" : "Login"}
             </button>
 
             {message && (
@@ -181,12 +212,21 @@ function AuthForm() {
           </div>
 
           <div className="mt-5 border-t border-border pt-4 text-center">
-            <button
-              onClick={() => { setIsSignUp(!isSignUp); setMessage("") }}
-              className="text-sm font-medium text-primary hover:text-primary/80"
-            >
-              {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign Up"}
-            </button>
+            {forgotMode ? (
+              <button
+                onClick={() => { setForgotMode(false); setMessage("") }}
+                className="text-sm font-medium text-primary hover:text-primary/80"
+              >
+                Back to login
+              </button>
+            ) : (
+              <button
+                onClick={() => { setIsSignUp(!isSignUp); setMessage("") }}
+                className="text-sm font-medium text-primary hover:text-primary/80"
+              >
+                {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign Up"}
+              </button>
+            )}
           </div>
         </div>
 
