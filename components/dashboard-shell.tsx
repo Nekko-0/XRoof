@@ -10,6 +10,7 @@ import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 import { NAV_PERMISSIONS } from "@/lib/permissions"
 import { NotificationBell } from "@/components/notification-bell"
+import { useUnreadPortalCount } from "@/hooks/use-unread-portal-count"
 import { CommandPalette } from "@/components/command-palette"
 import { useRole } from "@/lib/role-context"
 import { getRoleLabel } from "@/lib/permissions"
@@ -73,6 +74,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { role: teamRole, granularRole, isOwner, accountId, can } = useRole()
   const isContractor = role === "contractor"
+  const unreadPortalCount = useUnreadPortalCount()
 
   // Search
   const [searchQuery, setSearchQuery] = useState("")
@@ -213,6 +215,11 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                   >
                     <item.icon className="h-4 w-4" />
                     {item.label}
+                    {item.label === "Messages" && unreadPortalCount > 0 && (
+                      <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold text-destructive-foreground">
+                        {unreadPortalCount > 9 ? "9+" : unreadPortalCount}
+                      </span>
+                    )}
                   </Link>
                 </li>
               )

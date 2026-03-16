@@ -20,6 +20,7 @@ type Notification = {
 function getNotificationLink(type: string): string | null {
   switch (type) {
     case "visit_request": return "/contractor/messages"
+    case "portal_message": return "/contractor/messages"
     case "sms_received": return "/contractor/messages"
     case "contract_signed": return "/contractor/leads"
     case "payment_received": return "/contractor/leads"

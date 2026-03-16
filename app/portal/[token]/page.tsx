@@ -247,6 +247,13 @@ export default function HomeownerPortal() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Auto-poll messages every 5s when Messages tab is active
+  useEffect(() => {
+    if (activeTab !== "messages" || !data?.job.id) return
+    const interval = setInterval(() => fetchMessages(data.job.id), 5000)
+    return () => clearInterval(interval)
+  }, [activeTab, data?.job.id])
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950">

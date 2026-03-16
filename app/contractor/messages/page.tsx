@@ -274,6 +274,19 @@ export default function ContractorMessagesPage() {
     portalEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [portalMessages])
 
+  // Auto-poll portal thread every 5s when viewing a conversation
+  useEffect(() => {
+    if (tab !== "portal" || !selectedJobId) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await authFetch(`/api/contractor/portal-messages?job_id=${selectedJobId}`)
+        const data = await res.json()
+        setPortalMessages(data.messages || [])
+      } catch {}
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [tab, selectedJobId])
+
   const formatPhone = (phone: string) => {
     const digits = phone.replace(/\D/g, "")
     if (digits.length === 10) {
