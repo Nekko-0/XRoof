@@ -133,7 +133,7 @@ export default function LandingPageView() {
     { quote: "Best roofing experience we've ever had. 5 stars!", name: "Homeowner" },
   ]
 
-  const LeadForm = ({ dark = true }: { dark?: boolean }) => (
+  const renderLeadForm = (dark = true) => (
     step === "form" ? (
       <div className={`rounded-2xl border p-6 shadow-xl ${dark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-xl font-bold text-center mb-1 ${dark ? "text-white" : "text-gray-900"}`}>{page.cta_text}</h2>
@@ -186,7 +186,7 @@ export default function LandingPageView() {
     )
   )
 
-  const TrustBadges = ({ dark = true }: { dark?: boolean }) => (
+  const renderTrustBadges = (dark = true) => (
     <div className={`flex flex-wrap items-center justify-center gap-4 text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
       {branding.google_reviews_cache?.rating && (
         <GoogleReviewsBadge rating={branding.google_reviews_cache.rating} reviewCount={branding.google_reviews_cache.reviewCount} reviewUrl={branding.google_review_url} />
@@ -200,7 +200,7 @@ export default function LandingPageView() {
     </div>
   )
 
-  const Footer = ({ dark = true }: { dark?: boolean }) => (
+  const renderFooter = (dark = true) => (
     <footer className={`border-t py-6 text-center ${dark ? "border-gray-800" : "border-gray-200"}`}>
       <p className={`text-sm font-semibold ${dark ? "text-gray-300" : "text-gray-700"}`}>{companyName}</p>
       <div className={`mt-2 flex items-center justify-center gap-4 text-xs ${dark ? "text-gray-500" : "text-gray-400"}`}>
@@ -223,7 +223,7 @@ export default function LandingPageView() {
               {branding.logo_url && <img src={branding.logo_url} alt={companyName} className="mb-6 h-14 w-14 rounded-xl object-cover" />}
               <h1 className="text-4xl font-bold sm:text-5xl leading-tight" style={{ fontFamily: "var(--font-heading)" }}>{page.title}</h1>
               <p className="mt-4 text-lg text-gray-300">{page.subtitle}</p>
-              <div className="mt-6"><TrustBadges /></div>
+              <div className="mt-6">{renderTrustBadges()}</div>
               {/* Services grid */}
               <div className="mt-8 grid grid-cols-2 gap-3">
                 {services.map((s) => (
@@ -234,10 +234,10 @@ export default function LandingPageView() {
                 ))}
               </div>
             </div>
-            <div><LeadForm /></div>
+            <div>{renderLeadForm()}</div>
           </div>
         </div>
-        <Footer />
+        {renderFooter()}
       </div>
     )
   }
@@ -250,9 +250,9 @@ export default function LandingPageView() {
           {branding.logo_url && <img src={branding.logo_url} alt={companyName} className="mx-auto mb-6 h-16 w-16 rounded-2xl object-cover" />}
           <h1 className="text-3xl font-bold sm:text-4xl text-gray-900" style={{ fontFamily: "var(--font-heading)" }}>{page.title}</h1>
           <p className="mt-4 text-lg text-gray-500">{page.subtitle}</p>
-          <div className="mt-6"><TrustBadges dark={false} /></div>
+          <div className="mt-6">{renderTrustBadges(false)}</div>
         </div>
-        <div className="mx-auto max-w-md px-6 pb-16"><LeadForm dark={false} /></div>
+        <div className="mx-auto max-w-md px-6 pb-16">{renderLeadForm(false)}</div>
         {/* Testimonial placeholder */}
         <div className="border-t border-gray-200 bg-gray-50 py-12">
           <div className="mx-auto max-w-2xl px-6 text-center">
@@ -268,7 +268,7 @@ export default function LandingPageView() {
             </div>
           </div>
         </div>
-        <Footer dark={false} />
+        {renderFooter(false)}
       </div>
     )
   }
@@ -283,12 +283,12 @@ export default function LandingPageView() {
             {branding.logo_url && <img src={branding.logo_url} alt={companyName} className="mx-auto mb-6 h-16 w-16 rounded-2xl object-cover" />}
             <h1 className="text-3xl font-bold sm:text-4xl" style={{ fontFamily: "var(--font-heading)" }}>{page.title}</h1>
             <p className="mt-4 text-lg text-gray-300">{page.subtitle}</p>
-            <div className="mt-6"><TrustBadges /></div>
+            <div className="mt-6">{renderTrustBadges()}</div>
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-md px-6 py-10 -mt-6"><LeadForm /></div>
-      <Footer />
+      <div className="mx-auto max-w-md px-6 py-10 -mt-6">{renderLeadForm()}</div>
+      {renderFooter()}
     </div>
   )
 }
