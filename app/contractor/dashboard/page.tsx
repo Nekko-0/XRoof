@@ -83,6 +83,7 @@ export default function ContractorDashboard() {
   // Attention items
   const [overdueFollowups, setOverdueFollowups] = useState<Followup[]>([])
   const [staleJobs, setStaleJobs] = useState<Job[]>([])
+  const [visitRequests, setVisitRequests] = useState<{ id: string; body: string; link: string; created_at: string }[]>([])
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
   const [recentJobs, setRecentJobs] = useState<Job[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -176,6 +177,17 @@ export default function ContractorDashboard() {
       setStaleJobs(stale)
 
       setOverdueFollowups((followupsRes.data as any) || [])
+
+      // Visit requests (unread notifications)
+      const { data: visitReqs } = await supabase
+        .from("notifications")
+        .select("id, body, link, created_at")
+        .eq("user_id", uid)
+        .eq("type", "visit_request")
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+        .limit(5)
+      setVisitRequests(visitReqs || [])
 
       // Today's appointments
       const todayAppts = (Array.isArray(appointmentsRes) ? appointmentsRes : [])
@@ -305,7 +317,7 @@ export default function ContractorDashboard() {
     ? Math.round(((statusCounts["Completed"] || 0) / totalJobs) * 100)
     : 0
 
-  const attentionCount = overdueFollowups.length + staleJobs.length
+  const attentionCount = overdueFollowups.length + staleJobs.length + visitRequests.length
 
   // Build ticker items from recent activity
   const tickerItems = (analytics?.recentActivity || []).map((a) => ({
@@ -682,6 +694,17 @@ export default function ContractorDashboard() {
             <AlertTriangle className="h-3.5 w-3.5" /> Needs Attention ({attentionCount})
           </h3>
           <div className="flex flex-col gap-2">
+            {visitRequests.map((vr) => (
+              <Link key={vr.id} href={vr.link || "/contractor/messages"}
+                className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">
+                <Calendar className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">{vr.body}</p>
+                  <p className="text-[10px] text-muted-foreground">{new Date(vr.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-400">New</span>
+              </Link>
+            ))}
             {overdueFollowups.map((f) => (
               <Link key={f.id} href="/contractor/calendar"
                 className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">

@@ -72,6 +72,13 @@ export async function GET(req: Request) {
     .eq("job_id", job.id)
     .order("created_at", { ascending: false })
 
+  // Get appointments for this job (site visits, work start, etc.)
+  const { data: appointments } = await supabase
+    .from("appointments")
+    .select("id, title, date, time, type, duration_min, notes")
+    .eq("job_id", job.id)
+    .order("date", { ascending: true })
+
   // Get document events for activity timeline
   const { data: events } = await supabase
     .from("document_events")
@@ -95,6 +102,7 @@ export async function GET(req: Request) {
     photos: photos || [],
     contracts: contracts || [],
     estimates: allReports || [],
+    appointments: appointments || [],
     events: events || [],
   })
 }

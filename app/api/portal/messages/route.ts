@@ -61,8 +61,12 @@ export async function POST(req: Request) {
       )
     }
 
-    // Verify the job exists to prevent blind writes
-    const { data: job } = await supabase.from("jobs").select("id").eq("id", job_id).single()
+    // Verify the job exists and get contractor info for notifications
+    const { data: job } = await supabase
+      .from("jobs")
+      .select("id, contractor_id, customer_name")
+      .eq("id", job_id)
+      .single()
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 })
     }
@@ -75,6 +79,20 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Send notification to contractor for visit requests
+    if (message.startsWith("📅 Visit Request") && job.contractor_id) {
+      await supabase.from("notifications").insert({
+        user_id: job.contractor_id,
+        type: "visit_request",
+        title: "Visit Request",
+        body: `${job.customer_name || "A customer"} is requesting a site visit`,
+        link: `/contractor/leads`,
+        read: false,
+      }).then(({ error: nErr }) => {
+        if (nErr) console.error("[XRoof] visit request notification error:", nErr.message)
+      })
     }
 
     return NextResponse.json({ message: row })

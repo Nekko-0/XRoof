@@ -60,6 +60,16 @@ type DocEvent = {
   created_at: string
 }
 
+type AppointmentInfo = {
+  id: string
+  title: string
+  date: string
+  time: string | null
+  type: string
+  duration_min: number | null
+  notes: string | null
+}
+
 type PortalData = {
   job: {
     id: string
@@ -104,6 +114,7 @@ type PortalData = {
   }[]
   contracts: ContractInfo[]
   estimates: EstimateInfo[]
+  appointments: AppointmentInfo[]
   events: DocEvent[]
 }
 
@@ -161,17 +172,13 @@ export default function HomeownerPortal() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
 
-  // Booking state
-  const [showBooking, setShowBooking] = useState(false)
-  const [bookingDate, setBookingDate] = useState("")
-  const [bookingSlots, setBookingSlots] = useState<string[]>([])
-  const [bookingDuration, setBookingDuration] = useState(60)
-  const [selectedSlot, setSelectedSlot] = useState("")
-  const [bookingPhone, setBookingPhone] = useState("")
-  const [bookingNotes, setBookingNotes] = useState("")
-  const [bookingLoading, setBookingLoading] = useState(false)
-  const [bookingConfirmed, setBookingConfirmed] = useState(false)
-  const [slotsLoading, setSlotsLoading] = useState(false)
+  // Visit request state
+  const [showVisitRequest, setShowVisitRequest] = useState(false)
+  const [visitPreferredDates, setVisitPreferredDates] = useState("")
+  const [visitNotes, setVisitNotes] = useState("")
+  const [visitPhone, setVisitPhone] = useState("")
+  const [visitRequestSent, setVisitRequestSent] = useState(false)
+  const [visitRequestLoading, setVisitRequestLoading] = useState(false)
 
   const fetchMessages = async (jobId: string) => {
     try {
@@ -201,45 +208,23 @@ export default function HomeownerPortal() {
     setSendingMessage(false)
   }
 
-  const fetchSlots = async (contractorId: string, date: string) => {
-    setSlotsLoading(true)
-    setBookingSlots([])
-    setSelectedSlot("")
+  const submitVisitRequest = async () => {
+    if (!data || visitRequestLoading) return
+    setVisitRequestLoading(true)
     try {
-      const res = await fetch(`/api/bookings/availability?contractor_id=${contractorId}&date=${date}`)
-      if (res.ok) {
-        const json = await res.json()
-        setBookingSlots(json.slots || [])
-        setBookingDuration(json.duration || 60)
-      }
-    } catch {}
-    setSlotsLoading(false)
-  }
-
-  const submitBooking = async () => {
-    if (!data || !bookingDate || !selectedSlot || bookingLoading) return
-    setBookingLoading(true)
-    try {
-      const res = await fetch("/api/bookings", {
+      const msg = `📅 Visit Request\nPreferred dates: ${visitPreferredDates || "Flexible"}\nNotes: ${visitNotes || "None"}\nPhone: ${visitPhone || data.job.customer_phone || "Not provided"}`
+      const res = await fetch("/api/portal/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contractor_id: data.job.contractor_id,
-          job_id: data.job.id,
-          date: bookingDate,
-          time: selectedSlot,
-          customer_name: data.job.customer_name,
-          customer_email: "",
-          customer_phone: bookingPhone || data.job.customer_phone || "",
-          notes: bookingNotes,
-        }),
+        body: JSON.stringify({ job_id: data.job.id, sender: "homeowner", message: msg }),
       })
       if (res.ok) {
-        setBookingConfirmed(true)
-        setShowBooking(false)
+        setVisitRequestSent(true)
+        setShowVisitRequest(false)
+        await fetchMessages(data.job.id)
       }
     } catch {}
-    setBookingLoading(false)
+    setVisitRequestLoading(false)
   }
 
   useEffect(() => {
@@ -282,7 +267,7 @@ export default function HomeownerPortal() {
     )
   }
 
-  const { job, contractor, report, photos, contracts, estimates, events } = data
+  const { job, contractor, report, photos, contracts, estimates, appointments, events } = data
   const companyName = contractor.company_name || contractor.username || "Your Contractor"
   const brandColor = contractor.widget_color || "#3b82f6"
 
@@ -505,126 +490,137 @@ export default function HomeownerPortal() {
               </div>
             )}
 
-            {/* Schedule Appointment */}
-            {!job.scheduled_date && !bookingConfirmed && (
+            {/* Upcoming Appointments */}
+            {appointments.length > 0 && (
+              <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                  <Calendar className="h-4 w-4" style={{ color: brandColor }} /> Upcoming
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {appointments.map((appt) => {
+                    const isWorkStart = appt.type === "work_start"
+                    const timeStr = appt.time ? (() => {
+                      const [h, m] = appt.time.split(":").map(Number)
+                      const ampm = h >= 12 ? "PM" : "AM"
+                      const h12 = h % 12 || 12
+                      return `${h12}:${String(m).padStart(2, "0")} ${ampm}`
+                    })() : null
+                    return (
+                      <div key={appt.id} className="rounded-xl bg-gray-800/50 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {isWorkStart ? (
+                            <Wrench className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
+                          ) : (
+                            <Eye className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white">{appt.title || (isWorkStart ? "Work Begins" : "Site Visit")}</p>
+                            <p className="text-xs text-gray-400">
+                              {formatDate(appt.date)}{timeStr && ` at ${timeStr}`}
+                              {appt.duration_min && !isWorkStart ? ` · ${appt.duration_min} min` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        {isWorkStart && (
+                          <p className="mt-2 text-[10px] text-gray-500 flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" /> Weather permitting — your contractor will notify you of any changes
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => {
+                    const msg = "I need to reschedule — please contact me to find a new time."
+                    fetch("/api/portal/messages", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ job_id: job.id, sender: "homeowner", message: msg }),
+                    }).then(() => { setActiveTab("messages"); fetchMessages(job.id) })
+                  }}
+                  className="mt-3 text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Request Reschedule
+                </button>
+              </div>
+            )}
+
+            {/* Request a Visit */}
+            {appointments.length === 0 && !visitRequestSent && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
-                  <Calendar className="h-4 w-4" style={{ color: brandColor }} /> Schedule a Site Visit
+                  <Calendar className="h-4 w-4" style={{ color: brandColor }} /> Need a Site Visit?
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">Pick a date and time that works for you.</p>
-                {!showBooking ? (
+                <p className="text-xs text-gray-400 mb-4">Request a visit and your contractor will schedule a time that works.</p>
+                {!showVisitRequest ? (
                   <button
-                    onClick={() => setShowBooking(true)}
+                    onClick={() => { setShowVisitRequest(true); setVisitPhone(job.customer_phone || "") }}
                     className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-colors"
                     style={{ backgroundColor: brandColor }}
                   >
-                    <Calendar className="h-4 w-4" /> Book Appointment
+                    <Calendar className="h-4 w-4" /> Request Visit
                   </button>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
-                      <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Select Date</label>
+                      <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Preferred Dates (optional)</label>
                       <input
-                        type="date"
-                        value={bookingDate}
-                        min={new Date().toISOString().slice(0, 10)}
-                        onChange={(e) => {
-                          setBookingDate(e.target.value)
-                          if (e.target.value) fetchSlots(job.contractor_id, e.target.value)
-                        }}
+                        type="text"
+                        value={visitPreferredDates}
+                        onChange={(e) => setVisitPreferredDates(e.target.value)}
+                        placeholder="e.g. Next week, mornings preferred"
                         className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    {bookingDate && (
-                      <div>
-                        <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">
-                          Available Times {bookingDuration && `(${bookingDuration} min)`}
-                        </label>
-                        {slotsLoading ? (
-                          <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
-                            Loading availability...
-                          </div>
-                        ) : bookingSlots.length === 0 ? (
-                          <p className="text-xs text-gray-500 py-2">No available slots on this date. Try another day.</p>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                            {bookingSlots.map((slot) => {
-                              const [h, m] = slot.split(":").map(Number)
-                              const ampm = h >= 12 ? "PM" : "AM"
-                              const h12 = h % 12 || 12
-                              const label = `${h12}:${String(m).padStart(2, "0")} ${ampm}`
-                              return (
-                                <button
-                                  key={slot}
-                                  onClick={() => setSelectedSlot(slot)}
-                                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                                    selectedSlot === slot
-                                      ? "text-white"
-                                      : "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600"
-                                  }`}
-                                  style={selectedSlot === slot ? { backgroundColor: brandColor, borderColor: brandColor } : undefined}
-                                >
-                                  {label}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {selectedSlot && (
-                      <>
-                        <div>
-                          <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Phone (optional)</label>
-                          <input
-                            type="tel"
-                            value={bookingPhone}
-                            onChange={(e) => setBookingPhone(e.target.value)}
-                            placeholder="For appointment reminders"
-                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Notes (optional)</label>
-                          <textarea
-                            value={bookingNotes}
-                            onChange={(e) => setBookingNotes(e.target.value)}
-                            rows={2}
-                            placeholder="Anything we should know before the visit?"
-                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={submitBooking}
-                            disabled={bookingLoading}
-                            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
-                            style={{ backgroundColor: brandColor }}
-                          >
-                            {bookingLoading ? "Booking..." : "Confirm Appointment"}
-                          </button>
-                          <button
-                            onClick={() => { setShowBooking(false); setBookingDate(""); setSelectedSlot("") }}
-                            className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:bg-gray-800 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    <div>
+                      <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Notes (optional)</label>
+                      <textarea
+                        value={visitNotes}
+                        onChange={(e) => setVisitNotes(e.target.value)}
+                        rows={2}
+                        placeholder="Anything we should know before the visit?"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">Phone</label>
+                      <input
+                        type="tel"
+                        value={visitPhone}
+                        onChange={(e) => setVisitPhone(e.target.value)}
+                        placeholder="For scheduling contact"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={submitVisitRequest}
+                        disabled={visitRequestLoading}
+                        className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
+                        style={{ backgroundColor: brandColor }}
+                      >
+                        {visitRequestLoading ? "Sending..." : "Send Request"}
+                      </button>
+                      <button
+                        onClick={() => setShowVisitRequest(false)}
+                        className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:bg-gray-800 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {bookingConfirmed && (
+            {visitRequestSent && appointments.length === 0 && (
               <div className="rounded-2xl border p-5" style={{ borderColor: brandColor, backgroundColor: colorWithOpacity(brandColor, 0.05) }}>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="h-6 w-6" style={{ color: brandColor }} />
+                  <Clock className="h-6 w-6" style={{ color: brandColor }} />
                   <div>
-                    <h3 className="text-sm font-bold text-white">Appointment Confirmed!</h3>
-                    <p className="text-xs text-gray-400">You&apos;ll receive a confirmation with the details shortly.</p>
+                    <h3 className="text-sm font-bold text-white">Visit Request Sent</h3>
+                    <p className="text-xs text-gray-400">Your contractor will schedule a time and you&apos;ll be notified.</p>
                   </div>
                 </div>
               </div>
