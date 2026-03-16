@@ -141,6 +141,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
   // Touch device detection
   const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const touchStartRef = useRef<{ x: number; y: number; lat: number; lng: number } | null>(null)
   useEffect(() => {
     setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0)
   }, [])
@@ -171,9 +172,16 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
   // Keep refs in sync
   useEffect(() => {
     drawingActiveRef.current = drawingActive
-    // Crosshair cursor while drawing
-    if (mapInstanceRef.current) {
+    // Crosshair cursor while drawing (desktop only)
+    if (mapInstanceRef.current && !isTouchDevice) {
       mapInstanceRef.current.setOptions({ draggableCursor: drawingActive ? "crosshair" : null })
+    }
+    // Touch devices: lock map gestures during drawing so single-finger pan works via our handler
+    if (mapInstanceRef.current && isTouchDevice) {
+      mapInstanceRef.current.setOptions({
+        gestureHandling: drawingActive ? "none" : "auto",
+        zoomControl: !drawingActive,
+      })
     }
     // Remove preview line when drawing stops
     if (!drawingActive && previewLineRef.current) {
@@ -185,7 +193,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       angleIndicatorRef.current = null
       setAngleIndicator(null)
     }
-  }, [drawingActive])
+  }, [drawingActive, isTouchDevice])
   useEffect(() => { activePlaneIndexRef.current = activePlaneIndex }, [activePlaneIndex])
   useEffect(() => { activeEdgeToolRef.current = activeEdgeTool }, [activeEdgeTool])
   useEffect(() => { satPitchActiveRef.current = satPitchActive }, [satPitchActive])
@@ -601,6 +609,108 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       return updated
     })
   }
+
+  // Touch drawing helpers — place point at map center, zoom in/out
+  const placePointAtCenter = useCallback(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+    const center = map.getCenter()
+    if (!center) return
+    addPointToPlane(center.lat(), center.lng())
+  }, [])
+
+  const touchZoomIn = useCallback(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+    map.setZoom((map.getZoom() || 20) + 1)
+  }, [])
+
+  const touchZoomOut = useCallback(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+    map.setZoom((map.getZoom() || 20) - 1)
+  }, [])
+
+  // Update preview line + magnifier to follow the crosshair (map center)
+  const updateTouchPreview = useCallback(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+    const center = map.getCenter()
+    if (!center) return
+
+    // Update magnifier to follow crosshair
+    if (magnifierInstanceRef.current) {
+      magnifierInstanceRef.current.setCenter(center)
+      const mainZoom = map.getZoom() || 20
+      const magZoom = magnifierInstanceRef.current.getZoom()
+      if (magZoom !== mainZoom + 3) {
+        magnifierInstanceRef.current.setZoom(mainZoom + 3)
+      }
+    }
+
+    // Update preview line from last point to crosshair
+    if (!drawingActiveRef.current || satPitchActiveRef.current) return
+    const currentPlane = planesRef.current[activePlaneIndexRef.current]
+    if (!currentPlane || currentPlane.points.length === 0) return
+
+    const lastPt = currentPlane.points[currentPlane.points.length - 1]
+    const cursor = { lat: center.lat(), lng: center.lng() }
+    const color = "#22c55e"
+
+    if (previewLineRef.current) {
+      previewLineRef.current.setPath([lastPt, cursor])
+    } else {
+      previewLineRef.current = new window.google.maps.Polyline({
+        path: [lastPt, cursor],
+        strokeColor: color,
+        strokeOpacity: 0,
+        strokeWeight: 2,
+        map,
+        clickable: false,
+        zIndex: 20,
+        icons: [{
+          icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: color, scale: 2 },
+          offset: "0",
+          repeat: "8px",
+        }],
+      })
+    }
+  }, [])
+
+  // Touch-based panning when Google Maps gestures are disabled (drawing mode on touch)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!drawingActive || !isTouchDevice || !mapInstanceRef.current) return
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const center = mapInstanceRef.current.getCenter()
+    if (!center) return
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, lat: center.lat(), lng: center.lng() }
+  }, [drawingActive, isTouchDevice])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !mapInstanceRef.current) return
+    if (e.touches.length !== 1) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const map = mapInstanceRef.current
+    const zoom = map.getZoom() || 20
+    const scale = 156543.03392 * Math.cos((touchStartRef.current.lat * Math.PI) / 180) / Math.pow(2, zoom)
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    const lngDelta = -(dx * scale) / 111320
+    const latDelta = (dy * scale) / 110540
+    map.setCenter({
+      lat: touchStartRef.current.lat + latDelta,
+      lng: touchStartRef.current.lng + lngDelta,
+    })
+
+    // Update guide line + magnifier to follow the crosshair
+    updateTouchPreview()
+  }, [updateTouchPreview])
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartRef.current = null
+  }, [])
 
   // Calculate polygon area using Google Maps geometry
   const calculatePolygonArea = (points: { lat: number; lng: number }[]): number => {
@@ -1385,7 +1495,50 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           <div className={activeTab === "satellite" ? "block" : "hidden"}>
             <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
               <div className="relative">
-                <div ref={mapRef} className="h-[400px] sm:h-[500px] w-full" />
+                <div
+                  ref={mapRef}
+                  className="h-[400px] sm:h-[500px] w-full"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                />
+
+                {/* Touch crosshair overlay */}
+                {isTouchDevice && drawingActive && !satPitchActive && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center" style={{ zIndex: 30 }}>
+                    <div className="absolute h-8 w-px bg-red-500/80" style={{ transform: "translateY(-16px)" }} />
+                    <div className="absolute h-8 w-px bg-red-500/80" style={{ transform: "translateY(16px)" }} />
+                    <div className="absolute w-8 h-px bg-red-500/80" style={{ transform: "translateX(-16px)" }} />
+                    <div className="absolute w-8 h-px bg-red-500/80" style={{ transform: "translateX(16px)" }} />
+                    <div className="absolute h-5 w-5 rounded-full border-2 border-red-500/80" />
+                  </div>
+                )}
+
+                {/* Touch Place Point + Zoom buttons */}
+                {isTouchDevice && drawingActive && !satPitchActive && (
+                  <div className="absolute bottom-3 right-3 flex flex-col gap-2" style={{ zIndex: 45 }}>
+                    <button
+                      onClick={placePointAtCenter}
+                      className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg active:bg-emerald-700"
+                    >
+                      Place Point
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={touchZoomIn}
+                        className="flex-1 rounded-xl bg-black/70 px-3 py-2 text-lg font-bold text-white shadow-lg active:bg-black/90"
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={touchZoomOut}
+                        className="flex-1 rounded-xl bg-black/70 px-3 py-2 text-lg font-bold text-white shadow-lg active:bg-black/90"
+                      >
+                        −
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <canvas
                   ref={satCanvasRef}
@@ -1422,7 +1575,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 {/* Mini Magnifier — desktop only, always mounted to preserve instance across plane switches */}
                 <div
                   className="absolute top-3 right-3 rounded-lg border-2 border-white/50 shadow-lg overflow-hidden"
-                  style={{ width: 180, height: 180, zIndex: 40, display: drawingActive && magnifierVisible && !isTouchDevice ? "block" : "none" }}
+                  style={{ width: 180, height: 180, zIndex: 40, display: drawingActive && magnifierVisible ? "block" : "none" }}
                 >
                   <div ref={magnifierMapRef} style={{ width: 180, height: 180 }} />
                   {/* Crosshair overlay */}
@@ -1466,19 +1619,17 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     <RotateCcw className="h-3.5 w-3.5" />
                     Undo
                   </button>
-                  {!isTouchDevice && (
-                    <button
-                      onClick={() => setMagnifierVisible(!magnifierVisible)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        magnifierVisible
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-border bg-background text-muted-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      <Search className="h-3 w-3" />
-                      Magnifier
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setMagnifierVisible(!magnifierVisible)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      magnifierVisible
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Search className="h-3 w-3" />
+                    Magnifier
+                  </button>
                   {satPitchActive && (
                     <span className="text-xs text-muted-foreground">
                       {satPitchPoints.length}/3 points
@@ -1498,7 +1649,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                 {drawingActive && (
                   <p className="mb-3 text-xs text-muted-foreground">
                     {isTouchDevice
-                      ? "Tap on roof corners to place points. Use two fingers to zoom and pan. Add at least 3 points."
+                      ? "Drag to position the crosshair on a roof corner, then tap Place Point. Use +/− to zoom. Add at least 3 points."
                       : "Click on the roof corners to draw a polygon. Add at least 3 points to calculate area."}
                   </p>
                 )}
