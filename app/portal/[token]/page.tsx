@@ -499,6 +499,14 @@ export default function HomeownerPortal() {
                 <div className="flex flex-col gap-3">
                   {appointments.map((appt) => {
                     const isWorkStart = appt.type === "work_start"
+                    const typeLabels: Record<string, string> = {
+                      site_visit: "Site Visit", work_start: "Work Begins",
+                      inspection: "Inspection", meeting: "Meeting", other: "Appointment",
+                    }
+                    const TypeIcon = isWorkStart ? Wrench
+                      : appt.type === "inspection" ? Eye
+                      : appt.type === "meeting" ? MessageSquare
+                      : Calendar
                     const timeStr = appt.time ? (() => {
                       const [h, m] = appt.time.split(":").map(Number)
                       const ampm = h >= 12 ? "PM" : "AM"
@@ -508,13 +516,9 @@ export default function HomeownerPortal() {
                     return (
                       <div key={appt.id} className="rounded-xl bg-gray-800/50 px-4 py-3">
                         <div className="flex items-center gap-3">
-                          {isWorkStart ? (
-                            <Wrench className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
-                          ) : (
-                            <Eye className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
-                          )}
+                          <TypeIcon className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white">{appt.title || (isWorkStart ? "Work Begins" : "Site Visit")}</p>
+                            <p className="text-sm font-semibold text-white">{appt.title || typeLabels[appt.type] || "Appointment"}</p>
                             <p className="text-xs text-gray-400">
                               {formatDate(appt.date)}{timeStr && ` at ${timeStr}`}
                               {appt.duration_min && !isWorkStart ? ` · ${appt.duration_min} min` : ""}

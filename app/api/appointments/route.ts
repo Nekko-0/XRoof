@@ -36,6 +36,29 @@ export async function POST(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Auto-notify customer via portal message when appointment is linked to a job
+  if (data && job_id) {
+    try {
+      const { data: job } = await supabase.from("jobs").select("customer_name").eq("id", job_id).single()
+      if (job) {
+        const typeLabel: Record<string, string> = {
+          site_visit: "site visit", work_start: "work start",
+          inspection: "inspection", meeting: "meeting",
+        }
+        const label = typeLabel[type || "site_visit"] || "appointment"
+        const timeStr = time ? ` at ${time}` : ""
+        await supabase.from("portal_messages").insert({
+          job_id,
+          sender: "contractor",
+          message: `📅 Your ${label} has been scheduled for ${date}${timeStr}. We'll notify you of any changes.`,
+        })
+      }
+    } catch (err) {
+      console.error("[XRoof] appointment notification error:", err)
+    }
+  }
+
   return NextResponse.json(data)
 }
 

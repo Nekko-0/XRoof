@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Bell } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
@@ -16,7 +17,20 @@ type Notification = {
   created_at: string
 }
 
+function getNotificationLink(type: string): string | null {
+  switch (type) {
+    case "visit_request": return "/contractor/messages"
+    case "sms_received": return "/contractor/messages"
+    case "contract_signed": return "/contractor/leads"
+    case "payment_received": return "/contractor/leads"
+    case "estimate_viewed": return "/contractor/leads"
+    case "automation_triggered": return "/contractor/automations"
+    default: return null
+  }
+}
+
 export function NotificationBell() {
+  const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
@@ -175,7 +189,11 @@ export function NotificationBell() {
               notifications.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => markAsRead(n.id)}
+                  onClick={() => {
+                    markAsRead(n.id)
+                    const link = getNotificationLink(n.type)
+                    if (link) { router.push(link); setOpen(false) }
+                  }}
                   className={cn(
                     "flex w-full flex-col gap-0.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary/30",
                     !n.read && "bg-primary/5"

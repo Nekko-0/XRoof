@@ -61,8 +61,9 @@ type WeatherDay = {
 
 const APPT_TYPES = [
   { value: "site_visit", label: "Site Visit" },
-  { value: "meeting", label: "Meeting" },
+  { value: "work_start", label: "Work Start" },
   { value: "inspection", label: "Inspection" },
+  { value: "meeting", label: "Meeting" },
   { value: "other", label: "Other" },
 ]
 

@@ -51,6 +51,7 @@ export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All")
   const [jobCosts, setJobCosts] = useState<Record<string, number>>({})
   const [jobInvoices, setJobInvoices] = useState<Record<string, string>>({})
+  const [portalMsgCounts, setPortalMsgCounts] = useState<Record<string, number>>({})
 
   // Advanced filters
   const [searchText, setSearchText] = useState("")
@@ -173,6 +174,20 @@ export default function MyJobsPage() {
           if (!invMap[inv.job_id]) invMap[inv.job_id] = inv.id // keep latest
         }
         setJobInvoices(invMap)
+      }
+
+      // Fetch portal message counts per job
+      const { data: msgRows } = await supabase
+        .from("portal_messages")
+        .select("job_id")
+        .in("job_id", jobsRaw.map((j: any) => j.id))
+        .eq("sender", "homeowner")
+      if (msgRows) {
+        const msgMap: Record<string, number> = {}
+        for (const m of msgRows) {
+          msgMap[m.job_id] = (msgMap[m.job_id] || 0) + 1
+        }
+        setPortalMsgCounts(msgMap)
       }
     }
 
@@ -827,7 +842,14 @@ export default function MyJobsPage() {
               >
                 {/* Name + Status + Actions */}
                 <div className="mb-1 flex items-center justify-between">
-                  <h3 className="text-base font-bold text-foreground">{job.customer_name || "Customer"}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-foreground">{job.customer_name || "Customer"}</h3>
+                    {portalMsgCounts[job.id] > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                        <MessageSquare className="h-3 w-3" /> {portalMsgCounts[job.id]}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleHide(job.id)}
