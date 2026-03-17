@@ -100,7 +100,24 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     try {
       const res = await authFetch(`/api/search?q=${encodeURIComponent(q)}&contractor_id=${accountId}`)
       const data = await res.json()
-      setSearchResults(data.results || [])
+      const results: { type: string; label: string; sub: string; href: string }[] = []
+      for (const job of data.jobs || []) {
+        results.push({
+          type: "job",
+          label: job.customer_name || job.address,
+          sub: `${job.address} · ${job.status}`,
+          href: `/contractor/leads?job=${job.id}`,
+        })
+      }
+      for (const cust of data.customers || []) {
+        results.push({
+          type: "customer",
+          label: cust.name,
+          sub: cust.email || cust.phone || cust.address || "",
+          href: `/contractor/customers?id=${cust.id}`,
+        })
+      }
+      setSearchResults(results)
     } catch { setSearchResults([]) }
   }, [accountId])
 

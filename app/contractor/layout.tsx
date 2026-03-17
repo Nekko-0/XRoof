@@ -25,6 +25,29 @@ function CrispWidget() {
     s.async = true
     document.head.appendChild(s)
 
+    // Once Crisp loads, set user identity from Supabase session
+    s.onload = async () => {
+      try {
+        const { supabase } = await import("@/lib/supabaseClient")
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return
+
+        const email = session.user.email
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, company_name")
+          .eq("id", session.user.id)
+          .single()
+
+        const $crisp = (window as any).$crisp
+        if (email) $crisp.push(["set", "user:email", [email]])
+        if (profile?.full_name) $crisp.push(["set", "user:nickname", [profile.full_name]])
+        if (profile?.company_name) {
+          $crisp.push(["set", "session:data", [[["company", profile.company_name]]]])
+        }
+      } catch {}
+    }
+
     return () => {
       try { document.head.removeChild(s) } catch {}
     }

@@ -113,7 +113,7 @@ const allFeatures = [
   "Sales pipeline CRM",
   "Stripe payment collection",
   "Milestone invoicing",
-  "Team management (up to 3 seats)",
+  "Team management ($39/mo per seat)",
   "Role-based permissions",
   "Analytics dashboard",
   "Calendar & scheduling",
@@ -151,7 +151,7 @@ const faqs = [
   },
   {
     q: "Can my whole crew use it?",
-    a: "Your plan includes up to 3 team member seats with role-based permissions (owner, admin, office manager, sales, field tech, viewer). Need more seats? Contact us.",
+    a: "Your plan includes 1 owner seat. Add team members for $39/month each with role-based permissions (admin, office manager, sales, field tech, viewer). Each member gets their own login with access based on their role.",
   },
   {
     q: "How does the satellite measurement tool work?",
