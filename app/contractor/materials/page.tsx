@@ -15,6 +15,7 @@ type CatalogProduct = {
   color_name: string
   price_tier: "economy" | "mid" | "premium" | "luxury"
   description: string | null
+  image_url: string | null
 }
 
 type BrandPreference = {
@@ -29,6 +30,43 @@ const TIER_COLORS: Record<string, string> = {
   mid: "bg-blue-500 text-white",
   premium: "bg-amber-500 text-white",
   luxury: "bg-purple-500 text-white",
+}
+
+// Color-accurate swatch hex codes for roofing shingle colors
+const SWATCH_COLORS: Record<string, string> = {
+  // Charcoal / Black tones
+  "charcoal": "#3a3a3a", "onyx black": "#1a1a1a", "moire black": "#222222",
+  "dual black": "#1e1e1e", "rustic black": "#252525", "shadow black": "#2a2a2a",
+  "pristine black": "#1c1c1c",
+  // Gray tones
+  "pewter gray": "#7a7d7e", "slate": "#5a6370", "estate gray": "#6b6e70",
+  "georgetown gray": "#5e6264", "pewter": "#8a8d8f", "cobblestone gray": "#6d7072",
+  "fox hollow gray": "#5f6366", "oyster gray": "#9a9c98", "quarry gray": "#6e7173",
+  "sierra gray": "#7e8185", "castle gray": "#686c6e", "hearthstone gray": "#6a6e72",
+  "thunderstorm gray": "#5c5f63", "mountain slate": "#5b6068", "dual gray": "#707478",
+  "charcoal gray": "#404448", "pewterwood": "#6b6560",
+  // Brown / Wood tones
+  "weathered wood": "#6e5d4e", "hickory": "#7a6148", "barkwood": "#6a5545",
+  "shakewood": "#7d6b55", "mission brown": "#5e4a3a", "driftwood": "#8a7e6e",
+  "brownwood": "#5e4e3e", "teak": "#6e5840", "resawn shake": "#756050",
+  "burnt sienna": "#8b5a3a", "brownstone": "#6b5848", "natural timber": "#8a7558",
+  "aged wood": "#7e6e5e", "rustic cedar": "#8a6240", "earthtone cedar": "#7a6045",
+  "weatherwood": "#6e5e50", "sedona canyon": "#8b6850", "sedona": "#9a6848",
+  // Green tones
+  "hunter green": "#3a5040", "chateau green": "#3e5a48",
+  // Blue tones
+  "harbor blue": "#4a5a6e", "appalachian sky": "#5a6878", "glacier": "#8a9aa8",
+  // Tan / Light tones
+  "sand dune": "#b8a888", "desert tan": "#baa878", "desert shake": "#9a8868",
+  "birchwood": "#a09080", "heather blend": "#8a7e72",
+  // Red tones
+  "aged redwood": "#7a4838", "harvard slate": "#5a4858",
+  "sierra brown": "#7a5a42",
+}
+
+function getSwatchColor(colorName: string): string {
+  const key = colorName.toLowerCase()
+  return SWATCH_COLORS[key] || "#6b7280"
 }
 
 export default function MaterialsPage() {
@@ -71,12 +109,13 @@ export default function MaterialsPage() {
                   color_name: p.color,
                   price_tier: p.price_tier,
                   description: p.description,
+                  image_url: p.image_url,
                 })
               }
             }
             setCatalogProducts(flat)
             if (flat.length === 0) {
-              setCatalogError("Table exists but has 0 rows. Run the SQL seed data in Supabase SQL Editor.")
+              setCatalogError("No products found in material_catalog table.")
             }
           } else {
             setCatalogError(`Unexpected API response: ${catText.slice(0, 200)}`)
@@ -330,8 +369,13 @@ export default function MaterialsPage() {
                   {products.map((product) => (
                     <div
                       key={product.id}
-                      className="flex items-start justify-between rounded-xl border border-border bg-background p-3"
+                      className="flex items-center gap-3 rounded-xl border border-border bg-background p-3"
                     >
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.color_name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0 border border-border" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg flex-shrink-0 border border-border" style={{ backgroundColor: getSwatchColor(product.color_name) }} />
+                      )}
                       <div className="flex-1 min-w-0 mr-2">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-sm font-semibold text-foreground truncate">{product.color_name}</span>
