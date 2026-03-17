@@ -112,7 +112,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { role: teamRole, granularRole, isOwner, accountId, can } = useRole()
   const isContractor = role === "contractor"
-  const unreadPortalCount = useUnreadPortalCount()
+  const { count: unreadPortalCount } = useUnreadPortalCount()
 
   // Sidebar collapse (desktop only)
   const [collapsed, setCollapsed] = useState(false)

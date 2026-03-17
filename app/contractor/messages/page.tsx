@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { useToast } from "@/lib/toast-context"
 import { useEventListener } from "@/components/event-provider"
+import { useUnreadPortalCount } from "@/hooks/use-unread-portal-count"
 import {
   MessageSquare, Send, Phone, ArrowLeft, RefreshCw,
   MessageCircle, User, Users,
@@ -49,6 +50,7 @@ type PortalMsg = {
 
 export default function ContractorMessagesPage() {
   const toast = useToast()
+  const { refresh: refreshUnread } = useUnreadPortalCount()
   const [tab, setTab] = useState<"sms" | "admin" | "portal">("sms")
   const [conversations, setConversations] = useState<SmsConversation[]>([])
   const [selectedPhone, setSelectedPhone] = useState("")
@@ -248,16 +250,16 @@ export default function ContractorMessagesPage() {
     }
     setPortalThreadLoading(false)
 
-    // Mark portal notifications as read for this thread
+    // Mark portal notifications as read for this thread + refresh red dot instantly
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      supabase
+      await supabase
         .from("notifications")
         .update({ read: true })
         .eq("user_id", user.id)
         .in("type", ["portal_message", "visit_request"])
         .eq("read", false)
-        .then(() => {})
+      refreshUnread()
     }
   }
 
@@ -287,20 +289,32 @@ export default function ContractorMessagesPage() {
     portalEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [portalMessages])
 
-  // Auto-poll portal thread every 3s when viewing a conversation
+  // Supabase Realtime: instant portal message updates
+  const selectedJobIdRef = useRef(selectedJobId)
+  selectedJobIdRef.current = selectedJobId
   useEffect(() => {
-    if (tab !== "portal" || !selectedJobId) return
-    const interval = setInterval(async () => {
-      try {
-        const res = await authFetch(`/api/contractor/portal-messages?job_id=${selectedJobId}`)
-        const data = await res.json()
-        setPortalMessages(data.messages || [])
-      } catch {}
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [tab, selectedJobId])
+    const channel = supabase
+      .channel("portal-messages-realtime")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "portal_messages",
+      }, (payload) => {
+        const newMsg = payload.new as PortalMsg
+        if (selectedJobIdRef.current && newMsg.job_id === selectedJobIdRef.current) {
+          setPortalMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+        }
+        loadPortalThreads()
+      })
+      .subscribe()
 
-  // Instant refresh on SSE portal_message event
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // SSE fallback (works in local dev)
   useEventListener("portal_message", () => {
     if (selectedJobId) {
       authFetch(`/api/contractor/portal-messages?job_id=${selectedJobId}`)

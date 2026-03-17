@@ -9,9 +9,15 @@ import {
   MapPin, Phone, DollarSign, MessageSquare, Clock, ChevronDown,
   Send, CheckCircle, ArrowRight, Zap, Plus, X,
   Filter, ArrowUpDown, Mail, FileText, PenTool, Receipt, Calendar,
-  AlertCircle, Trash2, TrendingUp, ExternalLink,
+  AlertCircle, Trash2, TrendingUp, ExternalLink, GripVertical,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DndContext, DragOverlay, closestCenter,
+  PointerSensor, TouchSensor, useSensor, useSensors,
+  useDroppable, useDraggable,
+  type DragStartEvent, type DragEndEvent,
+} from "@dnd-kit/core"
 
 type Job = {
   id: string
@@ -112,6 +118,33 @@ export default function PipelinePage() {
   const [googleReviewUrl, setGoogleReviewUrl] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [leadScores, setLeadScores] = useState<Record<string, { score: number; factors: string[] }>>({})
+  const [activeJob, setActiveJob] = useState<Job | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  )
+
+  function handleDragStart(event: DragStartEvent) {
+    const job = jobs.find((j) => j.id === event.active.id)
+    if (job) {
+      setActiveJob(job)
+      setExpandedJob(null)
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveJob(null)
+    const { active, over } = event
+    if (!over) return
+    const jobId = active.id as string
+    const newStage = over.id as string
+    const job = jobs.find((j) => j.id === jobId)
+    if (!job || job.status === newStage) return
+    const allowed = NEXT_STAGES[job.status] || []
+    if (!allowed.includes(newStage)) return
+    handleMoveStage(jobId, newStage)
+  }
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -573,101 +606,121 @@ export default function PipelinePage() {
       </div>
 
       {/* Desktop: Kanban Board */}
-      <div className="hidden lg:flex flex-1 gap-3 overflow-x-auto pb-2 min-h-0 justify-center">
-        {visibleStages.map((stage) => {
-          const stageJobs = sortJobs(jobs.filter((j) => j.status === stage))
-          const config = STAGE_CONFIG[stage]
-          const stageValue = stageJobs.reduce((sum, j) => sum + (j.budget || 0), 0)
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="hidden lg:flex flex-1 gap-3 overflow-x-auto pb-2 min-h-0 justify-center">
+          {visibleStages.map((stage) => {
+            const stageJobs = sortJobs(jobs.filter((j) => j.status === stage))
+            const config = STAGE_CONFIG[stage]
+            const stageValue = stageJobs.reduce((sum, j) => sum + (j.budget || 0), 0)
 
-          // Column summary stats
-          const stageContracts = stageJobs.filter((j) => related?.contracts[j.id]).length
-          const stageSigned = stageJobs.filter((j) => related?.contracts[j.id]?.signed).length
-          const stageInvoiced = stageJobs.filter((j) => related?.invoices[j.id]).length
-          const stagePaid = stageJobs.filter((j) => {
-            const inv = related?.invoices[j.id]
-            return inv && inv.paidCount === inv.count && inv.count > 0
-          }).length
+            // Column summary stats
+            const stageContracts = stageJobs.filter((j) => related?.contracts[j.id]).length
+            const stageSigned = stageJobs.filter((j) => related?.contracts[j.id]?.signed).length
+            const stageInvoiced = stageJobs.filter((j) => related?.invoices[j.id]).length
+            const stagePaid = stageJobs.filter((j) => {
+              const inv = related?.invoices[j.id]
+              return inv && inv.paidCount === inv.count && inv.count > 0
+            }).length
 
-          return (
-            <div key={stage} className="flex flex-col flex-shrink-0 w-[320px] min-h-0">
-              {/* Column Header */}
-              <div className={`rounded-t-xl border border-border bg-card border-t-[3px] ${config.border} px-3 py-3`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">{stage}</span>
-                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${config.light} ${config.lightText}`}>
-                      {stageJobs.length}
-                    </span>
+            return (
+              <div key={stage} className="flex flex-col flex-shrink-0 w-[320px] min-h-0">
+                {/* Column Header */}
+                <div className={`rounded-t-xl border border-border bg-card border-t-[3px] ${config.border} px-3 py-3`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">{stage}</span>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${config.light} ${config.lightText}`}>
+                        {stageJobs.length}
+                      </span>
+                    </div>
+                    {stageValue > 0 && (
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-600">
+                        ${stageValue >= 1000 ? `${(stageValue / 1000).toFixed(stageValue >= 10000 ? 0 : 1)}k` : stageValue}
+                      </span>
+                    )}
                   </div>
-                  {stageValue > 0 && (
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-600">
-                      ${stageValue >= 1000 ? `${(stageValue / 1000).toFixed(stageValue >= 10000 ? 0 : 1)}k` : stageValue}
-                    </span>
+                  {/* Column micro-stats */}
+                  {stageJobs.length > 0 && (stageContracts > 0 || stageInvoiced > 0) && (
+                    <div className="flex items-center gap-3 mt-1.5">
+                      {stageContracts > 0 && (
+                        <span className="text-[10px] text-muted-foreground/60">
+                          <PenTool className="inline h-2.5 w-2.5 mr-0.5" />{stageSigned}/{stageContracts} signed
+                        </span>
+                      )}
+                      {stageInvoiced > 0 && (
+                        <span className="text-[10px] text-muted-foreground/60">
+                          <Receipt className="inline h-2.5 w-2.5 mr-0.5" />{stagePaid}/{stageInvoiced} paid
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
-                {/* Column micro-stats */}
-                {stageJobs.length > 0 && (stageContracts > 0 || stageInvoiced > 0) && (
-                  <div className="flex items-center gap-3 mt-1.5">
-                    {stageContracts > 0 && (
-                      <span className="text-[10px] text-muted-foreground/60">
-                        <PenTool className="inline h-2.5 w-2.5 mr-0.5" />{stageSigned}/{stageContracts} signed
-                      </span>
-                    )}
-                    {stageInvoiced > 0 && (
-                      <span className="text-[10px] text-muted-foreground/60">
-                        <Receipt className="inline h-2.5 w-2.5 mr-0.5" />{stagePaid}/{stageInvoiced} paid
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
 
-              {/* Column Body */}
-              <div className="flex-1 overflow-y-auto rounded-b-xl border border-t-0 border-border bg-secondary/20 p-2 space-y-2">
-                {stageJobs.length === 0 ? (
-                  <div className="flex items-center justify-center py-12">
-                    <p className="text-xs text-muted-foreground/40">No jobs</p>
-                  </div>
-                ) : (
-                  stageJobs.map((job) => (
-                    <JobCard
-                      key={job.id}
-                      job={job}
-                      stage={stage}
-                      config={config}
-                      expanded={expandedJob === job.id}
-                      movingJob={movingJob}
-                      loadingDetails={loadingDetails}
-                      activities={activities}
-                      followups={followups}
-                      newActivity={newActivity}
-                      followupDays={followupDays}
-                      followupNote={followupNote}
-                      related={related}
-                      onToggle={() => loadJobDetails(job.id)}
-                      onMoveStage={handleMoveStage}
-                      onAddActivity={() => handleAddActivity(job.id)}
-                      onSetNewActivity={setNewActivity}
-                      onAddFollowup={() => handleAddFollowup(job.id)}
-                      onSetFollowupDays={setFollowupDays}
-                      onSetFollowupNote={setFollowupNote}
-                      onCompleteFollowup={handleCompleteFollowup}
-                      timeAgo={timeAgo}
-                      daysInStage={daysInStage}
-                      followupUrgency={followupUrgency}
-                      activityIcon={activityIcon}
-                      getInitials={getInitials}
-                      formatShortDate={formatShortDate}
-                      canEdit={canEdit}
-                      leadScore={leadScores[job.id]}
-                    />
-                  ))
-                )}
+                {/* Column Body — Droppable */}
+                <DroppableColumn id={stage} activeJob={activeJob}>
+                  {stageJobs.length === 0 ? (
+                    <div className="flex items-center justify-center py-12">
+                      <p className="text-xs text-muted-foreground/40">No jobs</p>
+                    </div>
+                  ) : (
+                    stageJobs.map((job) => (
+                      <DraggableJobCard
+                        key={job.id}
+                        job={job}
+                        stage={stage}
+                        config={config}
+                        expanded={expandedJob === job.id}
+                        movingJob={movingJob}
+                        loadingDetails={loadingDetails}
+                        activities={activities}
+                        followups={followups}
+                        newActivity={newActivity}
+                        followupDays={followupDays}
+                        followupNote={followupNote}
+                        related={related}
+                        onToggle={() => loadJobDetails(job.id)}
+                        onMoveStage={handleMoveStage}
+                        onAddActivity={() => handleAddActivity(job.id)}
+                        onSetNewActivity={setNewActivity}
+                        onAddFollowup={() => handleAddFollowup(job.id)}
+                        onSetFollowupDays={setFollowupDays}
+                        onSetFollowupNote={setFollowupNote}
+                        onCompleteFollowup={handleCompleteFollowup}
+                        timeAgo={timeAgo}
+                        daysInStage={daysInStage}
+                        followupUrgency={followupUrgency}
+                        activityIcon={activityIcon}
+                        getInitials={getInitials}
+                        formatShortDate={formatShortDate}
+                        canEdit={canEdit}
+                        leadScore={leadScores[job.id]}
+                      />
+                    ))
+                  )}
+                </DroppableColumn>
+              </div>
+            )
+          })}
+        </div>
+        <DragOverlay dropAnimation={null}>
+          {activeJob ? (
+            <div className="w-[300px] rounded-xl border border-primary/50 bg-card p-3 shadow-xl rotate-[2deg]">
+              <div className="flex items-center gap-2.5">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold ${STAGE_CONFIG[activeJob.status]?.light || ""} ${STAGE_CONFIG[activeJob.status]?.lightText || ""}`}>
+                  {(activeJob.customer_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-foreground truncate">{activeJob.customer_name}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{activeJob.address}</p>
+                </div>
+                {activeJob.budget ? (
+                  <span className="text-[12px] font-bold text-emerald-600 tabular-nums">${activeJob.budget.toLocaleString()}</span>
+                ) : null}
               </div>
             </div>
-          )
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Mobile: Card List for selected stage */}
       <div className="flex-1 overflow-y-auto lg:hidden space-y-2 min-h-0">
@@ -847,6 +900,43 @@ export default function PipelinePage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Drag & Drop Wrappers ────────────────────────────────────────────
+
+function DroppableColumn({ id, activeJob, children }: { id: string; activeJob: Job | null; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+  const canDrop = activeJob ? (NEXT_STAGES[activeJob.status] || []).includes(id) && activeJob.status !== id : false
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 overflow-y-auto rounded-b-xl border border-t-0 border-border p-2 space-y-2 transition-colors ${
+        isOver && canDrop
+          ? "bg-primary/10 ring-2 ring-inset ring-primary/40"
+          : isOver && !canDrop
+          ? "bg-red-500/5 ring-2 ring-inset ring-red-500/30"
+          : "bg-secondary/20"
+      }`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function DraggableJobCard(props: JobCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: props.job.id,
+    disabled: props.expanded,
+  })
+  const style = transform
+    ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 }
+    : undefined
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={isDragging ? "opacity-30" : ""}>
+      <JobCard {...props} />
     </div>
   )
 }

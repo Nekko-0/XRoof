@@ -1,8 +1,9 @@
 "use client"
 
 import { colorWithOpacity } from "@/lib/brand-colors"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useParams } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
 import {
   MapPin, Phone, Mail, Calendar, DollarSign, FileText,
   CheckCircle, Clock, Wrench, Camera, Star, Building2,
@@ -487,12 +488,27 @@ export default function HomeownerPortal() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Auto-poll messages every 5s when Messages tab is active
+  // Supabase Realtime: instant message updates for customer portal
   useEffect(() => {
-    if (activeTab !== "messages" || !data?.job.id) return
-    const interval = setInterval(() => fetchMessages(data.job.id), 5000)
-    return () => clearInterval(interval)
-  }, [activeTab, data?.job.id])
+    if (!data?.job.id) return
+    const channel = supabase
+      .channel(`portal-messages-${data.job.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "portal_messages",
+        filter: `job_id=eq.${data.job.id}`,
+      }, (payload) => {
+        const newMsg = payload.new as PortalMessage
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev
+          return [...prev, newMsg]
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [data?.job.id])
 
   if (loading) {
     return (
