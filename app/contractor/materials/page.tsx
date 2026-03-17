@@ -50,33 +50,42 @@ export default function MaterialsPage() {
     if (roleLoading || !accountId) return
     const loadCatalog = async () => {
       setCatalogLoading(true)
+
+      // Fetch catalog — independent of preferences
       try {
-        const [catRes, prefRes] = await Promise.all([
-          authFetch(`/api/materials/catalog?contractor_id=${accountId}`),
-          authFetch(`/api/materials/preferences`),
-        ])
-        const catData = await catRes.json()
-        const prefData = await prefRes.json()
-        if (catData.brands && Array.isArray(catData.brands)) {
-          const flat: CatalogProduct[] = []
-          for (const b of catData.brands) {
-            for (const p of b.products) {
-              flat.push({
-                id: p.id,
-                brand: b.name,
-                product_line: p.product_line,
-                color_name: p.color,
-                price_tier: p.price_tier,
-                description: p.description,
-              })
+        const catRes = await authFetch(`/api/materials/catalog?contractor_id=${accountId}`)
+        if (catRes.ok) {
+          const catData = await catRes.json()
+          if (catData.brands && Array.isArray(catData.brands)) {
+            const flat: CatalogProduct[] = []
+            for (const b of catData.brands) {
+              for (const p of b.products) {
+                flat.push({
+                  id: p.id,
+                  brand: b.name,
+                  product_line: p.product_line,
+                  color_name: p.color,
+                  price_tier: p.price_tier,
+                  description: p.description,
+                })
+              }
             }
+            setCatalogProducts(flat)
           }
-          setCatalogProducts(flat)
         }
-        if (Array.isArray(prefData)) {
+      } catch {
+        console.error("Failed to load material catalog")
+      }
+
+      // Fetch preferences — separate so it can't crash catalog
+      try {
+        const prefRes = await authFetch(`/api/materials/preferences`)
+        if (prefRes.ok) {
+          const prefData = await prefRes.json()
           const prefs: Record<string, boolean> = {}
           for (const b of BRANDS) prefs[b] = true
-          for (const p of prefData as BrandPreference[]) prefs[p.brand] = p.visible
+          const hiddenBrands: string[] = prefData?.hidden_brands || []
+          for (const hb of hiddenBrands) prefs[hb] = false
           setBrandPrefs(prefs)
         } else {
           const prefs: Record<string, boolean> = {}
@@ -84,11 +93,11 @@ export default function MaterialsPage() {
           setBrandPrefs(prefs)
         }
       } catch {
-        // Catalog endpoints may not exist yet — degrade gracefully
         const prefs: Record<string, boolean> = {}
         for (const b of BRANDS) prefs[b] = true
         setBrandPrefs(prefs)
       }
+
       setCatalogLoading(false)
     }
     loadCatalog()
@@ -98,10 +107,13 @@ export default function MaterialsPage() {
     const newVal = !brandPrefs[brand]
     setBrandPrefs((prev) => ({ ...prev, [brand]: newVal }))
     try {
+      // Build hidden_brands array from current state
+      const updated = { ...brandPrefs, [brand]: newVal }
+      const hidden_brands = BRANDS.filter(b => updated[b] === false)
       await authFetch(`/api/materials/preferences`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brand, visible: newVal }),
+        body: JSON.stringify({ hidden_brands }),
       })
     } catch {
       toast.error("Failed to update preference")
