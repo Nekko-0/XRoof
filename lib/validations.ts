@@ -65,6 +65,7 @@ export const LeadCaptureSchema = z.object({
   utm_source: z.string().max(100).optional(),
   utm_medium: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
+  source_type: z.enum(["landing_page", "embed_form"]).optional(),
 })
 
 // Contract signing (public endpoint)

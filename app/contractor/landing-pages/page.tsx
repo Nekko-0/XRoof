@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Globe, Copy, ExternalLink, Trash2, Eye, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download } from "lucide-react"
+import { Plus, Globe, Copy, ExternalLink, Trash2, Eye, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download, Code } from "lucide-react"
 import { authFetch } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 
@@ -428,6 +428,35 @@ export default function LandingPagesPage() {
           </div>
         </div>
       )}
+
+      {/* Embed on Your Website */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Code className="h-4.5 w-4.5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground mb-1">Embed on Your Website</h3>
+            <p className="text-xs text-muted-foreground mb-3">Add a lead capture form to your existing website. Paste this snippet anywhere on your site — leads flow directly into your XRoof dashboard.</p>
+            <div className="relative">
+              <pre className="rounded-lg bg-muted/50 border border-border p-3 pr-20 text-xs text-foreground overflow-x-auto font-mono whitespace-pre-wrap break-all">
+{`<script src="${typeof window !== "undefined" ? window.location.origin : "https://xroof.io"}/embed.js" data-contractor="${accountId}"></script>`}
+              </pre>
+              <button
+                onClick={() => {
+                  const code = `<script src="${window.location.origin}/embed.js" data-contractor="${accountId}"></script>`
+                  navigator.clipboard.writeText(code)
+                  setCopied("embed")
+                  setTimeout(() => setCopied(null), 2000)
+                }}
+                className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-background border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {copied === "embed" ? <><Check className="h-3 w-3 text-green-500" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Pages List */}
       {pages.length === 0 ? (
