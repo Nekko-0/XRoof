@@ -16,6 +16,7 @@ import { useRole } from "@/lib/role-context"
 import { getRoleLabel } from "@/lib/permissions"
 import { InstallPrompt } from "@/components/install-prompt"
 import { AnnouncementBanner } from "@/components/announcement-banner"
+import WhatsNewBell from "@/components/whats-new-bell"
 
 interface NavItem {
   label: string
@@ -263,7 +264,10 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           >
             {navItems.find((item) => item.href === pathname || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings")))?.label || "Dashboard"}
           </h1>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            {isContractor && <WhatsNewBell />}
+            <NotificationBell />
+          </div>
         </header>
         {isContractor && <AnnouncementBanner />}
         <main className={cn(

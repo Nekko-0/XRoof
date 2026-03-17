@@ -402,6 +402,155 @@ export async function GET(req: Request) {
   }
   activity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+  // ── #7 Onboarding progress per contractor ──
+  const onboardingPerUser = allProfiles.map(p => {
+    const hasJob = (allJobs || []).some(j => j.contractor_id === p.id)
+    const hasInvoice = (allInvoicesRaw || []).some(i => i.contractor_id === p.id)
+    const hasPaidInvoice = (paidInvoices || []).some(i => i.contractor_id === p.id)
+    const hasContract = (allContracts || []).some(c => c.contractor_id === p.id)
+    const hasReport = (allReportsRaw || []).some(r => r.contractor_id === p.id)
+    const hasTeam = allTeam.some(t => t.account_id === p.id && t.status === "active")
+    const steps = [
+      { label: "Profile", done: !!(p.company_name && p.phone) },
+      { label: "First Job", done: hasJob },
+      { label: "First Invoice", done: hasInvoice },
+      { label: "First Payment", done: hasPaidInvoice },
+      { label: "First Contract", done: hasContract },
+      { label: "First Report", done: hasReport },
+      { label: "Team Member", done: hasTeam },
+    ]
+    const pct = Math.round((steps.filter(s => s.done).length / steps.length) * 100)
+    const daysSinceSignup = Math.ceil((now.getTime() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    return { user_id: p.id, username: p.username || "", company_name: p.company_name || "", steps, pct, daysSinceSignup }
+  })
+
+  // ── #9 Seasonal revenue forecast ──
+  const seasonalForecast = monthlyRevenue.map((m, i) => {
+    const avgGrowthRate = monthlyRevenue.length > 1
+      ? monthlyRevenue.slice(1).reduce((sum, cur, idx) => {
+          const prev = monthlyRevenue[idx].total
+          return sum + (prev > 0 ? (cur.total - prev) / prev : 0)
+        }, 0) / (monthlyRevenue.length - 1)
+      : 0
+    return { ...m, forecast: i === monthlyRevenue.length - 1 ? Math.round(m.total * (1 + avgGrowthRate)) : undefined }
+  })
+  // Project next 3 months
+  const lastRevenue = monthlyRevenue[monthlyRevenue.length - 1]?.total || 0
+  const avgGrowth = monthlyRevenue.length > 2
+    ? (monthlyRevenue[monthlyRevenue.length - 1].total - monthlyRevenue[0].total) / (monthlyRevenue.length - 1)
+    : 0
+  const forecastMonths: { month: string; forecast: number }[] = []
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    forecastMonths.push({ month: d.toLocaleDateString("en-US", { month: "short" }), forecast: Math.max(0, Math.round(lastRevenue + avgGrowth * i)) })
+  }
+
+  // ── #10 Pricing experiment data ──
+  const pricingExperiment = {
+    monthly: {
+      total: subs.filter(s => s.plan === "monthly").length,
+      active: subs.filter(s => s.plan === "monthly" && s.status === "active").length,
+      trialing: subs.filter(s => s.plan === "monthly" && s.status === "trialing").length,
+      canceled: subs.filter(s => s.plan === "monthly" && s.status === "canceled").length,
+      conversionRate: (() => {
+        const t = subs.filter(s => s.plan === "monthly" && (s.status === "canceled" || s.status === "active")).length
+        const a = subs.filter(s => s.plan === "monthly" && s.status === "active").length
+        return t > 0 ? Math.round((a / t) * 100) : 0
+      })(),
+      arpu: 199,
+    },
+    annual: {
+      total: subs.filter(s => s.plan === "annual").length,
+      active: subs.filter(s => s.plan === "annual" && s.status === "active").length,
+      trialing: subs.filter(s => s.plan === "annual" && s.status === "trialing").length,
+      canceled: subs.filter(s => s.plan === "annual" && s.status === "canceled").length,
+      conversionRate: (() => {
+        const t = subs.filter(s => s.plan === "annual" && (s.status === "canceled" || s.status === "active")).length
+        const a = subs.filter(s => s.plan === "annual" && s.status === "active").length
+        return t > 0 ? Math.round((a / t) * 100) : 0
+      })(),
+      arpu: 169,
+    },
+  }
+
+  // ── #13 Revenue breakdown by source ──
+  const teamRevenue = activeSubs.reduce((sum, s) => sum + (teamCountMap.get(s.user_id) || 0) * TEAM_MEMBER_PRICE, 0)
+  const monthlySubRev = activeSubs.filter(s => s.plan === "monthly").length * 199
+  const annualSubRev = activeSubs.filter(s => s.plan === "annual").length * 169
+  const reportRevenue = allPurchases.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
+  const revenueBreakdown = {
+    monthlySubscriptions: monthlySubRev,
+    annualSubscriptions: annualSubRev,
+    teamAddons: teamRevenue,
+    reportPurchases: Math.round(reportRevenue),
+  }
+
+  // ── #18 Trial conversion day-by-day ──
+  const trialActivity: { day: number; active: number; createdJob: number; sentInvoice: number; converted: number }[] = []
+  for (let day = 0; day <= 7; day++) {
+    const dayProfiles = allProfiles.filter(p => {
+      const daysSince = Math.ceil((now.getTime() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSince >= day
+    })
+    const activeOnDay = dayProfiles.filter(p => {
+      const sub = subs.find(s => s.user_id === p.id)
+      return sub && (sub.status === "active" || sub.status === "trialing")
+    }).length
+    const jobOnDay = dayProfiles.filter(p => {
+      const firstJob = (allJobs || []).find(j => j.contractor_id === p.id)
+      if (!firstJob) return false
+      const jobDay = Math.ceil((new Date(firstJob.created_at).getTime() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return jobDay <= day
+    }).length
+    const invOnDay = dayProfiles.filter(p => {
+      const firstInv = (allInvoicesRaw || []).find(i => i.contractor_id === p.id)
+      if (!firstInv) return false
+      const invDay = Math.ceil((new Date(firstInv.created_at).getTime() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return invDay <= day
+    }).length
+    trialActivity.push({ day, active: activeOnDay, createdJob: jobOnDay, sentInvoice: invOnDay, converted: activeSubs.filter(s => {
+      const profile = profileMap.get(s.user_id)
+      if (!profile) return false
+      const daysSince = Math.ceil((new Date(s.current_period_start).getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSince <= day
+    }).length })
+  }
+
+  // ── Fetch extra data for dashboard features ──
+  const [
+    { data: revenueGoals },
+    { data: npsResponses },
+    { data: cancellationReasons },
+    { data: dunningSeqs },
+    { data: alertHistoryItems },
+  ] = await Promise.all([
+    supabase.from("revenue_goals").select("*").order("created_at", { ascending: false }).limit(5),
+    supabase.from("nps_responses").select("*").order("created_at", { ascending: false }).limit(50),
+    supabase.from("cancellation_reasons").select("*").order("created_at", { ascending: false }),
+    supabase.from("dunning_sequences").select("*"),
+    supabase.from("alert_history").select("*").order("triggered_at", { ascending: false }).limit(10),
+  ])
+
+  // NPS score
+  const npsAll = npsResponses || []
+  const npsPromoters = npsAll.filter(r => r.score >= 9).length
+  const npsDetractors = npsAll.filter(r => r.score <= 6).length
+  const npsScore = npsAll.length > 0 ? Math.round(((npsPromoters - npsDetractors) / npsAll.length) * 100) : null
+
+  // Revenue goal progress
+  const currentGoal = (revenueGoals || [])[0] || null
+
+  // Dunning stats
+  const dunningAll = dunningSeqs || []
+  const dunningRecovered = dunningAll.filter(d => d.recovered).length
+  const dunningRecoveredAmount = dunningRecovered * 199
+
+  // Cancellation reason distribution
+  const reasonCounts: Record<string, number> = {}
+  for (const cr of cancellationReasons || []) {
+    reasonCounts[cr.reason] = (reasonCounts[cr.reason] || 0) + 1
+  }
+
   // ── System health (cron jobs) ──
   const cronJobs = [
     { name: "followups", schedule: "6:00 AM", path: "/api/cron/followups" },
@@ -459,5 +608,16 @@ export async function GET(req: Request) {
       totalInvoicesPaid: totalInvoicesPaid || 0,
       totalReports: totalReports || 0,
     },
+    // 20 features data
+    onboardingPerUser,
+    seasonalForecast: { historical: seasonalForecast, forecast: forecastMonths },
+    pricingExperiment,
+    revenueBreakdown,
+    trialActivity,
+    npsScore,
+    currentGoal,
+    dunningStats: { total: dunningAll.length, recovered: dunningRecovered, recoveredAmount: dunningRecoveredAmount },
+    cancellationReasons: reasonCounts,
+    recentAlerts: (alertHistoryItems || []).slice(0, 5),
   })
 }

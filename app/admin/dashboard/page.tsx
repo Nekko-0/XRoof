@@ -2,16 +2,18 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { authFetch } from "@/lib/auth-fetch"
+import Link from "next/link"
 import {
   DollarSign, Users, Clock, TrendingUp, TrendingDown, AlertTriangle, Activity,
   ChevronDown, ChevronRight, ExternalLink, Mail, Download, BarChart3,
   UserCheck, UserX, Zap, ArrowRight, ArrowUp, ArrowDown, FileText,
   Globe, MessageSquare, Camera, Send, Timer, Trophy, Layers, MapPin,
-  Heart, Minus, Eye,
+  Heart, Minus, Eye, Target, Star, Bell, BookOpen, LifeBuoy, Swords,
+  PieChart, Megaphone, Receipt, Shield, ClipboardCheck,
 } from "lucide-react"
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, Line,
+  ResponsiveContainer, Legend, Line, Cell, PieChart as RPieChart, Pie,
 } from "recharts"
 
 /* ── Types ── */
@@ -56,6 +58,17 @@ type Analytics = {
   automationsSent: number; timeSavedHours: number; paymentVolume: number
   portalMessagesCount: number; smsCount: number; photosCount: number
   platformStats: { totalJobs: number; totalInvoices: number; totalInvoicesPaid: number; totalReports: number }
+  // 20 features
+  onboardingPerUser: { user_id: string; username: string; company_name: string; steps: { label: string; done: boolean }[]; pct: number; daysSinceSignup: number }[]
+  seasonalForecast: { historical: any[]; forecast: { month: string; forecast: number }[] }
+  pricingExperiment: { monthly: { total: number; active: number; trialing: number; canceled: number; conversionRate: number; arpu: number }; annual: { total: number; active: number; trialing: number; canceled: number; conversionRate: number; arpu: number } }
+  revenueBreakdown: { monthlySubscriptions: number; annualSubscriptions: number; teamAddons: number; reportPurchases: number }
+  trialActivity: { day: number; active: number; createdJob: number; sentInvoice: number; converted: number }[]
+  npsScore: number | null
+  currentGoal: { period: string; target_amount: number; start_date: string; end_date: string | null } | null
+  dunningStats: { total: number; recovered: number; recoveredAmount: number }
+  cancellationReasons: Record<string, number>
+  recentAlerts: { message: string; triggered_at: string; acknowledged: boolean }[]
 }
 
 const SC: Record<string, string> = {
@@ -543,20 +556,266 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* ── #4 Revenue Goal Progress ── */}
+      {d.currentGoal && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Target className="h-4 w-4 text-indigo-400" /> Revenue Goal</h3>
+            <Link href="/admin/goals" className="text-[10px] text-indigo-400 hover:underline">Manage Goals</Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between mb-1">
+                <span className="text-sm font-bold text-foreground">${d.mrr.toLocaleString()} / ${d.currentGoal.target_amount.toLocaleString()}</span>
+                <span className="text-xs text-muted-foreground capitalize">{d.currentGoal.period} MRR Goal</span>
+              </div>
+              <div className="h-3 rounded-full bg-secondary/50 overflow-hidden">
+                <div className="h-3 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all" style={{ width: `${Math.min(100, Math.round((d.mrr / d.currentGoal.target_amount) * 100))}%` }} />
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">{Math.round((d.mrr / d.currentGoal.target_amount) * 100)}% achieved &middot; ${Math.max(0, d.currentGoal.target_amount - d.mrr).toLocaleString()} to go</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── #5 NPS Score ── */}
+      {d.npsScore !== null && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Star className="h-4 w-4 text-amber-400" /> Net Promoter Score</h3>
+            <Link href="/admin/nps" className="text-[10px] text-indigo-400 hover:underline">View Details</Link>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className={`text-4xl font-bold ${d.npsScore >= 50 ? "text-emerald-400" : d.npsScore >= 0 ? "text-amber-400" : "text-red-400"}`}>{d.npsScore}</div>
+            <div className="text-xs text-muted-foreground">
+              {d.npsScore >= 70 ? "Excellent — world class" : d.npsScore >= 50 ? "Great — strong loyalty" : d.npsScore >= 0 ? "Good — room to improve" : "Needs work — reach out to detractors"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── #1 Dunning Stats ── */}
+      {d.dunningStats.total > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Shield className="h-4 w-4 text-emerald-400" /> Payment Recovery (Dunning)</h3>
+            <Link href="/admin/dunning" className="text-[10px] text-indigo-400 hover:underline">Manage</Link>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-secondary/30 p-3 text-center"><p className="text-lg font-bold text-foreground">{d.dunningStats.total}</p><p className="text-[9px] text-muted-foreground">Emails Sent</p></div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-400">{d.dunningStats.recovered}</p><p className="text-[9px] text-muted-foreground">Recovered</p></div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-400">${d.dunningStats.recoveredAmount}</p><p className="text-[9px] text-muted-foreground">Revenue Saved</p></div>
+          </div>
+        </div>
+      )}
+
+      {/* ── #2 Cancellation Reasons ── */}
+      {Object.keys(d.cancellationReasons).length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><ClipboardCheck className="h-4 w-4 text-red-400" /> Why They Cancel</h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {Object.entries(d.cancellationReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+              <div key={reason} className="rounded-xl bg-secondary/30 p-3">
+                <p className="text-sm font-bold text-foreground">{count}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">{reason.replace(/_/g, " ")}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── #13 Revenue Breakdown by Source ── */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><PieChart className="h-4 w-4 text-violet-400" /> Revenue Breakdown</h3>
+        <div className="flex flex-col lg:flex-row items-center gap-6">
+          <div className="w-48 h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <RPieChart>
+                <Pie data={[
+                  { name: "Monthly Subs", value: d.revenueBreakdown.monthlySubscriptions },
+                  { name: "Annual Subs", value: d.revenueBreakdown.annualSubscriptions },
+                  { name: "Team Add-ons", value: d.revenueBreakdown.teamAddons },
+                  { name: "Reports", value: d.revenueBreakdown.reportPurchases },
+                ].filter(x => x.value > 0)} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3}>
+                  {["#6366f1", "#8b5cf6", "#06b6d4", "#f59e0b"].map((c, i) => <Cell key={i} fill={c} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${v}`, ""]} />
+              </RPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            {[
+              { label: "Monthly Subs", value: d.revenueBreakdown.monthlySubscriptions, color: "bg-indigo-500" },
+              { label: "Annual Subs", value: d.revenueBreakdown.annualSubscriptions, color: "bg-violet-500" },
+              { label: "Team Add-ons", value: d.revenueBreakdown.teamAddons, color: "bg-cyan-500" },
+              { label: "Report Sales", value: d.revenueBreakdown.reportPurchases, color: "bg-amber-500" },
+            ].map(r => (
+              <div key={r.label} className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${r.color}`} />
+                <div><p className="text-xs font-medium text-foreground">${r.value.toLocaleString()}</p><p className="text-[9px] text-muted-foreground">{r.label}</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── #10 Pricing Experiment ── */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Receipt className="h-4 w-4 text-sky-400" /> Pricing Analysis</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {(["monthly", "annual"] as const).map(plan => {
+            const p = d.pricingExperiment[plan]
+            return (
+              <div key={plan} className="rounded-xl bg-secondary/30 p-4">
+                <p className="text-xs font-bold uppercase text-foreground mb-2">{plan} — ${p.arpu}/mo</p>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div><p className="text-muted-foreground">Total</p><p className="font-bold text-foreground">{p.total}</p></div>
+                  <div><p className="text-muted-foreground">Active</p><p className="font-bold text-emerald-400">{p.active}</p></div>
+                  <div><p className="text-muted-foreground">Trialing</p><p className="font-bold text-blue-400">{p.trialing}</p></div>
+                  <div><p className="text-muted-foreground">Canceled</p><p className="font-bold text-red-400">{p.canceled}</p></div>
+                </div>
+                <div className="mt-2"><p className="text-[10px] text-muted-foreground">Conversion Rate</p><p className="text-sm font-bold text-indigo-400">{p.conversionRate}%</p></div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── #9 Seasonal Forecast ── */}
+      {d.seasonalForecast.forecast.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><TrendingUp className="h-4 w-4 text-cyan-400" /> Revenue Forecast</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={[...d.monthlyRevenue.slice(-6).map(m => ({ month: m.month, actual: m.total })), ...d.seasonalForecast.forecast.map(f => ({ month: f.month, forecast: f.forecast }))]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="month" tick={{ fill: "#888", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#888", fontSize: 10 }} tickFormatter={v => `$${v}`} />
+                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${v}`, ""]} />
+                <Area type="monotone" dataKey="actual" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} />
+                <Area type="monotone" dataKey="forecast" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.1} strokeWidth={2} strokeDasharray="5 5" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 flex gap-4 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-1.5 w-4 rounded bg-indigo-500" /> Actual</span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-4 rounded bg-cyan-500 opacity-50" style={{ borderTop: "1px dashed #22d3ee" }} /> Forecast</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── #18 Trial Conversion Day-by-Day ── */}
+      {d.trialActivity.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><BarChart3 className="h-4 w-4 text-blue-400" /> Trial Journey (Day-by-Day)</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={d.trialActivity}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="day" tick={{ fill: "#888", fontSize: 10 }} tickFormatter={v => `Day ${v}`} />
+                <YAxis tick={{ fill: "#888", fontSize: 10 }} />
+                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Bar dataKey="createdJob" name="Created Job" fill="#6366f1" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="sentInvoice" name="Sent Invoice" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="converted" name="Converted" fill="#10b981" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ── #7 Onboarding Progress Per User ── */}
+      {d.onboardingPerUser && d.onboardingPerUser.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><ClipboardCheck className="h-4 w-4 text-indigo-400" /> Onboarding Progress (Per Contractor)</h3>
+          <div className="flex flex-col gap-2 max-h-72 overflow-y-auto">
+            {[...d.onboardingPerUser].sort((a, b) => a.pct - b.pct).map(u => (
+              <div key={u.user_id} className={`flex items-center gap-3 rounded-xl p-3 ${u.pct < 50 && u.daysSinceSignup > 3 ? "bg-red-500/10 border border-red-500/20" : "bg-secondary/30"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-foreground truncate">{u.company_name || u.username}</p>
+                    <span className="text-[10px] text-muted-foreground">{u.daysSinceSignup}d ago</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-secondary/50">
+                    <div className={`h-1.5 rounded-full transition-all ${u.pct >= 80 ? "bg-emerald-500" : u.pct >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${u.pct}%` }} />
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {u.steps.map(s => (
+                      <span key={s.label} className={`rounded px-1.5 py-0.5 text-[8px] font-medium ${s.done ? "bg-emerald-500/15 text-emerald-400" : "bg-secondary/50 text-muted-foreground"}`}>{s.done ? "\u2713" : "\u2717"} {s.label}</span>
+                    ))}
+                  </div>
+                </div>
+                <span className={`text-sm font-bold ${u.pct >= 80 ? "text-emerald-400" : u.pct >= 50 ? "text-amber-400" : "text-red-400"}`}>{u.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── #8 Recent Alerts ── */}
+      {d.recentAlerts && d.recentAlerts.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Bell className="h-4 w-4 text-amber-400" /> Recent Alerts</h3>
+            <Link href="/admin/alerts" className="text-[10px] text-indigo-400 hover:underline">Manage Rules</Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {d.recentAlerts.map((a, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
+                <p className="text-xs text-foreground">{a.message}</p>
+                <span className="text-[10px] text-muted-foreground">{new Date(a.triggered_at).toLocaleDateString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Navigation Hub: All Feature Pages ── */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Owner Tools</h3>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {[
+            { href: "/admin/dunning", icon: Shield, label: "Dunning", desc: "Payment recovery", color: "text-emerald-400" },
+            { href: "/admin/goals", icon: Target, label: "Goals", desc: "Revenue targets", color: "text-indigo-400" },
+            { href: "/admin/alerts", icon: Bell, label: "Alerts", desc: "Custom rules", color: "text-amber-400" },
+            { href: "/admin/changelog", icon: BookOpen, label: "Changelog", desc: "What's new feed", color: "text-purple-400" },
+            { href: "/admin/tickets", icon: LifeBuoy, label: "Tickets", desc: "Support inbox", color: "text-blue-400" },
+            { href: "/admin/competitors", icon: Swords, label: "Competitors", desc: "Battle cards", color: "text-red-400" },
+            { href: "/admin/costs", icon: Receipt, label: "Unit Economics", desc: "Margins & costs", color: "text-teal-400" },
+            { href: "/admin/investor", icon: BarChart3, label: "Investor Report", desc: "Growth metrics", color: "text-sky-400" },
+            { href: "/admin/contractors", icon: Users, label: "Contractors", desc: "All accounts", color: "text-violet-400" },
+            { href: "/admin/dashboard", icon: Megaphone, label: "Broadcast", desc: "Email all", color: "text-pink-400" },
+          ].map(item => (
+            <Link key={item.href + item.label} href={item.href} className="flex items-center gap-3 rounded-xl border border-border bg-secondary/20 p-3 hover:bg-secondary/40 transition-colors">
+              <item.icon className={`h-4 w-4 ${item.color}`} />
+              <div>
+                <p className="text-xs font-medium text-foreground">{item.label}</p>
+                <p className="text-[9px] text-muted-foreground">{item.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* ── Row 15: Quick Actions ── */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions</h3>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions — All Contractors</h3>
         <div className="flex flex-wrap gap-2">
-          {d.subscribers.filter(s => s.status === "active" || s.status === "trialing").map(s => (
-            <div key={s.user_id} className="flex items-center gap-2 rounded-xl border border-border bg-secondary/20 px-3 py-2">
-              <span className="text-xs text-foreground font-medium">{s.company_name || s.username}</span>
-              <div className="flex gap-1">
-                {s.email && <a href={`mailto:${s.email}`} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="Email"><Mail className="h-3 w-3" /></a>}
-                {s.stripe_customer_id && <a href={`https://dashboard.stripe.com/customers/${s.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="Stripe"><ExternalLink className="h-3 w-3" /></a>}
-                <a href={`/admin/impersonate?id=${s.user_id}`} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="View as this contractor"><Eye className="h-3 w-3" /></a>
+          {d.engagement.map(e => {
+            const sub = d.subscribers.find(s => s.user_id === e.user_id)
+            return (
+              <div key={e.user_id} className="flex items-center gap-2 rounded-xl border border-border bg-secondary/20 px-3 py-2">
+                <span className="text-xs text-foreground font-medium">{e.company_name || e.username}</span>
+                {sub && <Badge status={sub.status} />}
+                <div className="flex gap-1">
+                  <a href={`mailto:${sub?.email || ""}`} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="Email"><Mail className="h-3 w-3" /></a>
+                  {sub?.stripe_customer_id && <a href={`https://dashboard.stripe.com/customers/${sub.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="Stripe"><ExternalLink className="h-3 w-3" /></a>}
+                  <a href={`/admin/impersonate?id=${e.user_id}`} className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground" title="View as this contractor"><Eye className="h-3 w-3" /></a>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
