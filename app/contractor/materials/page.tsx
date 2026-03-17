@@ -81,7 +81,6 @@ export default function MaterialsPage() {
   const [brandPrefs, setBrandPrefs] = useState<Record<string, boolean>>({})
   const [activeBrand, setActiveBrand] = useState<string>(BRANDS[0])
   const [catalogLoading, setCatalogLoading] = useState(false)
-  const [catalogError, setCatalogError] = useState("")
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
 
   // Load catalog + preferences
@@ -95,7 +94,7 @@ export default function MaterialsPage() {
         const catRes = await authFetch(`/api/materials/catalog?contractor_id=${accountId}`)
         const catText = await catRes.text()
         if (!catRes.ok) {
-          setCatalogError(`API ${catRes.status}: ${catText.slice(0, 200)}`)
+          console.error("[XRoof] catalog fetch error:", catRes.status, catText.slice(0, 200))
         } else {
           const catData = JSON.parse(catText)
           if (catData.brands && Array.isArray(catData.brands)) {
@@ -114,15 +113,12 @@ export default function MaterialsPage() {
               }
             }
             setCatalogProducts(flat)
-            if (flat.length === 0) {
-              setCatalogError("No products found in material_catalog table.")
-            }
           } else {
-            setCatalogError(`Unexpected API response: ${catText.slice(0, 200)}`)
+            console.error("[XRoof] unexpected catalog response:", catText.slice(0, 200))
           }
         }
       } catch (err) {
-        setCatalogError(`Fetch failed: ${err instanceof Error ? err.message : String(err)}`)
+        console.error("[XRoof] catalog fetch failed:", err)
       }
 
       // Fetch preferences — separate so it can't crash catalog
@@ -356,9 +352,6 @@ export default function MaterialsPage() {
         ) : Object.keys(productsByLine).length === 0 ? (
           <div className="py-6 text-center text-xs">
             <p className="text-muted-foreground">No catalog products found for {activeBrand}.</p>
-            {catalogError && (
-              <p className="mt-2 text-red-400 bg-red-500/10 rounded-lg px-3 py-2 inline-block">{catalogError}</p>
-            )}
           </div>
         ) : (
           <div className="space-y-4">
