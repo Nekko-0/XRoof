@@ -23,7 +23,7 @@ type BrandPreference = {
   visible: boolean
 }
 
-const BRANDS = ["GAF", "Owens Corning", "CertainTeed", "Atlas", "IKO", "Tamko", "Malarkey", "PABCO", "Castlebrook", "DaVinci", "Decra", "Boral", "Eagle", "Home Depot", "Lowe's"] as const
+const BRANDS = ["GAF", "Owens Corning", "CertainTeed", "Atlas", "IKO", "Tamko", "Malarkey", "PABCO", "DaVinci", "Decra", "Boral", "Eagle", "Home Depot", "Lowe's"] as const
 
 const TIER_COLORS: Record<string, string> = {
   economy: "bg-gray-500 text-white",
@@ -34,58 +34,78 @@ const TIER_COLORS: Record<string, string> = {
 
 // Color-accurate swatch hex codes for roofing shingle colors
 const SWATCH_COLORS: Record<string, string> = {
-  // Charcoal / Black tones
+  // ── Black tones ──
   "charcoal": "#3a3a3a", "onyx black": "#1a1a1a", "moire black": "#222222",
   "dual black": "#1e1e1e", "rustic black": "#252525", "shadow black": "#2a2a2a",
-  "pristine black": "#1c1c1c",
-  // Gray tones
+  "pristine black": "#1c1c1c", "midnight black": "#181818", "black": "#1a1a1a",
+  "carbon": "#2a2c2e", "ebony": "#1e1e20", "noir": "#202020",
+  "max def moire black": "#222222", "true black": "#161616",
+
+  // ── Gray tones ──
   "pewter gray": "#7a7d7e", "slate": "#5a6370", "estate gray": "#6b6e70",
   "georgetown gray": "#5e6264", "pewter": "#8a8d8f", "cobblestone gray": "#6d7072",
   "fox hollow gray": "#5f6366", "oyster gray": "#9a9c98", "quarry gray": "#6e7173",
   "sierra gray": "#7e8185", "castle gray": "#686c6e", "hearthstone gray": "#6a6e72",
   "thunderstorm gray": "#5c5f63", "mountain slate": "#5b6068", "dual gray": "#707478",
-  "charcoal gray": "#404448", "pewterwood": "#6b6560",
-  // Brown / Wood tones
+  "charcoal gray": "#404448", "pewterwood": "#6b6560", "granite gray": "#686c70",
+  "shadow gray": "#505458", "coastal gray": "#6e7478", "storm grey": "#5a5e62",
+  "silverwood": "#8a8e90", "thunderstorm grey": "#4e5258", "slate gray": "#5a6068",
+  "colonial slate": "#5a5e64", "nickel gray": "#7e8084", "harbor mist": "#8a8e92",
+  "williamsburg gray": "#5e6468", "silver birch": "#9a9e98", "silver lining": "#959a9e",
+  "platinum gray": "#8a8c90", "ash gray": "#6e7276", "dove gray": "#8e9094",
+  "nordic grey": "#5a6064", "max def pewter gray": "#7a7d7e",
+  "weathered gray": "#6a6e72", "zinc gray": "#7a7e82",
+  "charcoal blend": "#3e4042",
+
+  // ── Brown / Wood tones ──
   "weathered wood": "#6e5d4e", "hickory": "#7a6148", "barkwood": "#6a5545",
   "shakewood": "#7d6b55", "mission brown": "#5e4a3a", "driftwood": "#8a7e6e",
   "brownwood": "#5e4e3e", "teak": "#6e5840", "resawn shake": "#756050",
   "burnt sienna": "#8b5a3a", "brownstone": "#6b5848", "natural timber": "#8a7558",
   "aged wood": "#7e6e5e", "rustic cedar": "#8a6240", "earthtone cedar": "#7a6045",
   "weatherwood": "#6e5e50", "sedona canyon": "#8b6850", "sedona": "#9a6848",
-  // Green tones
-  "hunter green": "#3a5040", "chateau green": "#3e5a48",
-  // Blue tones
-  "harbor blue": "#4a5a6e", "appalachian sky": "#5a6878", "glacier": "#8a9aa8",
-  // Tan / Light tones
-  "sand dune": "#b8a888", "desert tan": "#baa878", "desert shake": "#9a8868",
-  "birchwood": "#a09080", "heather blend": "#8a7e72",
-  // Red tones
-  "aged redwood": "#7a4838", "harvard slate": "#5a4858",
-  "sierra brown": "#7a5a42", "colonial red": "#8a3a30", "terra cotta": "#c05a3a",
-  "red blend": "#8a4238", "mesa red": "#9a4a38",
-  // Malarkey colors
-  "midnight black": "#181818", "storm grey": "#5a5e62", "silverwood": "#8a8e90",
-  "antique brown": "#6a5040", "natural wood": "#7a6850", "thunderstorm grey": "#4e5258",
+  "antique brown": "#6a5040", "natural wood": "#7a6850", "autumn": "#7a5838",
+  "autumn blend": "#7a5a40", "black walnut": "#3a2e28", "brownstone blend": "#6a5a48",
   "max def weathered wood": "#6e5d4e", "max def driftwood": "#8a7e6e",
-  "max def moire black": "#222222", "max def pewter gray": "#7a7d7e",
-  // PABCO colors
-  "black walnut": "#3a2e28", "autumn blend": "#7a5a40", "pacific redwood": "#6a3a30",
-  "granite gray": "#686c70", "shadow gray": "#505458", "white oak": "#c0b8a8",
-  "cascade green": "#3a5a48",
-  // Castlebrook / Menards colors
-  "carbon": "#2a2c2e", "autumn": "#7a5838", "coastal gray": "#6e7478",
-  "sandalwood": "#a08868",
-  // DaVinci synthetic colors
-  "slate gray": "#5a6068", "european": "#5e5650", "castle": "#686058",
-  "tahoe": "#4e4640", "brownstone blend": "#6a5a48", "multi-width slate": "#5a5e62",
-  // Decra metal colors
-  "charcoal (metal)": "#3a3c3e", "terracotta (metal)": "#b85838",
-  "stone (metal)": "#8a8680", "bark (metal)": "#5e4e40",
-  "forest green (metal)": "#2e4a38", "shadowood": "#5a4e42",
-  // Boral / Eagle concrete tile colors
-  "charcoal blend": "#3e4042", "cocoa": "#5a4838", "cafe": "#7a6a58",
-  "adobe sunset": "#b07050", "capri": "#9a8878", "santa fe": "#c09068",
-  "mocha": "#5e4a3c", "villa blend": "#8a7058",
+  "aged bark": "#5e4a3e", "cedar brown": "#7e5a3e", "timber blend": "#6e5840",
+  "chestnut": "#5e4030", "walnut": "#5a4230", "saddlewood": "#7a6248",
+  "amber": "#8a6a40", "pecan": "#7a5e40", "autumn brown": "#6e5038",
+  "heatherwood": "#6e5e50", "woodland": "#5e5040", "bark": "#5e4e40",
+  "bark (metal)": "#5e4e40", "tahoe": "#4e4640", "cocoa": "#5a4838",
+  "cafe": "#7a6a58", "mocha": "#5e4a3c", "villa blend": "#8a7058",
+  "shadowood": "#5a4e42", "european": "#5e5650", "castle": "#686058",
+
+  // ── Tan / Beige / Sand tones ──
+  "sand dune": "#b8a888", "desert tan": "#baa878", "desert shake": "#9a8868",
+  "birchwood": "#a09080", "heather blend": "#8a7e72", "sandalwood": "#a08868",
+  "white oak": "#c0b8a8", "sandcastle": "#b0a080", "buff": "#c0a880",
+  "cream": "#d8c8a8", "sand": "#c0b090", "sahara": "#baa478",
+  "desert sand": "#c8b898", "khaki": "#a89878", "prairie": "#b8a888",
+  "harvest gold": "#b89858", "golden cedar": "#a88848", "sunrise": "#c8a868",
+  "capri": "#9a8878", "santa fe": "#c09068",
+
+  // ── Green tones ──
+  "hunter green": "#3a5040", "chateau green": "#3e5a48", "cascade green": "#3a5a48",
+  "forest green": "#2e4a38", "forest green (metal)": "#2e4a38",
+  "moss": "#4a5a40", "sage": "#6a7a60", "evergreen": "#2e4838",
+  "emerald": "#2a5a3a", "jade": "#3a6a48", "pine green": "#2e4a3a",
+
+  // ── Blue tones ──
+  "harbor blue": "#4a5a6e", "appalachian sky": "#5a6878", "glacier": "#8a9aa8",
+  "pacific blue": "#4a6070", "blue": "#3e5a70", "atlantic blue": "#3a5268",
+  "midnight blue": "#2e3a50", "country blue": "#5a6a80", "harbor mist blue": "#6a7a8a",
+  "ocean blue": "#3e5870",
+
+  // ── Red / Burgundy tones ──
+  "aged redwood": "#7a4838", "harvard slate": "#5a4858", "sierra brown": "#7a5a42",
+  "colonial red": "#8a3a30", "terra cotta": "#c05a3a", "terracotta (metal)": "#b85838",
+  "red blend": "#8a4238", "mesa red": "#9a4a38", "pacific redwood": "#6a3a30",
+  "adobe sunset": "#b07050", "burgundy": "#5a2028", "barn red": "#7a2a20",
+  "patriot red": "#8a3028", "rustic red": "#7a3830", "red": "#8a3830",
+
+  // ── Multi-tone / Special ──
+  "multi-width slate": "#5a5e62", "stone (metal)": "#8a8680",
+  "charcoal (metal)": "#3a3c3e",
 }
 
 function getSwatchColor(colorName: string): string {
