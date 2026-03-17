@@ -61,7 +61,31 @@ export default function SurveyPage() {
           <p className="mt-2 text-slate-600">
             Your feedback helps us improve our service. We appreciate you taking the time to respond.
           </p>
-          {googleReviewUrl && (
+          {googleReviewUrl && rating >= 4 ? (
+            <div className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-5">
+              <div className="flex justify-center gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star key={s} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-sm font-semibold text-slate-800 mb-1">
+                We&apos;re glad you had a great experience!
+              </p>
+              <p className="text-xs text-slate-600 mb-4">
+                Would you mind sharing your experience on Google? It only takes a minute and helps other homeowners find quality roofing services.
+              </p>
+              <a
+                href={googleReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:bg-amber-600 hover:shadow-xl hover:scale-[1.02]"
+              >
+                <Star className="h-5 w-5" />
+                Share on Google
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          ) : googleReviewUrl ? (
             <a
               href={googleReviewUrl}
               target="_blank"
@@ -72,7 +96,7 @@ export default function SurveyPage() {
               Leave a Google Review
               <ExternalLink className="h-4 w-4" />
             </a>
-          )}
+          ) : null}
         </div>
       </div>
     )

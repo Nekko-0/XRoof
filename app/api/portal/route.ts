@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   // Get contractor info
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, company_name, phone, email, google_review_url, widget_color, logo_url, google_reviews_cache")
+    .select("username, company_name, phone, email, google_review_url, widget_color, logo_url, google_reviews_cache, warranty_enabled, warranty_years, warranty_terms")
     .eq("id", job.contractor_id)
     .single()
 

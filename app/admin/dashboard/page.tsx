@@ -148,6 +148,14 @@ export default function AdminDashboard() {
   const [nudgesExpanded, setNudgesExpanded] = useState(false)
   const [subFilter, setSubFilter] = useState<"all" | "at_risk">("all")
 
+  // Stripe revenue metrics
+  const [stripeRevenue, setStripeRevenue] = useState<{
+    mrr: number; totalActive: number; totalTrialing: number;
+    monthlyCount: number; annualCount: number; churnRate: number;
+    trialConversion: number; ltv: number;
+    mrrTrend: { month: string; mrr: number }[]; recentCancels: number;
+  } | null>(null)
+
   useEffect(() => {
     authFetch("/api/analytics/admin")
       .then(res => { if (!res.ok) throw new Error("Unauthorized"); return res.json() })
@@ -164,6 +172,11 @@ export default function AdminDashboard() {
   // Fetch revenue attribution
   useEffect(() => {
     authFetch("/api/admin/attribution").then(r => r.ok ? r.json() : []).then(setAttributionData).catch(() => {})
+  }, [])
+
+  // Fetch stripe revenue metrics
+  useEffect(() => {
+    authFetch("/api/admin/stripe-revenue").then(r => r.ok ? r.json() : null).then(setStripeRevenue).catch(() => {})
   }, [])
 
   // Fetch platform health score
@@ -882,6 +895,45 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Stripe Revenue Deep Dive ── */}
+      {stripeRevenue && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><DollarSign className="h-4 w-4 text-emerald-400" /> Stripe Revenue</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            {[
+              { label: "MRR", value: `$${stripeRevenue.mrr.toLocaleString()}`, color: "text-emerald-400" },
+              { label: "Active", value: stripeRevenue.totalActive, color: "text-blue-400" },
+              { label: "Trialing", value: stripeRevenue.totalTrialing, color: "text-cyan-400" },
+              { label: "Churn Rate", value: `${stripeRevenue.churnRate}%`, color: stripeRevenue.churnRate > 5 ? "text-red-400" : "text-emerald-400" },
+              { label: "Trial Conv", value: `${stripeRevenue.trialConversion}%`, color: "text-indigo-400" },
+              { label: "LTV", value: `$${stripeRevenue.ltv.toLocaleString()}`, color: "text-amber-400" },
+            ].map((m) => (
+              <div key={m.label} className="rounded-xl bg-secondary/30 p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                <p className={`text-lg font-bold ${m.color}`}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+          {stripeRevenue.mrrTrend.length > 0 && (
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stripeRevenue.mrrTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#888" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "#888" }} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${v.toLocaleString()}`, "MRR"]} />
+                  <Area type="monotone" dataKey="mrr" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{stripeRevenue.monthlyCount} monthly · {stripeRevenue.annualCount} annual</span>
+            <span>{stripeRevenue.recentCancels} cancels (30d)</span>
+          </div>
+        </div>
+      )}
 
       {/* ── #10 Pricing Experiment ── */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">

@@ -52,6 +52,64 @@ export async function POST(req: Request) {
           current_period_start: new Date(periodStart * 1000).toISOString(),
           current_period_end: new Date(periodEnd * 1000).toISOString(),
         }, { onConflict: "user_id" })
+
+        // Handle referral credit ($50 for both referrer and referred)
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("referred_by")
+            .eq("id", userId)
+            .single()
+
+          if (profile?.referred_by) {
+            // Look up the referrer by their code
+            const { data: referralCode } = await supabase
+              .from("referral_codes")
+              .select("user_id")
+              .eq("code", profile.referred_by)
+              .single()
+
+            if (referralCode) {
+              // Record the conversion
+              await supabase.from("referral_conversions").insert({
+                referrer_id: referralCode.user_id,
+                referred_id: userId,
+                converted: true,
+                reward_type: "credit",
+                reward_amount: 5000, // $50 in cents
+              })
+
+              // Apply $50 credit to referrer's Stripe customer
+              const { data: referrerSub } = await supabase
+                .from("subscriptions")
+                .select("stripe_customer_id")
+                .eq("user_id", referralCode.user_id)
+                .single()
+
+              if (referrerSub?.stripe_customer_id) {
+                await stripe.customers.createBalanceTransaction(referrerSub.stripe_customer_id, {
+                  amount: -5000, // negative = credit
+                  currency: "usd",
+                  description: "Referral bonus — $50 credit for referring a new contractor",
+                })
+              }
+
+              // Apply $50 credit to the new subscriber too
+              if (session.customer) {
+                await stripe.customers.createBalanceTransaction(session.customer as string, {
+                  amount: -5000,
+                  currency: "usd",
+                  description: "Welcome bonus — $50 credit for signing up via referral",
+                })
+              }
+
+              // Clear the referred_by so it doesn't fire again
+              await supabase.from("profiles").update({ referred_by: null }).eq("id", userId)
+            }
+          }
+        } catch (refErr) {
+          console.error("[XRoof] referral credit error:", refErr)
+        }
       }
 
       if (session.metadata?.type === "report_purchase" && userId) {

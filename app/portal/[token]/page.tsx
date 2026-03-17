@@ -8,7 +8,7 @@ import {
   CheckCircle, Clock, Wrench, Camera, Star, Building2,
   AlertCircle, ArrowRight, MessageSquare, Send,
   FileSignature, CreditCard, Activity, ExternalLink, Eye,
-  ArrowLeftRight, Upload, Download, Package,
+  ArrowLeftRight, Upload, Download, Package, Shield,
 } from "lucide-react"
 import { BeforeAfterSlider } from "@/components/before-after-slider"
 import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
@@ -216,6 +216,9 @@ type PortalData = {
     widget_color: string
     logo_url: string
     google_reviews_cache: { rating: number; reviewCount: number } | null
+    warranty_enabled?: boolean
+    warranty_years?: number
+    warranty_terms?: string
   }
   report: {
     id: string
@@ -250,7 +253,60 @@ const STATUS_STEPS = [
   { status: "Completed", label: "Completed" },
 ]
 
-type TabId = "overview" | "documents" | "materials" | "activity" | "messages"
+type TabId = "overview" | "documents" | "materials" | "activity" | "messages" | "warranty"
+
+const MANUFACTURER_WARRANTIES: Record<string, string> = {
+  "Timberline HDZ": "Lifetime Limited Warranty",
+  "Timberline HD": "Lifetime Limited Warranty",
+  "Timberline AS II": "Lifetime Limited Warranty",
+  "Timberline NS": "Lifetime Limited Warranty",
+  "Timberline UHDZ": "Lifetime Limited Warranty",
+  "Grand Sequoia": "Lifetime Limited Warranty",
+  "Camelot II": "Lifetime Limited Warranty",
+  "Woodland": "Lifetime Limited Warranty",
+  "Slateline": "Lifetime Limited Warranty",
+  "Monaco": "Lifetime Limited Warranty",
+  "Duration": "Limited Lifetime Warranty",
+  "Duration FLEX": "Limited Lifetime Warranty",
+  "Duration STORM": "Limited Lifetime Warranty",
+  "Duration MAX": "Limited Lifetime Warranty",
+  "TruDefinition Duration": "Limited Lifetime Warranty",
+  "Oakridge": "Limited Lifetime Warranty",
+  "Woodcrest": "Limited Lifetime Warranty",
+  "Woodmoor": "Limited Lifetime Warranty",
+  "Berkshire": "Limited Lifetime Warranty",
+  "Landmark": "Limited Lifetime Warranty",
+  "Landmark PRO": "Limited Lifetime Warranty",
+  "Landmark TL": "Limited Lifetime Warranty",
+  "Landmark Premium": "Limited Lifetime Warranty",
+  "Grand Manor": "Limited Lifetime Warranty",
+  "Presidential Shake": "Limited Lifetime Warranty",
+  "Carriage House": "Limited Lifetime Warranty",
+  "Highland Slate": "Limited Lifetime Warranty",
+  "StormMaster Shake": "Limited Lifetime Warranty",
+  "StormMaster Slate": "Limited Lifetime Warranty",
+  "ProLam": "Limited Lifetime Warranty",
+  "Pinnacle Pristine": "Limited Lifetime Warranty",
+  "Cambridge": "Limited Lifetime Warranty",
+  "Nordic": "Limited Lifetime Warranty",
+  "Dynasty": "Limited Lifetime Warranty",
+  "Crowne Slate": "Limited Lifetime Warranty",
+  "Royal Estate": "Limited Lifetime Warranty",
+  "Heritage": "30-Year Limited Warranty",
+  "Heritage Woodgate": "30-Year Limited Warranty",
+  "Titan XT": "Limited Lifetime Warranty",
+  "Legacy": "Limited Lifetime Warranty",
+  "Vista": "Limited Lifetime Warranty",
+  "Windsor": "Limited Lifetime Warranty",
+  "Centurion Slate": "Limited Lifetime Warranty",
+  "Belmont": "50-Year Limited Warranty",
+  "EcoChoice": "30-Year Limited Warranty",
+  "DaVinci Slate": "Lifetime Limited Warranty",
+  "DaVinci Shake": "Lifetime Limited Warranty",
+  "Decra Stone Coated": "Limited Lifetime Warranty",
+  "Decra Shake": "Limited Lifetime Warranty",
+  "Decra Shingle": "Limited Lifetime Warranty",
+}
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -468,12 +524,15 @@ export default function HomeownerPortal() {
 
   const lang = (job as any).preferred_language || undefined
 
+  const showWarranty = job.status === "Completed" && contractor.warranty_enabled
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "overview", label: t("portal.tab.overview", lang), icon: <Wrench className="h-4 w-4" /> },
     { id: "documents", label: t("portal.tab.documents", lang), icon: <FileText className="h-4 w-4" />, badge: unpaidInvoices.length || undefined },
     { id: "materials", label: t("portal.tab.materials", lang), icon: <Package className="h-4 w-4" /> },
     { id: "activity", label: t("portal.tab.activity", lang), icon: <Activity className="h-4 w-4" /> },
     { id: "messages", label: t("portal.tab.messages", lang), icon: <MessageSquare className="h-4 w-4" /> },
+    ...(showWarranty ? [{ id: "warranty" as TabId, label: "Warranty", icon: <Shield className="h-4 w-4" /> }] : []),
   ]
 
   return (
@@ -1107,6 +1166,92 @@ export default function HomeownerPortal() {
             <div className="flex gap-2">
               <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Type a message..." rows={2} className="flex-1 resize-none rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500" />
               <button onClick={sendMessage} disabled={!newMessage.trim() || sendingMessage} className="flex h-auto items-center justify-center rounded-xl px-4 text-white transition-colors disabled:opacity-40" style={{ backgroundColor: brandColor }}><Send className="h-4 w-4" /></button>
+            </div>
+          </div>
+        )}
+
+        {/* Warranty Tab */}
+        {activeTab === "warranty" && showWarranty && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-gray-600 bg-gray-800 p-6 text-center">
+              <Shield className="mx-auto mb-3 h-12 w-12" style={{ color: brandColor }} />
+              <h3 className="text-xl font-bold text-white mb-1">Warranty Certificate</h3>
+              <p className="text-sm text-gray-400">Your project is covered by the following warranties</p>
+            </div>
+
+            {/* Workmanship Warranty */}
+            <div className="rounded-2xl border border-gray-600 bg-gray-800 p-5">
+              <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+                <Shield className="h-4 w-4" style={{ color: brandColor }} />
+                Workmanship Warranty
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-gray-700/50 p-3">
+                  <p className="text-xs text-gray-400 mb-1">Contractor</p>
+                  <p className="font-semibold text-white">{contractor.company_name}</p>
+                </div>
+                <div className="rounded-xl bg-gray-700/50 p-3">
+                  <p className="text-xs text-gray-400 mb-1">Coverage Period</p>
+                  <p className="font-semibold text-white">
+                    {contractor.warranty_years === 0 ? "Lifetime" : `${contractor.warranty_years} Year${(contractor.warranty_years || 1) > 1 ? "s" : ""}`}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-gray-700/50 p-3">
+                  <p className="text-xs text-gray-400 mb-1">Completion Date</p>
+                  <p className="font-semibold text-white">{formatDate(job.created_at)}</p>
+                </div>
+                <div className="rounded-xl bg-gray-700/50 p-3">
+                  <p className="text-xs text-gray-400 mb-1">Property</p>
+                  <p className="font-semibold text-white truncate">{job.address}</p>
+                </div>
+              </div>
+              {contractor.warranty_terms && (
+                <div className="mt-4 rounded-xl bg-gray-700/30 p-4">
+                  <p className="text-xs font-medium text-gray-400 mb-2">Terms & Conditions</p>
+                  <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{contractor.warranty_terms}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Manufacturer Warranty — show for each selected material */}
+            {materialBrands.length > 0 && (
+              <div className="rounded-2xl border border-gray-600 bg-gray-800 p-5">
+                <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+                  <Package className="h-4 w-4" style={{ color: brandColor }} />
+                  Manufacturer Warranties
+                </h4>
+                <div className="space-y-2">
+                  {materialBrands.flatMap((brand) =>
+                    brand.products
+                      .filter((item) => selectedMaterialIds.has(item.id))
+                      .map((item) => {
+                        const mfgWarranty = MANUFACTURER_WARRANTIES[item.product_line] || "See manufacturer documentation"
+                        return (
+                          <div key={item.id} className="flex items-center justify-between rounded-xl bg-gray-700/50 px-4 py-3">
+                            <div>
+                              <p className="text-sm font-medium text-white">{brand.name} {item.product_line}</p>
+                              <p className="text-xs text-gray-400">{item.color}</p>
+                            </div>
+                            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">{mfgWarranty}</span>
+                          </div>
+                        )
+                      })
+                  )}
+                  {materialBrands.every((b) => b.products.every((p) => !selectedMaterialIds.has(p.id))) && (
+                    <p className="py-3 text-center text-xs text-gray-500">No materials selected yet. Select materials in the Materials tab to see manufacturer warranties.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-xl bg-gray-700/30 p-4 text-center">
+              <p className="text-xs text-gray-400">
+                Questions about your warranty? Contact {contractor.company_name} at{" "}
+                <a href={`tel:${contractor.phone}`} className="underline" style={{ color: brandColor }}>{contractor.phone}</a>
+                {contractor.email && (
+                  <> or <a href={`mailto:${contractor.email}`} className="underline" style={{ color: brandColor }}>{contractor.email}</a></>
+                )}
+              </p>
             </div>
           </div>
         )}

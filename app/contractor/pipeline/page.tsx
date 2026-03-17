@@ -105,8 +105,10 @@ export default function PipelinePage() {
   const [showSort, setShowSort] = useState(false)
   const [related, setRelated] = useState<RelatedData | null>(null)
   const [showAddJob, setShowAddJob] = useState(false)
-  const [newJob, setNewJob] = useState({ customer_name: "", address: "", customer_phone: "", customer_email: "", job_type: "", budget: "" })
+  const [newJob, setNewJob] = useState({ customer_name: "", address: "", customer_phone: "", customer_email: "", job_type: "", budget: "", description: "" })
   const [addingJob, setAddingJob] = useState(false)
+  const [templates, setTemplates] = useState<{ id: string; name: string; job_type: string; description: string; default_budget: number | null; material_notes: string }[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState("")
   const [googleReviewUrl, setGoogleReviewUrl] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [leadScores, setLeadScores] = useState<Record<string, { score: number; factors: string[] }>>({})
@@ -143,6 +145,12 @@ export default function PipelinePage() {
       authFetch("/api/leads/score")
         .then((r) => r.json())
         .then((data) => { if (data.scores) setLeadScores(data.scores) })
+        .catch(() => {})
+
+      // Fetch job templates
+      authFetch("/api/job-templates")
+        .then((r) => r.json())
+        .then((data) => { if (data.templates) setTemplates(data.templates) })
         .catch(() => {})
     }
     fetchJobs()
@@ -344,6 +352,7 @@ export default function PipelinePage() {
       customer_email: newJob.customer_email,
       job_type: newJob.job_type || "Other",
       budget: newJob.budget ? Number(newJob.budget) : null,
+      description: newJob.description || null,
       status: "New",
       source: "manual",
     }).select().single()
@@ -351,7 +360,8 @@ export default function PipelinePage() {
     if (error) { toast.error("Error: " + error.message) }
     else if (data) {
       setJobs((prev) => [data, ...prev])
-      setNewJob({ customer_name: "", address: "", customer_phone: "", customer_email: "", job_type: "", budget: "" })
+      setNewJob({ customer_name: "", address: "", customer_phone: "", customer_email: "", job_type: "", budget: "", description: "" })
+      setSelectedTemplate("")
       setShowAddJob(false)
       // Auto-create customer record
       supabase.from("customers").insert({
@@ -747,6 +757,31 @@ export default function PipelinePage() {
               </button>
             </div>
             <div className="space-y-3">
+              {templates.length > 0 && (
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => {
+                    setSelectedTemplate(e.target.value)
+                    if (e.target.value) {
+                      const tmpl = templates.find((t) => t.id === e.target.value)
+                      if (tmpl) {
+                        setNewJob((prev) => ({
+                          ...prev,
+                          job_type: tmpl.job_type || prev.job_type,
+                          description: tmpl.description || prev.description,
+                          budget: tmpl.default_budget ? String(tmpl.default_budget) : prev.budget,
+                        }))
+                      }
+                    }
+                  }}
+                  className="w-full rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">Use a template...</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
               <input
                 value={newJob.customer_name}
                 onChange={(e) => setNewJob({ ...newJob, customer_name: e.target.value })}
@@ -792,6 +827,15 @@ export default function PipelinePage() {
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
+              {newJob.description && (
+                <textarea
+                  value={newJob.description}
+                  onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+                  placeholder="Description"
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                />
+              )}
             </div>
             <button
               onClick={handleAddJob}

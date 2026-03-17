@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
 import { Home, ArrowLeft, Target, MessageSquare, BarChart3 } from "lucide-react"
@@ -9,6 +9,8 @@ import { Suspense } from "react"
 
 function AuthForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const refCode = searchParams.get("ref")
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -18,6 +20,11 @@ function AuthForm() {
   const [forgotMode, setForgotMode] = useState(false)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // If ref code in URL, show signup and display referral banner
+  useEffect(() => {
+    if (refCode) setIsSignUp(true)
+  }, [refCode])
 
   const handleSignUp = async () => {
     if (!email || !password) {
@@ -53,7 +60,9 @@ function AuthForm() {
     }
 
     if (data.session) {
-      await supabase.from("profiles").update({ service_zips: parsedZips }).eq("id", data.user!.id)
+      const profileUpdate: Record<string, any> = { service_zips: parsedZips }
+      if (refCode) profileUpdate.referred_by = refCode
+      await supabase.from("profiles").update(profileUpdate).eq("id", data.user!.id)
       router.push("/contractor/dashboard")
     } else if (data.user) {
       setMessage("Check your email for a confirmation link, then log in!")
@@ -135,6 +144,13 @@ function AuthForm() {
             {forgotMode ? "Enter your email to receive a reset link" : isSignUp ? "Sign up as a contractor to receive leads" : "Sign in to manage your leads"}
           </p>
         </div>
+
+        {/* Referral banner */}
+        {refCode && isSignUp && (
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">You&apos;ve been referred! Sign up and get $50 credit when you subscribe.</p>
+          </div>
+        )}
 
         {/* Form */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

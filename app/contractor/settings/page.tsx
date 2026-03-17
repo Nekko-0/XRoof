@@ -9,7 +9,7 @@ import { useRole } from "@/lib/role-context"
 import {
   Building2, Phone, Mail, MapPin, Star, DollarSign,
   Palette, Upload, Link2, Calendar, CreditCard, MessageSquare,
-  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database, AlarmClock,
+  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database, AlarmClock, Shield, ClipboardList, Trash2, Plus, Gift, Copy, Check,
 } from "lucide-react"
 
 type BookingHours = { start: string; end: string; days: number[] }
@@ -34,6 +34,9 @@ type SettingsProfile = {
   booking_hours: BookingHours
   booking_duration_min: number
   booking_buffer_min: number
+  warranty_enabled: boolean
+  warranty_years: number
+  warranty_terms: string
 }
 
 type NotificationPreferences = {
@@ -49,6 +52,9 @@ const TABS = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "email-templates", label: "Templates", icon: Mail },
   { id: "reminders", label: "Reminders", icon: AlarmClock },
+  { id: "warranty", label: "Warranty", icon: Shield },
+  { id: "templates", label: "Templates", icon: ClipboardList },
+  { id: "referral", label: "Referral", icon: Gift },
   { id: "data", label: "Data", icon: Database },
 ] as const
 
@@ -96,7 +102,7 @@ export default function SettingsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, google_place_id, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min")
+        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, google_place_id, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min, warranty_enabled, warranty_years, warranty_terms")
         .eq("id", accountId)
         .single()
 
@@ -109,6 +115,7 @@ export default function SettingsPage() {
           notification_preferences: { email: {}, sms: {} },
           booking_enabled: false, booking_hours: { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
           booking_duration_min: 60, booking_buffer_min: 30,
+          warranty_enabled: false, warranty_years: 1, warranty_terms: "",
         })
       } else {
         setProfile({
@@ -131,6 +138,9 @@ export default function SettingsPage() {
           booking_hours: data.booking_hours || { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
           booking_duration_min: data.booking_duration_min || 60,
           booking_buffer_min: data.booking_buffer_min || 30,
+          warranty_enabled: data.warranty_enabled || false,
+          warranty_years: data.warranty_years || 1,
+          warranty_terms: data.warranty_terms || "",
         })
       }
       setLoading(false)
@@ -953,6 +963,101 @@ export default function SettingsPage() {
         <RemindersTab />
       )}
 
+      {/* Warranty Tab */}
+      {activeTab === "warranty" && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+              Warranty Card
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Enable warranty cards on your customer portal for completed jobs.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-5">
+            {/* Enable toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Warranty Cards</p>
+                <p className="text-xs text-muted-foreground">Show a warranty tab on the customer portal for completed jobs</p>
+              </div>
+              <NotifToggle
+                on={profile.warranty_enabled}
+                onToggle={() => setProfile({ ...profile, warranty_enabled: !profile.warranty_enabled })}
+              />
+            </div>
+
+            {profile.warranty_enabled && (
+              <>
+                {/* Warranty duration */}
+                <div className="flex items-start gap-3 rounded-lg bg-secondary/30 px-4 py-3">
+                  <div className="mt-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Workmanship Warranty Period</label>
+                    <select
+                      value={profile.warranty_years}
+                      onChange={(e) => setProfile({ ...profile, warranty_years: Number(e.target.value) })}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={1}>1 Year</option>
+                      <option value={2}>2 Years</option>
+                      <option value={5}>5 Years</option>
+                      <option value={10}>10 Years</option>
+                      <option value={25}>25 Years</option>
+                      <option value={0}>Lifetime</option>
+                    </select>
+                    <p className="mt-1 text-xs text-muted-foreground">How long your workmanship warranty covers the job</p>
+                  </div>
+                </div>
+
+                {/* Warranty terms */}
+                <div className="flex items-start gap-3 rounded-lg bg-secondary/30 px-4 py-3">
+                  <div className="mt-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Warranty Terms & Conditions</label>
+                    <textarea
+                      value={profile.warranty_terms}
+                      onChange={(e) => setProfile({ ...profile, warranty_terms: e.target.value })}
+                      placeholder="e.g. This warranty covers defects in workmanship for the specified period from the date of completion. Normal wear and tear, acts of nature, and unauthorized modifications are not covered..."
+                      rows={5}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => saveProfile({
+              warranty_enabled: profile.warranty_enabled,
+              warranty_years: profile.warranty_years,
+              warranty_terms: profile.warranty_terms,
+            })}
+            disabled={saving}
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {saving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Save className="h-4 w-4" />}
+            Save Warranty Settings
+          </button>
+        </div>
+      )}
+
+      {/* Templates Tab */}
+      {activeTab === "templates" && (
+        <TemplatesTab accountId={accountId} />
+      )}
+
+      {/* Referral Tab */}
+      {activeTab === "referral" && (
+        <ReferralTab />
+      )}
+
       {activeTab === "data" && (
         <DataExportTab />
       )}
@@ -1184,6 +1289,248 @@ function DataExportTab() {
           {exporting ? "Exporting..." : "Download All Data (ZIP)"}
         </button>
       </div>
+    </div>
+  )
+}
+
+function ReferralTab() {
+  const toast = useToast()
+  const [code, setCode] = useState<string | null>(null)
+  const [stats, setStats] = useState({ totalReferred: 0, totalConverted: 0, totalEarned: 0 })
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    authFetch("/api/referrals")
+      .then((r) => r.json())
+      .then((data) => {
+        setCode(data.code || null)
+        if (data.stats) setStats(data.stats)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const generateCode = async () => {
+    setGenerating(true)
+    const res = await authFetch("/api/referrals", { method: "POST" })
+    const data = await res.json()
+    if (data.code) {
+      setCode(data.code)
+      toast.success("Referral code generated!")
+    }
+    setGenerating(false)
+  }
+
+  const referralUrl = code ? `${typeof window !== "undefined" ? window.location.origin : ""}/auth?ref=${code}` : ""
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(referralUrl)
+    setCopied(true)
+    toast.success("Referral link copied!")
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) {
+    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-secondary/50" />)}</div>
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>Referral Program</h3>
+        <p className="text-xs text-muted-foreground">Refer other contractors to XRoof and earn $50 credit for each signup that subscribes.</p>
+      </div>
+
+      {!code ? (
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+          <Gift className="mx-auto mb-3 h-10 w-10 text-primary/40" />
+          <p className="text-sm font-medium text-foreground mb-1">Get Your Referral Link</p>
+          <p className="text-xs text-muted-foreground mb-4">Generate a unique link to share with other contractors. When they subscribe, you both get $50 credit.</p>
+          <button onClick={generateCode} disabled={generating} className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+            {generating ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Gift className="h-4 w-4" />}
+            Generate Referral Link
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Your Referral Link</p>
+            <div className="flex gap-2">
+              <input value={referralUrl} readOnly className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground" />
+              <button onClick={copyLink} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">Code: <span className="font-mono font-medium text-foreground">{code}</span></p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
+              <p className="text-2xl font-bold text-foreground">{stats.totalReferred}</p>
+              <p className="text-xs text-muted-foreground">Referred</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
+              <p className="text-2xl font-bold text-emerald-500">{stats.totalConverted}</p>
+              <p className="text-xs text-muted-foreground">Subscribed</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
+              <p className="text-2xl font-bold text-primary">${stats.totalEarned}</p>
+              <p className="text-xs text-muted-foreground">Earned</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-secondary/30 p-4">
+            <p className="text-xs font-medium text-foreground mb-1">How it works</p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Share your referral link with other contractors</li>
+              <li>They sign up and start their free trial</li>
+              <li>When they subscribe, you both get $50 credit applied to your next invoice</li>
+            </ol>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+const JOB_TYPES = ["Roof Replacement", "Roof Repair", "Inspection", "Gutter", "Siding", "Other"]
+
+function TemplatesTab({ accountId }: { accountId: string }) {
+  const toast = useToast()
+  const [templates, setTemplates] = useState<{ id: string; name: string; job_type: string; description: string; default_budget: number | null; material_notes: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: "", job_type: "", description: "", default_budget: "", material_notes: "" })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    authFetch("/api/job-templates")
+      .then((r) => r.json())
+      .then((data) => { setTemplates(data.templates || []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const resetForm = () => {
+    setForm({ name: "", job_type: "", description: "", default_budget: "", material_notes: "" })
+    setEditId(null)
+    setShowForm(false)
+  }
+
+  const handleSave = async () => {
+    if (!form.name.trim()) return
+    setSaving(true)
+    const payload = {
+      ...(editId ? { id: editId } : {}),
+      name: form.name,
+      job_type: form.job_type || null,
+      description: form.description || null,
+      default_budget: form.default_budget ? Number(form.default_budget) : null,
+      material_notes: form.material_notes || null,
+    }
+
+    const res = await authFetch("/api/job-templates", {
+      method: editId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      toast.success(editId ? "Template updated" : "Template created")
+      // Reload
+      const r = await authFetch("/api/job-templates")
+      const data = await r.json()
+      setTemplates(data.templates || [])
+      resetForm()
+    } else {
+      toast.error("Failed to save template")
+    }
+    setSaving(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    const res = await authFetch(`/api/job-templates?id=${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setTemplates((prev) => prev.filter((t) => t.id !== id))
+      toast.success("Template deleted")
+    }
+  }
+
+  const startEdit = (t: typeof templates[0]) => {
+    setEditId(t.id)
+    setForm({
+      name: t.name,
+      job_type: t.job_type || "",
+      description: t.description || "",
+      default_budget: t.default_budget ? String(t.default_budget) : "",
+      material_notes: t.material_notes || "",
+    })
+    setShowForm(true)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>Job Templates</h3>
+          <p className="text-xs text-muted-foreground">Pre-saved job configurations for quick job creation in the pipeline.</p>
+        </div>
+        <button onClick={() => { resetForm(); setShowForm(true) }} className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+          <Plus className="h-4 w-4" /> New Template
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-3">
+          <h4 className="text-sm font-semibold text-foreground">{editId ? "Edit Template" : "Create Template"}</h4>
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Template name *" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <div className="grid grid-cols-2 gap-3">
+            <select value={form.job_type} onChange={(e) => setForm({ ...form, job_type: e.target.value })} className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              <option value="">Job type</option>
+              {JOB_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <input type="number" value={form.default_budget} onChange={(e) => setForm({ ...form, default_budget: e.target.value })} placeholder="Default budget ($)" className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Default job description" rows={3} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+          <textarea value={form.material_notes} onChange={(e) => setForm({ ...form, material_notes: e.target.value })} placeholder="Material notes (optional)" rows={2} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving || !form.name.trim()} className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+              {saving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Save className="h-4 w-4" />}
+              {editId ? "Update" : "Create"}
+            </button>
+            <button onClick={resetForm} className="rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-secondary/50" />)}</div>
+      ) : templates.length === 0 && !showForm ? (
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+          <ClipboardList className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No templates yet. Create one to speed up job creation.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {templates.map((t) => (
+            <div key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">{t.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {[t.job_type, t.default_budget ? `$${Number(t.default_budget).toLocaleString()}` : null, t.description].filter(Boolean).join(" · ") || "No details"}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 ml-3">
+                <button onClick={() => startEdit(t)} className="rounded-lg px-2 py-1 text-xs text-primary hover:bg-primary/10">Edit</button>
+                <button onClick={() => handleDelete(t.id)} className="rounded-lg px-2 py-1 text-xs text-red-500 hover:bg-red-500/10"><Trash2 className="h-3.5 w-3.5" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
