@@ -155,11 +155,7 @@ export default function DispatchPage() {
     return appointments.filter((a) => a.date === dayStr)
   }
 
-  // All crew + "Unassigned" row
-  const crewRows = [
-    ...crew.map((c) => ({ id: c.id, name: c.invited_name || c.invited_email, role: c.role })),
-    { id: null as string | null, name: "Unassigned", role: "" },
-  ]
+  const crewRows = crew.map((c) => ({ id: c.id, name: c.invited_name || c.invited_email, role: c.role }))
 
   const handleQuickAssign = async (workOrderId: string, crewId: string | null) => {
     const member = crew.find((c) => c.id === crewId)
@@ -412,15 +408,6 @@ export default function DispatchPage() {
 
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Assign to:</p>
             <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
-              <button
-                onClick={() => handleQuickAssign(assignModal.workOrderId, null)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-secondary ${
-                  !assignModal.currentAssignee ? "bg-primary/10 border border-primary/30" : "border border-border"
-                }`}
-              >
-                <AlertTriangle className="h-3.5 w-3.5 text-gray-400" />
-                <span className="font-semibold">Unassigned</span>
-              </button>
               {crew.map((c) => (
                 <button
                   key={c.id}

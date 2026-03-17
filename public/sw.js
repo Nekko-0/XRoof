@@ -1,6 +1,6 @@
-const CACHE_NAME = "xroof-v3"
-const STATIC_CACHE = "xroof-static-v3"
-const API_CACHE = "xroof-api-v2"
+const CACHE_NAME = "xroof-v4"
+const STATIC_CACHE = "xroof-static-v4"
+const API_CACHE = "xroof-api-v3"
 
 // Pages to pre-cache for offline use
 const PRECACHE_URLS = [
