@@ -831,55 +831,6 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
               },
             },
             {
-              name: "Gutter Install",
-              icon: "🌧️",
-              data: {
-                job_type: "Gutter Installation",
-                scope_of_work: "Remove and dispose of existing gutters and downspouts.\nInstall new seamless aluminum gutters with hidden hangers spaced 24\" on center.\nInstall new 3x4 aluminum downspouts with extensions directing water away from foundation.\nSeal all joints, end caps, and miters.\nVerify proper slope (1/16\" per foot) for optimal drainage.\nSecure all gutter guards/screens if specified.\nClean up all work areas.",
-                material: "5\" seamless aluminum gutters with 3x4 downspouts",
-                recommendations: "Consider adding leaf guards to reduce maintenance. Upgrading to 6\" gutters is recommended for steep-pitch roofs or areas with heavy rainfall.",
-                deposit_percent: 0,
-                pricing_tiers: [
-                  { name: "Standard 5\"", description: "5\" seamless aluminum gutters — standard residential", price: null },
-                  { name: "Oversized 6\"", description: "6\" seamless aluminum gutters — high volume capacity", price: null },
-                  { name: "6\" + Leaf Guards", description: "6\" gutters with micro-mesh leaf protection system", price: null },
-                ],
-                estimate_line_items: [
-                  { description: "Remove existing gutters & disposal", quantity: 1, unit_price: 0 },
-                  { description: "Seamless aluminum gutters (per LF)", quantity: 0, unit_price: 12 },
-                  { description: "Downspouts with extensions (each)", quantity: 0, unit_price: 85 },
-                  { description: "Inside/outside miters (each)", quantity: 0, unit_price: 35 },
-                  { description: "Leaf guard system (per LF, if selected)", quantity: 0, unit_price: 8 },
-                ],
-              },
-            },
-            {
-              name: "Siding",
-              icon: "🪵",
-              data: {
-                job_type: "Siding Installation",
-                scope_of_work: "Remove existing siding and inspect wall sheathing.\nRepair or replace damaged sheathing as needed.\nInstall house wrap / moisture barrier.\nInstall new vinyl/fiber cement siding per manufacturer specifications.\nInstall J-channel, starter strip, and corner posts.\nCaulk and seal all windows, doors, and penetrations.\nInstall soffit and fascia as specified.\nComplete cleanup and haul-away of debris.",
-                material: "James Hardie fiber cement siding (ColorPlus finish)",
-                recommendations: "Fiber cement siding offers superior durability (30-50 year lifespan), fire resistance, and resale value compared to vinyl. Consider adding insulated foam backing for improved energy efficiency.",
-                deposit_percent: 40,
-                pricing_tiers: [
-                  { name: "Vinyl", description: "Premium vinyl siding — economical, low maintenance", price: null },
-                  { name: "Fiber Cement", description: "James Hardie fiber cement — premium durability & aesthetics", price: null },
-                  { name: "Fiber Cement + Insulation", description: "Hardie siding with insulated foam backing — maximum energy efficiency", price: null },
-                ],
-                estimate_line_items: [
-                  { description: "Remove existing siding & disposal", quantity: 0, unit_price: 2 },
-                  { description: "House wrap / moisture barrier (per sq ft)", quantity: 0, unit_price: 1 },
-                  { description: "Fiber cement siding — installed (per sq ft)", quantity: 0, unit_price: 10 },
-                  { description: "Window/door trim & J-channel", quantity: 1, unit_price: 0 },
-                  { description: "Corner posts (each)", quantity: 0, unit_price: 65 },
-                  { description: "Soffit & fascia (per LF)", quantity: 0, unit_price: 14 },
-                  { description: "Caulk & seal all penetrations", quantity: 1, unit_price: 0 },
-                  { description: "Cleanup & haul-away", quantity: 1, unit_price: 500 },
-                ],
-              },
-            },
-            {
               name: "Roof Inspection",
               icon: "🔍",
               data: {

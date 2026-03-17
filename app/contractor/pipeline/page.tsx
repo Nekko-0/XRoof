@@ -79,7 +79,7 @@ const NEXT_STAGES: Record<string, string[]> = {
 }
 
 const ACTIVITY_TYPES = ["call", "email", "visit", "note"] as const
-const JOB_TYPES = ["Roof Replacement", "Roof Repair", "Inspection", "Gutter", "Siding", "Other"] as const
+const JOB_TYPES = ["Roof Replacement", "Roof Repair", "Inspection", "Storm Damage", "Insurance Claim", "Other"] as const
 
 type SortOption = "newest" | "oldest" | "value-high" | "value-low" | "time-in-stage"
 

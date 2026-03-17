@@ -229,9 +229,24 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           isContractor && collapsed ? "w-16" : "w-56 sm:w-64",
           isContractor
             ? "-translate-x-full lg:translate-x-0"
-            : mobileOpen ? "translate-x-0" : "-translate-x-full"
+            : mobileOpen ? "translate-x-0" : "-translate-x-full",
+          "relative"
         )}
       >
+        {/* Collapse toggle — floating arrow on sidebar edge */}
+        {isContractor && (
+          <button
+            onClick={toggleCollapsed}
+            className="hidden lg:flex absolute top-1/2 -right-3 z-[60] h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar shadow-md transition-colors hover:bg-sidebar-accent"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </button>
+        )}
         {/* Logo */}
         <div className={cn("flex h-16 items-center border-b border-sidebar-border", collapsed ? "justify-center px-2" : "justify-between px-6")}>
           <Link href="/" className="flex items-center gap-2">
@@ -385,25 +400,8 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           )}
         </nav>
 
-        {/* Bottom: collapse toggle + logout */}
+        {/* Bottom: logout */}
         <div className="border-t border-sidebar-border p-2">
-          {/* Collapse toggle — contractor desktop only */}
-          {isContractor && (
-            <button
-              onClick={toggleCollapsed}
-              className="hidden lg:flex w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground mb-1"
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <>
-                  <ChevronLeft className="h-4 w-4" />
-                  Collapse
-                </>
-              )}
-            </button>
-          )}
           <button
             onClick={handleLogout}
             title={collapsed ? "Log Out" : undefined}

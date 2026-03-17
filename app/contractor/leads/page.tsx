@@ -822,9 +822,7 @@ export default function MyJobsPage() {
                 <option value="Roof Replacement">Roof Replacement</option>
                 <option value="Roof Repair">Roof Repair</option>
                 <option value="Roof Inspection">Roof Inspection</option>
-                <option value="Gutter Installation">Gutter Installation</option>
-                <option value="Gutter Repair">Gutter Repair</option>
-                <option value="New Construction">New Construction</option>
+<option value="New Construction">New Construction</option>
                 <option value="Storm Damage">Storm Damage</option>
                 <option value="Insurance Claim">Insurance Claim</option>
                 <option value="Other">Other</option>

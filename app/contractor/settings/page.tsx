@@ -1525,7 +1525,7 @@ function ReferralTab() {
   )
 }
 
-const JOB_TYPES = ["Roof Replacement", "Roof Repair", "Inspection", "Gutter", "Siding", "Other"]
+const JOB_TYPES = ["Roof Replacement", "Roof Repair", "Inspection", "Storm Damage", "Insurance Claim", "Other"]
 
 function TemplatesTab({ accountId }: { accountId: string }) {
   const toast = useToast()
