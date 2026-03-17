@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useCallback, useState, Re
 import { supabase } from "@/lib/supabaseClient"
 
 type EventHandler = (event: any) => void
-type EventType = "sms_received" | "estimate_viewed" | "payment_received" | "contract_signed" | "notification" | "connected"
+type EventType = "sms_received" | "estimate_viewed" | "payment_received" | "contract_signed" | "notification" | "portal_message" | "connected"
 
 type EventContextType = {
   subscribe: (type: EventType, handler: EventHandler) => () => void

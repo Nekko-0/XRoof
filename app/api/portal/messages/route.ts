@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { emitToUser } from "@/lib/event-emitter"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -94,6 +95,12 @@ export async function POST(req: Request) {
           ? `${job.customer_name || "A customer"} is requesting a site visit`
           : `${job.customer_name || "A customer"}: ${message.slice(0, 80)}`
       ).catch((err) => console.error("[XRoof] portal notification error:", err))
+
+      // SSE push for real-time message updates
+      emitToUser(job.contractor_id, {
+        type: "portal_message",
+        payload: { job_id, customer_name: job.customer_name, message: message.slice(0, 80) },
+      })
     }
 
     return NextResponse.json({ message: row })

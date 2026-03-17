@@ -124,10 +124,17 @@ export async function POST(req: Request) {
       .eq("id", catalog_item_id)
       .single()
 
-    // Notify contractor
+    // Notify contractor (in-app + email)
     if (job.contractor_id && catalogItem) {
+      const { data: contractorProfile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", job.contractor_id)
+        .single()
+
       sendNotificationBundle({
         userId: job.contractor_id,
+        email: contractorProfile?.email || undefined,
         title: "Material selected",
         body: `${job.customer_name || "A customer"} chose ${catalogItem.brand} ${catalogItem.product_line} - ${catalogItem.color}`,
         type: "material_selected",

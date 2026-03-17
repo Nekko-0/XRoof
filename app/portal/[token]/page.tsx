@@ -229,6 +229,7 @@ type PortalData = {
     photo_visible: boolean[]
     pricing_tiers: { name: string; description: string; price: number | null }[] | null
     deposit_percent: number | null
+    accepted_tier_index: number | null
     created_at: string
   } | null
   photos: {
@@ -646,14 +647,18 @@ export default function HomeownerPortal() {
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><DollarSign className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.estimate", lang)}</h3>
                 {report.pricing_tiers && report.pricing_tiers.length > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-3">
-                    {report.pricing_tiers.map((tier, i) => (
-                      <div key={i} className={`rounded-xl border p-4 text-center ${i === 1 ? "ring-1" : "border-gray-700 bg-gray-800/50"}`} style={i === 1 ? { borderColor: brandColor, backgroundColor: colorWithOpacity(brandColor, 0.1) } : undefined}>
-                        {i === 1 && <p className="mb-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: brandColor }}>Most Popular</p>}
-                        <p className="text-sm font-bold text-white">{tier.name}</p>
-                        <p className="mt-1 text-2xl font-bold" style={{ color: brandColor }}>{tier.price ? `$${tier.price.toLocaleString()}` : "TBD"}</p>
-                        {tier.description && <p className="mt-1 text-[11px] text-gray-500">{tier.description}</p>}
-                      </div>
-                    ))}
+                    {report.pricing_tiers.map((tier, i) => {
+                      const isAccepted = report.accepted_tier_index === i
+                      return (
+                        <div key={i} className={`rounded-xl border p-4 text-center ${isAccepted ? "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10" : i === 1 && report.accepted_tier_index == null ? "ring-1" : "border-gray-700 bg-gray-800/50 opacity-60"}`} style={!isAccepted && i === 1 && report.accepted_tier_index == null ? { borderColor: brandColor, backgroundColor: colorWithOpacity(brandColor, 0.1) } : undefined}>
+                          {isAccepted && <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-emerald-400">Your Selection</p>}
+                          {!isAccepted && i === 1 && report.accepted_tier_index == null && <p className="mb-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: brandColor }}>Most Popular</p>}
+                          <p className="text-sm font-bold text-white">{tier.name}</p>
+                          <p className="mt-1 text-2xl font-bold" style={{ color: isAccepted ? "#10b981" : brandColor }}>{tier.price ? `$${tier.price.toLocaleString()}` : "TBD"}</p>
+                          {tier.description && <p className="mt-1 text-[11px] text-gray-500">{tier.description}</p>}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : report.price_quote ? (
                   <div className="text-center py-2">
@@ -1126,7 +1131,7 @@ export default function HomeownerPortal() {
                 <p className="text-[10px] text-gray-500">{formatDateTime(job.created_at)}</p>
               </div>
 
-              {(events || []).length > 0 && [...events].reverse().map((ev) => (
+              {(events || []).length > 0 && [...events].reverse().filter((ev) => ev.event_type !== "opened").map((ev) => (
                 <div key={ev.id} className="relative mb-6">
                   <div className="absolute -left-[31px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-800 bg-gray-900">{eventIcon(ev, brandColor)}</div>
                   <p className="text-sm font-semibold text-white">{eventLabel(ev)}</p>

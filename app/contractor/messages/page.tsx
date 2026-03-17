@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { useToast } from "@/lib/toast-context"
+import { useEventListener } from "@/components/event-provider"
 import {
   MessageSquare, Send, Phone, ArrowLeft, RefreshCw,
   MessageCircle, User, Users,
@@ -246,6 +247,18 @@ export default function ContractorMessagesPage() {
       toast.error("Failed to load messages")
     }
     setPortalThreadLoading(false)
+
+    // Mark portal notifications as read for this thread
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .in("type", ["portal_message", "visit_request"])
+        .eq("read", false)
+        .then(() => {})
+    }
   }
 
   const handleSendPortalReply = async () => {
@@ -274,7 +287,7 @@ export default function ContractorMessagesPage() {
     portalEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [portalMessages])
 
-  // Auto-poll portal thread every 5s when viewing a conversation
+  // Auto-poll portal thread every 3s when viewing a conversation
   useEffect(() => {
     if (tab !== "portal" || !selectedJobId) return
     const interval = setInterval(async () => {
@@ -283,9 +296,20 @@ export default function ContractorMessagesPage() {
         const data = await res.json()
         setPortalMessages(data.messages || [])
       } catch {}
-    }, 5000)
+    }, 3000)
     return () => clearInterval(interval)
   }, [tab, selectedJobId])
+
+  // Instant refresh on SSE portal_message event
+  useEventListener("portal_message", () => {
+    if (selectedJobId) {
+      authFetch(`/api/contractor/portal-messages?job_id=${selectedJobId}`)
+        .then(res => res.json())
+        .then(data => setPortalMessages(data.messages || []))
+        .catch(() => {})
+    }
+    loadPortalThreads()
+  })
 
   const formatPhone = (phone: string) => {
     const digits = phone.replace(/\D/g, "")

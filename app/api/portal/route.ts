@@ -46,7 +46,7 @@ export async function GET(req: Request) {
   // Get reports for this job
   const { data: reports } = await supabase
     .from("reports")
-    .select("id, price_quote, scope_of_work, photo_urls, photo_captions, photo_visible, pricing_tiers, deposit_percent, created_at, report_completed")
+    .select("id, price_quote, scope_of_work, photo_urls, photo_captions, photo_visible, pricing_tiers, deposit_percent, created_at, report_completed, accepted_tier_index")
     .eq("job_id", job.id)
     .order("created_at", { ascending: false })
     .limit(1)

@@ -3,7 +3,7 @@
 // Works per-instance (Vercel serverless). For multi-instance scaling, use Redis pub/sub.
 
 export type AppEvent = {
-  type: "sms_received" | "estimate_viewed" | "payment_received" | "contract_signed" | "notification"
+  type: "sms_received" | "estimate_viewed" | "payment_received" | "contract_signed" | "notification" | "portal_message"
   payload: Record<string, unknown>
   userId: string
   timestamp: string
