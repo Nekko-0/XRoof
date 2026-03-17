@@ -104,7 +104,7 @@ function StarRating({
   )
 }
 
-const ACTIVE_STATUSES = ["Pending", "Accepted", "Estimate Sent", "Signed"]
+const ACTIVE_STATUSES = ["New", "Accepted", "Estimate Sent", "Scheduled", "In Progress"]
 
 export default function SubcontractorsPage() {
   const { accountId } = useRole()
