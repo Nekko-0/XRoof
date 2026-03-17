@@ -43,6 +43,7 @@ export default function MaterialsPage() {
   const [brandPrefs, setBrandPrefs] = useState<Record<string, boolean>>({})
   const [activeBrand, setActiveBrand] = useState<string>(BRANDS[0])
   const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogError, setCatalogError] = useState("")
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
 
   // Load catalog + preferences
@@ -54,8 +55,11 @@ export default function MaterialsPage() {
       // Fetch catalog — independent of preferences
       try {
         const catRes = await authFetch(`/api/materials/catalog?contractor_id=${accountId}`)
-        if (catRes.ok) {
-          const catData = await catRes.json()
+        const catText = await catRes.text()
+        if (!catRes.ok) {
+          setCatalogError(`API ${catRes.status}: ${catText.slice(0, 200)}`)
+        } else {
+          const catData = JSON.parse(catText)
           if (catData.brands && Array.isArray(catData.brands)) {
             const flat: CatalogProduct[] = []
             for (const b of catData.brands) {
@@ -71,10 +75,15 @@ export default function MaterialsPage() {
               }
             }
             setCatalogProducts(flat)
+            if (flat.length === 0) {
+              setCatalogError("Table exists but has 0 rows. Run the SQL seed data in Supabase SQL Editor.")
+            }
+          } else {
+            setCatalogError(`Unexpected API response: ${catText.slice(0, 200)}`)
           }
         }
-      } catch {
-        console.error("Failed to load material catalog")
+      } catch (err) {
+        setCatalogError(`Fetch failed: ${err instanceof Error ? err.message : String(err)}`)
       }
 
       // Fetch preferences — separate so it can't crash catalog
@@ -306,9 +315,12 @@ export default function MaterialsPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : Object.keys(productsByLine).length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">
-            No catalog products found for {activeBrand}. Catalog data will appear once the API is populated.
-          </p>
+          <div className="py-6 text-center text-xs">
+            <p className="text-muted-foreground">No catalog products found for {activeBrand}.</p>
+            {catalogError && (
+              <p className="mt-2 text-red-400 bg-red-500/10 rounded-lg px-3 py-2 inline-block">{catalogError}</p>
+            )}
+          </div>
         ) : (
           <div className="space-y-4">
             {Object.entries(productsByLine).map(([line, products]) => (

@@ -16,7 +16,9 @@ export async function GET(req: Request) {
       .order("brand")
       .order("product_line")
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    console.log("[XRoof] material_catalog query:", { itemCount: items?.length ?? 0, error: error?.message ?? null })
+
+    if (error) return NextResponse.json({ error: error.message, debug: "query_failed" }, { status: 500 })
 
     let filtered = items || []
 
