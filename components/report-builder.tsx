@@ -9,7 +9,7 @@ import {
   User, MapPin, Phone, Mail, FileText, DollarSign, Wrench,
   MessageSquare, Calendar, Hash, Ruler, Calculator, EyeOff as EyeOffIcon,
   ChevronDown, ChevronUp, BookTemplate, FolderOpen, Printer, Download,
-  Send, CheckCircle, Clock, Activity,
+  Send, CheckCircle, Clock, Activity, X, Plus,
 } from "lucide-react"
 
 interface PricingTier {
@@ -1371,6 +1371,9 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                     <Calculator className="h-3.5 w-3.5" />
                     Auto-calculate from {report.roof_squares} squares
                   </button>
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">
+                    Generates estimated line items based on roof squares. Adjust quantities and prices to match your actual costs.
+                  </p>
                 )}
 
                 <div className="rounded-xl border border-border overflow-hidden">
@@ -1491,7 +1494,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary">
                 <DollarSign className="h-4 w-4" />
-                Pricing Options (Good / Better / Best)
+                Pricing Tiers
               </h3>
               <button
                 onClick={() => {
@@ -1512,9 +1515,21 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
             </div>
             {report.pricing_tiers && (
               <div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className={`grid grid-cols-1 gap-3 ${report.pricing_tiers.length === 1 ? "sm:grid-cols-1 max-w-xs" : report.pricing_tiers.length === 2 ? "sm:grid-cols-2" : report.pricing_tiers.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
                   {report.pricing_tiers.map((tier, i) => (
-                    <div key={i} className={`rounded-xl border p-4 ${i === 1 ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <div key={i} className={`relative rounded-xl border p-4 ${i === 1 && report.pricing_tiers!.length > 1 ? "border-primary bg-primary/5" : "border-border"}`}>
+                      {report.pricing_tiers!.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const tiers = report.pricing_tiers!.filter((_, idx) => idx !== i)
+                            updateField("pricing_tiers", tiers)
+                          }}
+                          className="absolute top-2 right-2 p-0.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Remove tier"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <input
                         value={tier.name}
                         onChange={(e) => {
@@ -1552,6 +1567,18 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                       </div>
                     </div>
                   ))}
+                  {report.pricing_tiers.length < 4 && (
+                    <button
+                      onClick={() => {
+                        const tiers = [...report.pricing_tiers!, { name: "", description: "", price: null }]
+                        updateField("pricing_tiers", tiers)
+                      }}
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border p-4 text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors min-h-[120px]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add tier
+                    </button>
+                  )}
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   <label className="text-xs text-muted-foreground">Deposit %:</label>
