@@ -592,22 +592,27 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
 
       {/* Send to Customer Form */}
       {showSendForm && (
-        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <Mail className="h-4 w-4 text-primary shrink-0" />
-          <input
-            type="email"
-            value={customerEmail}
-            onChange={(e) => setCustomerEmail(e.target.value)}
-            placeholder="Customer email address"
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <button
-            onClick={handleSendToCustomer}
-            disabled={sending || !customerEmail}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {sending ? "Sending..." : "Send"}
-          </button>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Mail className="h-4 w-4 text-primary shrink-0" />
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Customer email address"
+              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              onClick={handleSendToCustomer}
+              disabled={sending || !customerEmail}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {sending ? "Sending..." : "Send"}
+            </button>
+          </div>
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
+            Please confirm the materials and pricing in this estimate are accurate before sending. Customers will be able to browse your visible material catalog.
+          </p>
         </div>
       )}
 

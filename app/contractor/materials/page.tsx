@@ -368,24 +368,31 @@ export default function MaterialsPage() {
         </div>
 
         {/* Visibility Toggle */}
-        <div className="flex items-center justify-between mb-4 px-1">
-          <span className="text-xs text-muted-foreground">
-            Show <strong>{activeBrand}</strong> products to customers
-          </span>
-          <button
-            onClick={() => toggleBrandVisibility(activeBrand)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              brandPrefs[activeBrand] !== false
-                ? "bg-emerald-500/10 text-emerald-500"
-                : "bg-secondary text-muted-foreground"
-            }`}
-          >
-            {brandPrefs[activeBrand] !== false ? (
-              <><Eye className="h-3.5 w-3.5" /> Visible</>
-            ) : (
-              <><EyeOff className="h-3.5 w-3.5" /> Hidden</>
-            )}
-          </button>
+        <div className="mb-4 px-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Show <strong>{activeBrand}</strong> products to customers
+            </span>
+            <button
+              onClick={() => toggleBrandVisibility(activeBrand)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                brandPrefs[activeBrand] !== false
+                  ? "bg-emerald-500/10 text-emerald-500"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {brandPrefs[activeBrand] !== false ? (
+                <><Eye className="h-3.5 w-3.5" /> Visible</>
+              ) : (
+                <><EyeOff className="h-3.5 w-3.5" /> Hidden</>
+              )}
+            </button>
+          </div>
+          {brandPrefs[activeBrand] === false && (
+            <p className="mt-1.5 text-[11px] text-amber-500">
+              Customers viewing your estimates and portal will not see {activeBrand} products.
+            </p>
+          )}
         </div>
 
         {/* Products grouped by product_line */}

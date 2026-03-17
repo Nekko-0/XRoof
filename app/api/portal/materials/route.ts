@@ -6,29 +6,34 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const jobId = searchParams.get("job_id")
+    const contractorIdParam = searchParams.get("contractor_id")
 
-    if (!jobId) {
-      return NextResponse.json({ error: "Missing job_id" }, { status: 400 })
+    if (!jobId && !contractorIdParam) {
+      return NextResponse.json({ error: "Missing job_id or contractor_id" }, { status: 400 })
     }
 
     const supabase = getServiceSupabase()
 
-    // Look up the job to get contractor_id
-    const { data: job } = await supabase
-      .from("jobs")
-      .select("contractor_id")
-      .eq("id", jobId)
-      .single()
+    // Resolve contractor_id from job or direct param
+    let contractorId = contractorIdParam
+    if (jobId) {
+      const { data: job } = await supabase
+        .from("jobs")
+        .select("contractor_id")
+        .eq("id", jobId)
+        .single()
 
-    if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+      if (!job) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 })
+      }
+      contractorId = job.contractor_id
     }
 
     // Get contractor's material preferences
     const { data: profile } = await supabase
       .from("profiles")
       .select("material_preferences")
-      .eq("id", job.contractor_id)
+      .eq("id", contractorId!)
       .single()
 
     const hiddenBrands: string[] = profile?.material_preferences?.hidden_brands || []
@@ -48,13 +53,16 @@ export async function GET(req: Request) {
       filtered = filtered.filter((item) => !hiddenBrands.includes(item.brand))
     }
 
-    // Get existing selections for this job
-    const { data: selections } = await supabase
-      .from("material_selections")
-      .select("catalog_item_id")
-      .eq("job_id", jobId)
+    // Get existing selections for this job (only if job_id provided)
+    let selectedIds = new Set<string>()
+    if (jobId) {
+      const { data: selections } = await supabase
+        .from("material_selections")
+        .select("catalog_item_id")
+        .eq("job_id", jobId)
 
-    const selectedIds = new Set((selections || []).map((s: { catalog_item_id: string }) => s.catalog_item_id))
+      selectedIds = new Set((selections || []).map((s: { catalog_item_id: string }) => s.catalog_item_id))
+    }
 
     // Group by brand
     const brandMap = new Map<string, typeof filtered>()

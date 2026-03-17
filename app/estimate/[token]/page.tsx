@@ -220,9 +220,14 @@ export default function PublicEstimatePage() {
         if (data.estimate_accepted && data.accepted_tier_index != null) {
           setSelectedTier(data.accepted_tier_index)
         }
-        // Fetch material catalog for this job
-        if (data.job_id) {
-          fetch(`/api/portal/materials?job_id=${data.job_id}`)
+        // Fetch material catalog — prefer job_id, fall back to contractor_id
+        const materialParam = data.job_id
+          ? `job_id=${data.job_id}`
+          : data.contractor_id
+            ? `contractor_id=${data.contractor_id}`
+            : null
+        if (materialParam) {
+          fetch(`/api/portal/materials?${materialParam}`)
             .then(r => r.ok ? r.json() : null)
             .then(json => {
               if (json) {
@@ -572,6 +577,11 @@ export default function PublicEstimatePage() {
                       {selectedMaterialIds.size} material{selectedMaterialIds.size > 1 ? "s" : ""} selected
                     </p>
                   )}
+                  {!report?.job_id && (
+                    <p className="mb-3 text-xs text-gray-500 italic">
+                      Browse available materials below. Contact your contractor to discuss preferences.
+                    </p>
+                  )}
                   <div className="flex flex-col gap-5">
                     {materialBrands.map((brand) => (
                       <div key={brand.name}>
@@ -629,7 +639,7 @@ export default function PublicEstimatePage() {
                                     <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
                                       <CheckCircle className="h-3 w-3" /> Selected
                                     </span>
-                                  ) : (
+                                  ) : report?.job_id ? (
                                     <button
                                       onClick={() => selectMaterial(item.id)}
                                       disabled={selectingMaterial === item.id}
@@ -638,7 +648,7 @@ export default function PublicEstimatePage() {
                                     >
                                       {selectingMaterial === item.id ? "..." : "Select"}
                                     </button>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             )
