@@ -134,5 +134,50 @@ export async function POST(req: Request) {
     html,
   })
 
+  // Send portal access email to customer
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  if (report.job_id && report.customer_email) {
+    const portalUrl = `${appUrl}/portal/${report.job_id}`
+    const customerHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
+        <div style="text-align:center;border-bottom:2px solid #e5e5e5;padding-bottom:15px;margin-bottom:20px;">
+          <h1 style="font-size:22px;margin:0;">Welcome to Your Project Portal</h1>
+          <p style="font-size:12px;color:#888;margin:5px 0 0;">From ${report.company_name || "Your Contractor"}</p>
+        </div>
+
+        <p style="font-size:14px;margin:0 0 15px;">Hi ${report.customer_name},</p>
+        <p style="font-size:13px;color:#555;margin:0 0 20px;">
+          Thanks for accepting the estimate! Your project portal is ready — use it anytime to pick your preferred materials and colors, track progress, view documents, and communicate with your contractor.
+        </p>
+
+        <div style="text-align:center;margin:25px 0;">
+          <a href="${portalUrl}" style="display:inline-block;background:#0891b2;color:white;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:bold;">
+            View Your Project Portal
+          </a>
+        </div>
+
+        <p style="font-size:11px;color:#999;text-align:center;margin:0 0 20px;">
+          Bookmark this link to access your portal anytime.
+        </p>
+
+        <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
+          <p style="font-size:11px;color:#aaa;margin:0;">
+            ${report.company_name || ""}
+            ${report.company_phone ? ` | ${report.company_phone}` : ""}
+            ${report.company_email ? ` | ${report.company_email}` : ""}
+          </p>
+          <p style="font-size:10px;color:#ccc;margin:5px 0 0;">Sent via XRoof</p>
+        </div>
+      </div>
+    `
+
+    resend.emails.send({
+      from: `${report.company_name || "XRoof"} via XRoof <contracts@xroof.io>`,
+      to: report.customer_email,
+      subject: `Your Project Portal — ${report.company_name || "Your Contractor"}`,
+      html: customerHtml,
+    }).catch((err) => console.error("[XRoof] portal email to customer error:", err))
+  }
+
   return NextResponse.json({ success: true })
 }

@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         <p style="font-size:13px;margin:3px 0;"><strong>Property:</strong> ${report.customer_address}</p>
         ${report.price_quote ? `<p style="font-size:13px;margin:3px 0;"><strong>Estimated Cost:</strong> $${Number(report.price_quote).toLocaleString()}</p>` : ""}
         ${report.scope_of_work ? `<p style="font-size:13px;margin:3px 0;"><strong>Scope:</strong> ${report.scope_of_work.substring(0, 100)}${report.scope_of_work.length > 100 ? "..." : ""}</p>` : ""}
+        <p style="font-size:11px;color:#999;margin:8px 0 0;font-style:italic;">Final price may vary based on material selection, hidden wood damage, or other unforeseen conditions.</p>
       </div>
 
       <div style="text-align:center;margin:25px 0;">

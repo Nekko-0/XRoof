@@ -3,7 +3,7 @@
 import { darkenColor, lightenColor, colorWithOpacity } from "@/lib/brand-colors"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { CheckCircle, AlertCircle, Clock, MapPin, Phone, Mail, DollarSign, FileText, Wrench, MessageSquare, User, Download, X, ChevronLeft, ChevronRight, HelpCircle, Send, List, Package } from "lucide-react"
+import { CheckCircle, AlertCircle, Clock, MapPin, Phone, Mail, DollarSign, FileText, Wrench, MessageSquare, User, Download, X, ChevronLeft, ChevronRight, HelpCircle, Send, List, ExternalLink } from "lucide-react"
 import { useToast } from "@/lib/toast-context"
 import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
 
@@ -17,104 +17,6 @@ type EstimateLineItem = {
   description: string
   quantity: number
   unit_price: number
-}
-
-type CatalogItem = {
-  id: string
-  brand: string
-  product_line: string
-  color: string
-  description: string | null
-  image_url: string | null
-  price_tier: string | null
-}
-
-type MaterialBrand = {
-  name: string
-  products: CatalogItem[]
-}
-
-const SWATCH_COLORS: Record<string, string> = {
-  "charcoal": "#3a3a3a", "onyx black": "#1a1a1a", "moire black": "#222222",
-  "dual black": "#1e1e1e", "rustic black": "#252525", "shadow black": "#2a2a2a",
-  "pristine black": "#1c1c1c", "midnight black": "#181818", "black": "#1a1a1a",
-  "carbon": "#2a2c2e", "max def moire black": "#222222",
-  "pewter gray": "#7a7d7e", "slate": "#5a6370", "estate gray": "#6b6e70",
-  "georgetown gray": "#5e6264", "pewter": "#8a8d8f", "cobblestone gray": "#6d7072",
-  "fox hollow gray": "#5f6366", "oyster gray": "#9a9c98", "quarry gray": "#6e7173",
-  "sierra gray": "#7e8185", "castle gray": "#686c6e", "hearthstone gray": "#6a6e72",
-  "thunderstorm gray": "#5c5f63", "mountain slate": "#5b6068", "dual gray": "#707478",
-  "charcoal gray": "#404448", "pewterwood": "#6b6560", "granite gray": "#686c70",
-  "shadow gray": "#505458", "coastal gray": "#6e7478", "storm grey": "#5a5e62",
-  "silverwood": "#8a8e90", "thunderstorm grey": "#4e5258", "slate gray": "#5a6068",
-  "colonial slate": "#5a5e64", "williamsburg gray": "#5e6468", "silver birch": "#9a9e98",
-  "platinum gray": "#8a8c90", "ash gray": "#6e7276", "dove gray": "#8e9094",
-  "max def pewter gray": "#7a7d7e", "charcoal blend": "#3e4042",
-  "weathered wood": "#6e5d4e", "hickory": "#7a6148", "barkwood": "#6a5545",
-  "shakewood": "#7d6b55", "mission brown": "#5e4a3a", "driftwood": "#8a7e6e",
-  "brownwood": "#5e4e3e", "teak": "#6e5840", "resawn shake": "#756050",
-  "burnt sienna": "#8b5a3a", "brownstone": "#6b5848", "natural timber": "#8a7558",
-  "aged wood": "#7e6e5e", "rustic cedar": "#8a6240", "earthtone cedar": "#7a6045",
-  "weatherwood": "#6e5e50", "sedona canyon": "#8b6850", "sedona": "#9a6848",
-  "antique brown": "#6a5040", "natural wood": "#7a6850", "autumn": "#7a5838",
-  "autumn blend": "#7a5a40", "black walnut": "#3a2e28", "brownstone blend": "#6a5a48",
-  "max def weathered wood": "#6e5d4e", "max def driftwood": "#8a7e6e",
-  "chestnut": "#5e4030", "walnut": "#5a4230", "pecan": "#7a5e40",
-  "bark": "#5e4e40", "bark (metal)": "#5e4e40", "tahoe": "#4e4640",
-  "cocoa": "#5a4838", "cafe": "#7a6a58", "mocha": "#5e4a3c", "villa blend": "#8a7058",
-  "shadowood": "#5a4e42", "european": "#5e5650", "castle": "#686058",
-  "sand dune": "#b8a888", "desert tan": "#baa878", "desert shake": "#9a8868",
-  "birchwood": "#a09080", "heather blend": "#8a7e72", "sandalwood": "#a08868",
-  "white oak": "#c0b8a8", "capri": "#9a8878", "santa fe": "#c09068",
-  "hunter green": "#3a5040", "chateau green": "#3e5a48", "cascade green": "#3a5a48",
-  "forest green": "#2e4a38", "forest green (metal)": "#2e4a38",
-  "harbor blue": "#4a5a6e", "appalachian sky": "#5a6878", "glacier": "#8a9aa8",
-  "aged redwood": "#7a4838", "harvard slate": "#5a4858", "sierra brown": "#7a5a42",
-  "colonial red": "#8a3a30", "terra cotta": "#c05a3a", "terracotta (metal)": "#b85838",
-  "red blend": "#8a4238", "mesa red": "#9a4a38", "pacific redwood": "#6a3a30",
-  "adobe sunset": "#b07050",
-  "multi-width slate": "#5a5e62", "stone (metal)": "#8a8680", "charcoal (metal)": "#3a3c3e",
-}
-
-function getSwatchColor(colorName: string): string {
-  return SWATCH_COLORS[colorName.toLowerCase()] || "#6b7280"
-}
-
-const PRODUCT_VALUES: Record<string, string> = {
-  "Timberline HD": "30-year warranty, architectural style",
-  "Timberline HDZ": "StrikeZone nailing, 130 mph wind, algae protection",
-  "Timberline UHDZ": "Ultra-premium layered look, 130 mph wind, lifetime warranty",
-  "StormMaster Slate": "Class 4 impact resistant, Scotchgard algae protection",
-  "Pinnacle Pristine": "Scotchgard algae protection, 130 mph wind",
-  "Architectural": "Economy architectural, 110 mph wind rating",
-  "Duration": "SureNail technology, 130 mph wind, algae resistance",
-  "Landmark": "Max Def colors, algae resistance, 110 mph wind",
-  "Landmark PRO": "Max Def colors, 130 mph wind, 15-year algae warranty",
-  "Cambridge": "Dual-layer laminate, algae resistance",
-  "Dynasty": "ArmourZone nailing, 130 mph wind, impact resistant",
-  "Heritage": "3-piece lamination, algae resistant",
-  "Vista AR": "Smog-reducing granules, algae protection",
-  "Legacy": "Scotchgard algae protection, NEX polymer modified",
-  "Highlander NEX": "Class 4 impact, Max Def, recycled content",
-  "Paramount": "Algae resistant, 110 mph wind rating",
-  "Premier": "Algae resistant, 130 mph wind rating",
-  "Bellaforté Slate": "Synthetic slate, lifetime warranty, Class 4 impact, fire resistant",
-  "Bellaforté Shake": "Synthetic shake, lifetime warranty, Class 4 impact, fire resistant",
-  "Metal Shingle Plus": "Stone-coated steel, 120 mph wind, fire & hail resistant",
-  "Metal Shake": "Stone-coated steel shake profile, 120 mph wind resistant",
-  "Metal Tile": "Stone-coated steel tile, 120 mph wind, energy efficient",
-  "Barcelona 900": "Concrete tile, 50+ year lifespan, fire resistant",
-  "Saxony Slate": "Concrete slate profile, fire resistant, energy efficient",
-  "Capistrano": "Concrete S-tile, 50+ year lifespan, fire resistant",
-  "Bel Air": "Concrete flat tile, fire resistant, energy efficient",
-  "3-Tab": "Economy 3-tab, 25-year warranty",
-}
-
-const TIER_LABELS: Record<string, { label: string; color: string }> = {
-  economy: { label: "$", color: "bg-gray-500 text-white" },
-  mid: { label: "$$", color: "bg-blue-500 text-white" },
-  premium: { label: "$$$", color: "bg-amber-500 text-white" },
-  luxury: { label: "$$$$", color: "bg-purple-500 text-white" },
 }
 
 type Report = {
@@ -170,11 +72,6 @@ export default function PublicEstimatePage() {
   const [sendingQuestion, setSendingQuestion] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [materialBrands, setMaterialBrands] = useState<MaterialBrand[]>([])
-  const [selectedMaterialIds, setSelectedMaterialIds] = useState<Set<string>>(new Set())
-  const [selectingMaterial, setSelectingMaterial] = useState<string | null>(null)
-  const [showMaterials, setShowMaterials] = useState(false)
-
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
@@ -220,23 +117,6 @@ export default function PublicEstimatePage() {
         if (data.estimate_accepted && data.accepted_tier_index != null) {
           setSelectedTier(data.accepted_tier_index)
         }
-        // Fetch material catalog — prefer job_id, fall back to contractor_id
-        const materialParam = data.job_id
-          ? `job_id=${data.job_id}`
-          : data.contractor_id
-            ? `contractor_id=${data.contractor_id}`
-            : null
-        if (materialParam) {
-          fetch(`/api/portal/materials?${materialParam}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(json => {
-              if (json) {
-                setMaterialBrands(json.brands || [])
-                setSelectedMaterialIds(new Set(json.selectedIds || []))
-              }
-            })
-            .catch(() => {})
-        }
       } catch {
         setErrorState("invalid")
       }
@@ -263,23 +143,6 @@ export default function PublicEstimatePage() {
       toast.error("Something went wrong. Please try again.")
     }
     setSubmitting(false)
-  }
-
-  const selectMaterial = async (catalogItemId: string) => {
-    if (!report?.job_id || selectingMaterial) return
-    setSelectingMaterial(catalogItemId)
-    try {
-      const res = await fetch("/api/portal/materials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ job_id: report.job_id, catalog_item_id: catalogItemId }),
-      })
-      if (res.ok) {
-        setSelectedMaterialIds((prev) => new Set([...prev, catalogItemId]))
-        toast.success("Material preference saved!")
-      }
-    } catch {}
-    setSelectingMaterial(null)
   }
 
   if (loading) {
@@ -315,6 +178,10 @@ export default function PublicEstimatePage() {
   }
 
   if (interested) {
+    const portalUrl = report.job_id ? `/portal/${report.job_id}` : null
+    if (portalUrl) {
+      setTimeout(() => { window.location.href = portalUrl }, 3000)
+    }
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
         <div className="max-w-sm text-center">
@@ -323,6 +190,19 @@ export default function PublicEstimatePage() {
           <p className="text-sm text-gray-600">
             Your contractor has been notified. {report.company_name || report.contractor_name} will reach out to you shortly to schedule the work and send a contract.
           </p>
+          {portalUrl && (
+            <>
+              <p className="mt-3 text-xs text-gray-400">Redirecting to your project portal...</p>
+              <a
+                href={portalUrl}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-colors"
+                style={{ backgroundColor: report.brand_color || "#059669" }}
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Your Project Portal
+              </a>
+            </>
+          )}
         </div>
       </div>
     )
@@ -535,6 +415,9 @@ export default function PublicEstimatePage() {
                   {report.deposit_percent}% deposit: ${Math.round(report.pricing_tiers[selectedTier].price * report.deposit_percent / 100).toLocaleString()}
                 </p>
               )}
+              <p className="mt-2 text-center text-[11px] text-gray-400 italic">
+                Final price may vary based on material selection, hidden wood damage, or other unforeseen conditions.
+              </p>
             </div>
           ) : report.price_quote != null && report.price_quote > 0 ? (
             <div className="mb-6">
@@ -545,6 +428,9 @@ export default function PublicEstimatePage() {
                 <p className="text-2xl font-bold text-gray-900">${Number(report.price_quote).toLocaleString()}</p>
                 <p className="text-xs text-gray-500 mt-1">Estimate valid for 30 days</p>
               </div>
+              <p className="mt-2 text-[11px] text-gray-400 italic">
+                Final price may vary based on material selection, hidden wood damage, or other unforeseen conditions.
+              </p>
             </div>
           ) : null}
 
@@ -555,110 +441,6 @@ export default function PublicEstimatePage() {
                 <Wrench className="h-3.5 w-3.5" /> Material
               </h3>
               <p className="text-sm text-gray-700">{report.material}</p>
-            </div>
-          )}
-
-          {/* Material Catalog Picker */}
-          {materialBrands.length > 0 && (
-            <div className="mb-6">
-              <button
-                onClick={() => setShowMaterials(!showMaterials)}
-                className="mb-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-left transition-colors hover:bg-gray-50"
-              >
-                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <Package className="h-3.5 w-3.5" /> Browse Available Materials & Colors
-                </span>
-                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${showMaterials ? "rotate-90" : ""}`} />
-              </button>
-              {showMaterials && (
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  {selectedMaterialIds.size > 0 && (
-                    <p className="mb-3 text-xs text-emerald-600 font-medium">
-                      {selectedMaterialIds.size} material{selectedMaterialIds.size > 1 ? "s" : ""} selected
-                    </p>
-                  )}
-                  {!report?.job_id && (
-                    <p className="mb-3 text-xs text-gray-500 italic">
-                      Browse available materials below. Contact your contractor to discuss preferences.
-                    </p>
-                  )}
-                  <div className="flex flex-col gap-5">
-                    {materialBrands.map((brand) => (
-                      <div key={brand.name}>
-                        <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">{brand.name}</h4>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {brand.products.map((item) => {
-                            const isSelected = selectedMaterialIds.has(item.id)
-                            const tier = item.price_tier ? TIER_LABELS[item.price_tier] : null
-                            const valueDesc = PRODUCT_VALUES[item.product_line]
-                            return (
-                              <div
-                                key={item.id}
-                                className={`rounded-lg border p-3 transition-colors ${
-                                  isSelected
-                                    ? "border-emerald-500/40 bg-emerald-50"
-                                    : "border-gray-200 bg-white hover:border-gray-300"
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  {item.image_url ? (
-                                    <img src={item.image_url} alt={item.color} className="h-10 w-10 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
-                                  ) : (
-                                    <div
-                                      className="h-10 w-10 rounded-lg flex-shrink-0 border border-gray-200"
-                                      style={{
-                                        backgroundColor: getSwatchColor(item.color),
-                                        backgroundImage: [
-                                          "radial-gradient(ellipse 2px 1.5px at 20% 25%, rgba(255,255,255,0.18) 0%, transparent 100%)",
-                                          "radial-gradient(ellipse 2px 1.5px at 70% 15%, rgba(0,0,0,0.22) 0%, transparent 100%)",
-                                          "radial-gradient(ellipse 1.5px 1px at 45% 55%, rgba(255,255,255,0.15) 0%, transparent 100%)",
-                                          "radial-gradient(ellipse 2px 1px at 80% 70%, rgba(0,0,0,0.18) 0%, transparent 100%)",
-                                          "repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 5px)",
-                                          "repeating-linear-gradient(0deg, transparent 0px, transparent 4px, rgba(255,255,255,0.05) 4px, rgba(255,255,255,0.05) 6px)",
-                                          "linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.15) 58%, rgba(0,0,0,0.12) 62%, transparent 65%)",
-                                          "linear-gradient(145deg, rgba(255,255,255,0.1) 0%, transparent 35%, rgba(0,0,0,0.12) 100%)",
-                                        ].join(", "),
-                                      }}
-                                    />
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-gray-900">{item.color}</p>
-                                    <p className="text-[11px] text-gray-500">{item.product_line}</p>
-                                    {valueDesc && (
-                                      <p className="mt-0.5 text-[10px] text-gray-400">{valueDesc}</p>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="mt-2 flex items-center justify-between">
-                                  {tier ? (
-                                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${tier.color}`}>
-                                      {tier.label} {item.price_tier}
-                                    </span>
-                                  ) : <span />}
-                                  {isSelected ? (
-                                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                                      <CheckCircle className="h-3 w-3" /> Selected
-                                    </span>
-                                  ) : report?.job_id ? (
-                                    <button
-                                      onClick={() => selectMaterial(item.id)}
-                                      disabled={selectingMaterial === item.id}
-                                      className="rounded-lg px-3 py-1 text-[11px] font-bold text-white transition-colors disabled:opacity-50"
-                                      style={{ backgroundColor: brandColor }}
-                                    >
-                                      {selectingMaterial === item.id ? "..." : "Select"}
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
