@@ -1027,7 +1027,6 @@ function JobCard({
     setCosts((prev) => prev.filter((c) => c.id !== id))
   }
 
-  const nextStages = NEXT_STAGES[stage] || []
 
   // Related data for this job
   const contract = related?.contracts[job.id]
@@ -1250,29 +1249,6 @@ function JobCard({
               <ExternalLink className="h-3 w-3" /> Portal
             </a>
           </div>
-
-          {/* Move Stage */}
-          {canEdit && nextStages.length > 0 && (
-            <div>
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/50">Move to</p>
-              <div className="flex flex-wrap gap-1.5">
-                {nextStages.map((s) => {
-                  const targetConfig = STAGE_CONFIG[s]
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => onMoveStage(job.id, s)}
-                      disabled={movingJob === job.id}
-                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 ${targetConfig.light} ${targetConfig.lightText}`}
-                    >
-                      {s}
-                      <ArrowRight className="h-3 w-3 opacity-40" />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {loadingDetails ? (
             <div className="flex items-center gap-2 py-3">
