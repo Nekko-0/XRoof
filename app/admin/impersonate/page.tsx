@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { authFetch } from "@/lib/auth-fetch"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
 import {
@@ -53,62 +54,14 @@ export default function ImpersonatePage() {
     if (!contractorId) { setLoading(false); return }
 
     const fetchData = async () => {
-      const [
-        { data: profile },
-        { data: subscription },
-        { count: jobCount },
-        { count: invoiceCount },
-        { count: reportCount },
-        { data: recentJobs },
-        { data: recentInvoices },
-        { data: recentReports },
-        { data: customers },
-        { data: teamMembers },
-        { data: churnScore },
-        { data: recentActivity },
-        { data: supportTickets },
-        { data: expenses },
-      ] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", contractorId).single(),
-        supabase.from("subscriptions").select("*").eq("user_id", contractorId).order("created_at", { ascending: false }).limit(1).single(),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("contractor_id", contractorId),
-        supabase.from("invoices").select("*", { count: "exact", head: true }).eq("contractor_id", contractorId),
-        supabase.from("reports").select("*", { count: "exact", head: true }).eq("contractor_id", contractorId),
-        supabase.from("jobs").select("id, customer_name, address, status, budget, created_at, completed_at").eq("contractor_id", contractorId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("invoices").select("id, customer_name, total, status, created_at, paid_at").eq("contractor_id", contractorId).order("created_at", { ascending: false }).limit(15),
-        supabase.from("reports").select("id, customer_name, created_at, estimate_accepted").eq("contractor_id", contractorId).order("created_at", { ascending: false }).limit(10),
-        supabase.from("customers").select("id, name, email, phone, created_at").eq("contractor_id", contractorId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("team_members").select("id, invited_name, invited_email, role, status, created_at").eq("account_id", contractorId),
-        supabase.from("churn_scores").select("*").eq("user_id", contractorId).order("calculated_at", { ascending: false }).limit(1).single(),
-        supabase.from("document_events").select("id, document_type, event_type, recipient_email, created_at, job_id").eq("contractor_id", contractorId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("support_tickets").select("id, subject, status, created_at").eq("user_id", contractorId).order("created_at", { ascending: false }).limit(10),
-        supabase.from("expenses").select("id, amount, vendor, category, date, job_id").eq("contractor_id", contractorId).order("date", { ascending: false }).limit(15),
-      ])
-
-      // Calculate totals
-      const paidInvoices = (recentInvoices || []).filter(i => i.status === "paid")
-      const totalRevenue = paidInvoices.reduce((sum: number, i: any) => sum + (i.total || 0), 0)
-      const pendingInvoices = (recentInvoices || []).filter(i => i.status === "sent")
-      const pendingInvoiceTotal = pendingInvoices.reduce((sum: number, i: any) => sum + (i.total || 0), 0)
-
-      setData({
-        profile,
-        subscription,
-        jobCount: jobCount || 0,
-        invoiceCount: invoiceCount || 0,
-        reportCount: reportCount || 0,
-        recentJobs: recentJobs || [],
-        recentInvoices: recentInvoices || [],
-        recentReports: recentReports || [],
-        customers: customers || [],
-        teamMembers: teamMembers || [],
-        churnScore,
-        recentActivity: recentActivity || [],
-        supportTickets: supportTickets || [],
-        expenses: expenses || [],
-        totalRevenue,
-        pendingInvoiceTotal,
-      })
+      try {
+        const res = await authFetch(`/api/admin/impersonate?id=${contractorId}`)
+        if (!res.ok) { setLoading(false); return }
+        const d = await res.json()
+        setData(d)
+      } catch (err) {
+        console.error("Failed to load contractor data:", err)
+      }
       setLoading(false)
     }
 
@@ -470,13 +423,12 @@ export default function ImpersonatePage() {
                   <th className="pb-2 pr-4 font-medium">Customer</th>
                   <th className="pb-2 pr-4 font-medium">Amount</th>
                   <th className="pb-2 pr-4 font-medium">Status</th>
-                  <th className="pb-2 pr-4 font-medium">Created</th>
-                  <th className="pb-2 font-medium">Paid</th>
+                  <th className="pb-2 font-medium">Created</th>
                 </tr></thead>
                 <tbody>{data.recentInvoices.map(inv => (
                   <tr key={inv.id} className="border-b border-border/50 hover:bg-secondary/20">
                     <td className="py-2.5 pr-4 font-medium text-foreground">{inv.customer_name || "—"}</td>
-                    <td className="py-2.5 pr-4 font-bold text-foreground">${inv.total?.toLocaleString() || "0"}</td>
+                    <td className="py-2.5 pr-4 font-bold text-foreground">${Number(inv.amount || 0).toLocaleString()}</td>
                     <td className="py-2.5 pr-4">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                         inv.status === "paid" ? "bg-emerald-500/15 text-emerald-400" :
@@ -485,8 +437,7 @@ export default function ImpersonatePage() {
                         "bg-red-500/15 text-red-400"
                       }`}>{inv.status}</span>
                     </td>
-                    <td className="py-2.5 pr-4 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString()}</td>
-                    <td className="py-2.5 text-muted-foreground">{inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : "—"}</td>
+                    <td className="py-2.5 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}</tbody>
               </table>
