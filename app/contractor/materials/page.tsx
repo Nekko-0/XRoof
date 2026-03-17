@@ -57,7 +57,22 @@ export default function MaterialsPage() {
         ])
         const catData = await catRes.json()
         const prefData = await prefRes.json()
-        if (Array.isArray(catData)) setCatalogProducts(catData)
+        if (catData.brands && Array.isArray(catData.brands)) {
+          const flat: CatalogProduct[] = []
+          for (const b of catData.brands) {
+            for (const p of b.products) {
+              flat.push({
+                id: p.id,
+                brand: b.name,
+                product_line: p.product_line,
+                color_name: p.color,
+                price_tier: p.price_tier,
+                description: p.description,
+              })
+            }
+          }
+          setCatalogProducts(flat)
+        }
         if (Array.isArray(prefData)) {
           const prefs: Record<string, boolean> = {}
           for (const b of BRANDS) prefs[b] = true
