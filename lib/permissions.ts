@@ -29,7 +29,7 @@ export type Permission =
   | "manage_dispatch"
   | "manage_materials"
   | "request_measurements"
-  | "manage_subcontractors"
+
   | "manage_expenses"
   | "view_surveys"
 
@@ -46,7 +46,7 @@ const PERMISSION_MATRIX: Record<Role, Permission[]> = {
     "use_field_mode", "manage_calendar",
     "manage_customers", "view_messages", "send_sms",
     "manage_dispatch", "manage_materials", "request_measurements",
-    "manage_subcontractors", "manage_expenses", "view_surveys",
+"manage_expenses", "view_surveys",
   ],
   admin: [
     "view_dashboard", "view_analytics", "export_data",
@@ -59,7 +59,7 @@ const PERMISSION_MATRIX: Record<Role, Permission[]> = {
     "use_field_mode", "manage_calendar",
     "manage_customers", "view_messages", "send_sms",
     "manage_dispatch", "manage_materials", "request_measurements",
-    "manage_subcontractors", "manage_expenses", "view_surveys",
+"manage_expenses", "view_surveys",
   ],
   office_manager: [
     "view_dashboard", "view_analytics", "export_data",
@@ -71,7 +71,7 @@ const PERMISSION_MATRIX: Record<Role, Permission[]> = {
     "manage_calendar",
     "manage_customers", "view_messages", "send_sms",
     "manage_dispatch", "manage_materials", "request_measurements",
-    "manage_subcontractors", "manage_expenses", "view_surveys",
+"manage_expenses", "view_surveys",
   ],
   sales: [
     "view_dashboard",
@@ -81,7 +81,7 @@ const PERMISSION_MATRIX: Record<Role, Permission[]> = {
     "manage_calendar",
     "manage_customers", "view_messages", "send_sms",
     "manage_materials", "request_measurements",
-    "manage_subcontractors", "manage_expenses", "view_surveys",
+"manage_expenses", "view_surveys",
   ],
   field_tech: [
     "view_dashboard",
@@ -166,6 +166,6 @@ export const NAV_PERMISSIONS: Record<string, Permission> = {
   "/contractor/reports": "view_analytics",
   "/contractor/landing-pages": "manage_automations",
   "/contractor/profile": "view_dashboard", // everyone can see their own profile
-  "/contractor/subcontractors": "manage_subcontractors",
+
   "/contractor/quick-estimate": "manage_materials",
 }

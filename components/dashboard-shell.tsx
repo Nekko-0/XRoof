@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck, Globe, Hammer, Receipt } from "lucide-react"
+import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck, Globe, Receipt} from "lucide-react"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -44,7 +44,7 @@ const contractorNav: NavItem[] = [
   { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true, desktopOnly: true },
   { label: "Materials", href: "/contractor/materials", icon: Calculator },
   { label: "Quick Estimate", href: "/contractor/quick-estimate", icon: Receipt, desktopOnly: true },
-  { label: "Subcontractors", href: "/contractor/subcontractors", icon: Hammer, adminOnly: true, desktopOnly: true },
+
   { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true, desktopOnly: true },
   { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true, desktopOnly: true },
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
