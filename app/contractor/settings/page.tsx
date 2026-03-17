@@ -9,7 +9,7 @@ import { useRole } from "@/lib/role-context"
 import {
   Building2, Phone, Mail, MapPin, Star, DollarSign,
   Palette, Upload, Link2, Calendar, CreditCard, MessageSquare,
-  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database,
+  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database, AlarmClock,
 } from "lucide-react"
 
 type BookingHours = { start: string; end: string; days: number[] }
@@ -48,6 +48,7 @@ const TABS = [
   { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "email-templates", label: "Templates", icon: Mail },
+  { id: "reminders", label: "Reminders", icon: AlarmClock },
   { id: "data", label: "Data", icon: Database },
 ] as const
 
@@ -948,9 +949,169 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {activeTab === "reminders" && (
+        <RemindersTab />
+      )}
+
       {activeTab === "data" && (
         <DataExportTab />
       )}
+    </div>
+  )
+}
+
+type ReminderTemplate = {
+  step: number
+  subject: string
+  body_html: string
+  include_late_fee_warning: boolean
+}
+
+const DEFAULT_REMINDERS: ReminderTemplate[] = [
+  { step: 1, subject: "Friendly Reminder: Invoice Due", body_html: "Hi {customer_name},\n\nJust a friendly reminder that your invoice #{invoice_number} for ${amount} is due. Please let us know if you have any questions.\n\nThank you for your business!", include_late_fee_warning: false },
+  { step: 2, subject: "Overdue Notice: Payment Past Due", body_html: "Hi {customer_name},\n\nThis is a reminder that your invoice #{invoice_number} for ${amount} is now 7 days past due. Please arrange payment at your earliest convenience.\n\nIf you've already sent payment, please disregard this notice.", include_late_fee_warning: false },
+  { step: 3, subject: "Final Notice: Payment Required", body_html: "Hi {customer_name},\n\nYour invoice #{invoice_number} for ${amount} is now 14 days overdue. This is our final notice before additional action is taken.\n\nPlease contact us immediately to arrange payment.", include_late_fee_warning: true },
+  { step: 4, subject: "Collections Notice: Immediate Payment Required", body_html: "Hi {customer_name},\n\nYour invoice #{invoice_number} for ${amount} is now 30 days past due. If payment is not received within 48 hours, this account may be referred to collections.\n\nPlease contact us immediately.", include_late_fee_warning: true },
+]
+
+const STEP_LABELS: Record<number, { label: string; color: string; day: string }> = {
+  1: { label: "Friendly Reminder", color: "text-blue-500", day: "Day 1" },
+  2: { label: "Overdue Notice", color: "text-amber-500", day: "Day 7" },
+  3: { label: "Final Notice", color: "text-orange-500", day: "Day 14" },
+  4: { label: "Collections", color: "text-red-500", day: "Day 30" },
+}
+
+function RemindersTab() {
+  const toast = useToast()
+  const [templates, setTemplates] = useState<ReminderTemplate[]>(DEFAULT_REMINDERS)
+  const [loadingReminders, setLoadingReminders] = useState(true)
+  const [savingStep, setSavingStep] = useState<number | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingReminders(true)
+      try {
+        const res = await authFetch("/api/contractor/reminder-templates")
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const merged = DEFAULT_REMINDERS.map((def) => {
+            const saved = data.find((d: ReminderTemplate) => d.step === def.step)
+            return saved ? { ...def, ...saved } : def
+          })
+          setTemplates(merged)
+        }
+      } catch {
+        // Use defaults
+      }
+      setLoadingReminders(false)
+    }
+    load()
+  }, [])
+
+  const handleSave = async (step: number) => {
+    const tpl = templates.find((t) => t.step === step)
+    if (!tpl) return
+    setSavingStep(step)
+    try {
+      const res = await authFetch("/api/contractor/reminder-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: tpl.step,
+          subject: tpl.subject,
+          body_html: tpl.body_html,
+          include_late_fee_warning: tpl.include_late_fee_warning,
+        }),
+      })
+      if (res.ok) {
+        toast.success(`Step ${step} template saved`)
+      } else {
+        toast.error("Failed to save template")
+      }
+    } catch {
+      toast.error("Failed to save template")
+    }
+    setSavingStep(null)
+  }
+
+  const updateTemplate = (step: number, fields: Partial<ReminderTemplate>) => {
+    setTemplates((prev) => prev.map((t) => t.step === step ? { ...t, ...fields } : t))
+  }
+
+  if (loadingReminders) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-40 animate-pulse rounded-xl bg-secondary/50" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+          Payment Reminder Templates
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Customize the automated email reminders sent to customers with overdue invoices. Use {"{customer_name}"}, {"{invoice_number}"}, and {"${amount}"} as placeholders.
+        </p>
+      </div>
+
+      {templates.map((tpl) => {
+        const meta = STEP_LABELS[tpl.step]
+        return (
+          <div key={tpl.step} className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${meta.color}`}>Step {tpl.step}: {meta.label}</span>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{meta.day}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Subject</label>
+              <input
+                value={tpl.subject}
+                onChange={(e) => updateTemplate(tpl.step, { subject: e.target.value })}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Body</label>
+              <textarea
+                value={tpl.body_html}
+                onChange={(e) => updateTemplate(tpl.step, { body_html: e.target.value })}
+                rows={5}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+              />
+            </div>
+
+            {(tpl.step === 3 || tpl.step === 4) && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tpl.include_late_fee_warning}
+                  onChange={(e) => updateTemplate(tpl.step, { include_late_fee_warning: e.target.checked })}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-xs font-medium text-foreground">Include late fee warning</span>
+              </label>
+            )}
+
+            <button
+              onClick={() => handleSave(tpl.step)}
+              disabled={savingStep === tpl.step}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              {savingStep === tpl.step ? "Saving..." : "Save Template"}
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 }

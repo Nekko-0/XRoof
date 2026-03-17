@@ -10,6 +10,7 @@ import {
   Globe, MessageSquare, Camera, Send, Timer, Trophy, Layers, MapPin,
   Heart, Minus, Eye, Target, Star, Bell, BookOpen, LifeBuoy, Swords,
   PieChart, Megaphone, Receipt, Shield, ClipboardCheck,
+  CheckSquare, X, Settings, Gauge,
 } from "lucide-react"
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -135,6 +136,18 @@ export default function AdminDashboard() {
   const [subSort, setSubSort] = useState<"mrr" | "status" | "health">("mrr")
   const [chartType, setChartType] = useState<"bar" | "line">("bar")
 
+  // ── Owner Portal Feature States ──
+  const [churnScores, setChurnScores] = useState<any[]>([])
+  const [attributionData, setAttributionData] = useState<any[]>([])
+  const [healthScore, setHealthScore] = useState<any | null>(null)
+  const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set())
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false)
+  const [bulkEmailSubject, setBulkEmailSubject] = useState("")
+  const [bulkEmailBody, setBulkEmailBody] = useState("")
+  const [nudgeTemplates, setNudgeTemplates] = useState<any[]>([])
+  const [nudgesExpanded, setNudgesExpanded] = useState(false)
+  const [subFilter, setSubFilter] = useState<"all" | "at_risk">("all")
+
   useEffect(() => {
     authFetch("/api/analytics/admin")
       .then(res => { if (!res.ok) throw new Error("Unauthorized"); return res.json() })
@@ -143,9 +156,86 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Fetch churn prediction scores
+  useEffect(() => {
+    authFetch("/api/admin/churn-prediction").then(r => r.ok ? r.json() : []).then(setChurnScores).catch(() => {})
+  }, [])
+
+  // Fetch revenue attribution
+  useEffect(() => {
+    authFetch("/api/admin/attribution").then(r => r.ok ? r.json() : []).then(setAttributionData).catch(() => {})
+  }, [])
+
+  // Fetch platform health score
+  useEffect(() => {
+    authFetch("/api/admin/health-score").then(r => r.ok ? r.json() : null).then(setHealthScore).catch(() => {})
+  }, [])
+
+  // Fetch trial nudge templates
+  useEffect(() => {
+    authFetch("/api/admin/trial-nudges").then(r => r.ok ? r.json() : []).then(setNudgeTemplates).catch(() => {})
+  }, [])
+
+  const getChurnRisk = (userId: string) => {
+    const s = churnScores.find((c: any) => c.user_id === userId)
+    if (!s) return null
+    const score = s.score ?? s.risk_score ?? 0
+    if (score <= 30) return { label: "Low Risk", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+    if (score <= 60) return { label: "Medium Risk", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" }
+    return { label: "High Risk", color: "bg-red-500/15 text-red-400 border-red-500/30" }
+  }
+
+  const toggleSubSelection = (userId: string) => {
+    setSelectedSubs(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId); else next.add(userId)
+      return next
+    })
+  }
+
+  const toggleAllSubs = () => {
+    if (!d) return
+    if (selectedSubs.size === d.subscribers.length) setSelectedSubs(new Set())
+    else setSelectedSubs(new Set(d.subscribers.map(s => s.user_id)))
+  }
+
+  const exportSelectedCsv = () => {
+    if (!d) return
+    const selected = d.subscribers.filter(s => selectedSubs.has(s.user_id))
+    csv(selected, "xroof-selected-contractors.csv")
+  }
+
+  const sendBulkEmail = async () => {
+    if (!bulkEmailSubject || !bulkEmailBody) return
+    try {
+      await authFetch("/api/admin/broadcast", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject: bulkEmailSubject, body: bulkEmailBody, userIds: Array.from(selectedSubs) }) })
+      setBulkEmailOpen(false)
+      setBulkEmailSubject("")
+      setBulkEmailBody("")
+    } catch {}
+  }
+
+  const toggleNudge = async (id: string, enabled: boolean) => {
+    setNudgeTemplates(prev => prev.map(t => t.id === id ? { ...t, enabled } : t))
+    try { await authFetch(`/api/admin/trial-nudges/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled }) }) } catch {}
+  }
+
+  const updateNudgeSubject = async (id: string, subject: string) => {
+    setNudgeTemplates(prev => prev.map(t => t.id === id ? { ...t, subject } : t))
+    try { await authFetch(`/api/admin/trial-nudges/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject }) }) } catch {}
+  }
+
   const sortedSubs = useMemo(() => {
     if (!d) return []
-    const list = [...d.subscribers]
+    let list = [...d.subscribers]
+    // Filter by churn risk if "at_risk" tab selected
+    if (subFilter === "at_risk") {
+      list = list.filter(s => {
+        const cs = churnScores.find((c: any) => c.user_id === s.user_id)
+        const score = cs?.score ?? cs?.risk_score ?? 0
+        return score > 30
+      })
+    }
     if (subSort === "mrr") list.sort((a, b) => b.mrr_contribution - a.mrr_contribution)
     else if (subSort === "health") {
       list.sort((a, b) => {
@@ -158,7 +248,7 @@ export default function AdminDashboard() {
       return (order[a.status] ?? 4) - (order[b.status] ?? 4)
     })
     return list
-  }, [d, subSort])
+  }, [d, subSort, subFilter, churnScores])
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" /></div>
   if (error || !d) return <p className="p-6 text-red-400">{error || "Failed to load"}</p>
@@ -181,6 +271,40 @@ export default function AdminDashboard() {
           <span className="flex items-center gap-1"><Timer className="h-3 w-3" /> {d.timeSavedHours}h saved</span>
         </div>
       </div>
+
+      {/* ── Platform Health Score ── */}
+      {healthScore && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Gauge className="h-4 w-4 text-indigo-400" /> Platform Health Score</h3>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className={`text-5xl font-bold ${healthScore.score > 70 ? "text-emerald-400" : healthScore.score > 40 ? "text-amber-400" : "text-red-400"}`}>{healthScore.score}</div>
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {[
+                { label: "Growth", key: "growth" },
+                { label: "Churn", key: "churn" },
+                { label: "NRR", key: "nrr" },
+                { label: "Engagement", key: "engagement" },
+                { label: "Trial Conv.", key: "trial_conversion" },
+              ].map(f => {
+                const val = healthScore.factors?.[f.key] ?? 0
+                return (
+                  <div key={f.key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-muted-foreground">{f.label}</span>
+                      <span className="text-[10px] font-bold text-foreground">{val}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-secondary/50">
+                      <div className={`h-1.5 rounded-full transition-all ${val > 70 ? "bg-emerald-500" : val > 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${val}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Row 1: Key metrics ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -307,7 +431,13 @@ export default function AdminDashboard() {
       {/* ── Row 6: Subscribers table ── */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Subscribers</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Subscribers</h3>
+            <div className="flex gap-1">
+              <button onClick={() => setSubFilter("all")} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${subFilter === "all" ? "bg-indigo-500/20 text-indigo-400" : "text-muted-foreground hover:bg-secondary"}`}>All</button>
+              <button onClick={() => setSubFilter("at_risk")} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${subFilter === "at_risk" ? "bg-red-500/20 text-red-400" : "text-muted-foreground hover:bg-secondary"}`}>At Risk</button>
+            </div>
+          </div>
           <div className="flex gap-1">
             {(["mrr", "status", "health"] as const).map(s => (
               <button key={s} onClick={() => setSubSort(s)} className={`rounded-lg px-3 py-1 text-xs font-medium capitalize ${subSort === s ? "bg-indigo-500/20 text-indigo-400" : "text-muted-foreground hover:bg-secondary"}`}>{s}</button>
@@ -319,8 +449,10 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead><tr className="border-b border-border text-left text-muted-foreground">
+                <th className="pb-2 pr-2 font-medium"><input type="checkbox" checked={selectedSubs.size === d.subscribers.length && d.subscribers.length > 0} onChange={toggleAllSubs} className="rounded border-border" /></th>
                 <th className="pb-2 pr-2 font-medium"></th>
                 <th className="pb-2 pr-3 font-medium">Contractor</th>
+                <th className="pb-2 pr-3 font-medium">Risk</th>
                 <th className="pb-2 pr-3 font-medium">Plan</th>
                 <th className="pb-2 pr-3 font-medium">Status</th>
                 <th className="pb-2 pr-3 font-medium">Health</th>
@@ -335,8 +467,10 @@ export default function AdminDashboard() {
                   const eng = d.engagement.find(e => e.user_id === sub.user_id)
                   return (
                     <tr key={sub.user_id} className="border-b border-border/50 hover:bg-secondary/30">
+                      <td className="py-2.5 pr-2"><input type="checkbox" checked={selectedSubs.has(sub.user_id)} onChange={() => toggleSubSelection(sub.user_id)} className="rounded border-border" /></td>
                       <td className="py-2.5 pr-2"><button onClick={() => setExpandedRow(expandedRow === sub.user_id ? null : sub.user_id)}>{expandedRow === sub.user_id ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}</button></td>
                       <td className="py-2.5 pr-3"><p className="font-medium text-foreground">{sub.company_name || sub.username}</p><p className="text-[10px] text-muted-foreground">{sub.email}</p></td>
+                      <td className="py-2.5 pr-3">{(() => { const risk = getChurnRisk(sub.user_id); return risk ? <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${risk.color}`}>{risk.label}</span> : <span className="text-[10px] text-muted-foreground">—</span> })()}</td>
                       <td className="py-2.5 pr-3 capitalize">{sub.plan}</td>
                       <td className="py-2.5 pr-3"><Badge status={sub.status} /></td>
                       <td className="py-2.5 pr-3"><span className={`text-[10px] font-bold ${HC[eng?.healthLevel || ""] || "text-muted-foreground"}`}>{eng?.healthScore || 0}/100</span></td>
@@ -358,6 +492,96 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* ── Bulk Action Toolbar ── */}
+      {selectedSubs.size > 0 && (
+        <div className="sticky bottom-4 z-50 mx-auto flex items-center gap-3 rounded-2xl border border-indigo-500/30 bg-card/95 backdrop-blur-sm px-5 py-3 shadow-lg">
+          <CheckSquare className="h-4 w-4 text-indigo-400" />
+          <span className="text-xs font-medium text-foreground">{selectedSubs.size} selected</span>
+          <div className="h-4 w-px bg-border" />
+          <button onClick={() => setBulkEmailOpen(true)} className="flex items-center gap-1 rounded-lg bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-400 hover:bg-indigo-500/30"><Mail className="h-3 w-3" /> Send Email</button>
+          <button onClick={exportSelectedCsv} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/30"><Download className="h-3 w-3" /> Export CSV</button>
+          <button onClick={() => { /* trigger NPS for selected */ }} className="flex items-center gap-1 rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/30"><Star className="h-3 w-3" /> Trigger NPS</button>
+          <button onClick={() => setSelectedSubs(new Set())} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary"><X className="h-3 w-3" /></button>
+        </div>
+      )}
+
+      {/* ── Bulk Email Dialog ── */}
+      {bulkEmailOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground">Send Email to {selectedSubs.size} Contractor{selectedSubs.size !== 1 ? "s" : ""}</h3>
+              <button onClick={() => setBulkEmailOpen(false)} className="rounded-lg p-1 text-muted-foreground hover:bg-secondary"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <input type="text" placeholder="Subject" value={bulkEmailSubject} onChange={e => setBulkEmailSubject(e.target.value)} className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <textarea placeholder="Email body..." value={bulkEmailBody} onChange={e => setBulkEmailBody(e.target.value)} rows={6} className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setBulkEmailOpen(false)} className="rounded-lg px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary">Cancel</button>
+                <button onClick={sendBulkEmail} disabled={!bulkEmailSubject || !bulkEmailBody} className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Revenue Attribution ── */}
+      {attributionData.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><PieChart className="h-4 w-4 text-emerald-400" /> Revenue Attribution</h3>
+          <div className="flex flex-col lg:flex-row items-center gap-6">
+            <div className="w-56 h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <RPieChart>
+                  <Pie data={attributionData.map((a: any) => ({ name: a.source?.replace(/_/g, " ") || a.name, value: a.revenue ?? a.value ?? 0 })).filter((x: any) => x.value > 0)} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3}>
+                    {["#10b981", "#8b5cf6", "#f59e0b", "#3b82f6", "#ec4899", "#ef4444"].map((c, i) => <Cell key={i} fill={c} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${v.toLocaleString()}`, ""]} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                </RPieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {attributionData.map((a: any, i: number) => {
+                const colors = ["bg-emerald-500", "bg-violet-500", "bg-amber-500", "bg-blue-500", "bg-pink-500", "bg-red-500"]
+                return (
+                  <div key={a.source || a.name || i} className="flex items-center gap-2">
+                    <span className={`h-2.5 w-2.5 rounded-full ${colors[i % colors.length]}`} />
+                    <div><p className="text-xs font-medium text-foreground">${(a.revenue ?? a.value ?? 0).toLocaleString()}</p><p className="text-[9px] text-muted-foreground capitalize">{(a.source || a.name || "").replace(/_/g, " ")}</p></div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Revenue Streams (Stacked Area Chart) ── */}
+      {d.monthlyRevenue.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Layers className="h-4 w-4 text-violet-400" /> Revenue Streams</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={d.monthlyRevenue.map(m => ({ month: m.month, Subscriptions: m.subscriptions, "Team Add-ons": Math.round(m.subscriptions * 0.15), Other: m.reports }))}>
+                <defs>
+                  <linearGradient id="gradStreams1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} /><stop offset="100%" stopColor="#6366f1" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gradStreams2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} /><stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gradStreams3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.4} /><stop offset="100%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="month" tick={{ fill: "#888", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#888", fontSize: 10 }} tickFormatter={v => `$${v}`} />
+                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${v.toLocaleString()}`, ""]} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Area type="monotone" dataKey="Subscriptions" stackId="1" stroke="#6366f1" fill="url(#gradStreams1)" strokeWidth={2} />
+                <Area type="monotone" dataKey="Team Add-ons" stackId="1" stroke="#8b5cf6" fill="url(#gradStreams2)" strokeWidth={2} />
+                <Area type="monotone" dataKey="Other" stackId="1" stroke="#f59e0b" fill="url(#gradStreams3)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* ── Row 7: Trials + Past Due ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -722,6 +946,31 @@ export default function AdminDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {/* ── Trial Nudge Settings ── */}
+      {nudgeTemplates.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <button onClick={() => setNudgesExpanded(!nudgesExpanded)} className="w-full flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Settings className="h-4 w-4 text-violet-400" /> Trial Nudge Templates ({nudgeTemplates.length})</h3>
+            {nudgesExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          </button>
+          {nudgesExpanded && (
+            <div className="mt-4 flex flex-col gap-3">
+              {nudgeTemplates.map((t: any) => (
+                <div key={t.id} className="flex items-center gap-3 rounded-xl bg-secondary/30 p-3">
+                  <button onClick={() => toggleNudge(t.id, !t.enabled)} className={`flex h-5 w-9 items-center rounded-full px-0.5 transition-colors ${t.enabled ? "bg-emerald-500" : "bg-secondary"}`}>
+                    <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${t.enabled ? "translate-x-4" : "translate-x-0"}`} />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <input type="text" value={t.subject || ""} onChange={e => setNudgeTemplates(prev => prev.map(n => n.id === t.id ? { ...n, subject: e.target.value } : n))} onBlur={e => updateNudgeSubject(t.id, e.target.value)} className="w-full bg-transparent text-xs font-medium text-foreground border-b border-transparent hover:border-border focus:border-indigo-500 focus:outline-none py-0.5" />
+                    <p className="text-[9px] text-muted-foreground mt-0.5">Day {t.day ?? t.send_day ?? "?"} &middot; {t.enabled ? "Active" : "Disabled"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

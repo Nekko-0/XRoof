@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, X,
   Bell, Zap, Briefcase, CheckCircle, Plus, Clock, Trash2,
   Mail, Phone, Cloud, Sun, CloudRain, CloudSnow, CloudLightning, CloudDrizzle,
+  AlertTriangle, RefreshCw,
 } from "lucide-react"
 
 type Job = {
@@ -66,6 +67,12 @@ const APPT_TYPES = [
   { value: "meeting", label: "Meeting" },
   { value: "other", label: "Other" },
 ]
+
+function isBadWeather(w: WeatherDay | undefined): boolean {
+  if (!w) return false
+  const desc = w.description.toLowerCase()
+  return desc.includes("rain") || desc.includes("thunderstorm") || desc.includes("snow") || w.temp > 105 || w.temp < 20
+}
 
 function WeatherIcon({ description, className }: { description: string; className?: string }) {
   const c = className || "h-3.5 w-3.5"
@@ -149,6 +156,12 @@ export default function CalendarPage() {
   const [apptType, setApptType] = useState("site_visit")
   const [apptNotes, setApptNotes] = useState("")
   const [savingAppt, setSavingAppt] = useState(false)
+
+  // Reschedule dialog state
+  const [rescheduleJob, setRescheduleJob] = useState<Job | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState("")
+  const [rescheduleNotify, setRescheduleNotify] = useState(true)
+  const [rescheduling, setRescheduling] = useState(false)
 
   useEffect(() => {
     if (!accountId) return
@@ -295,6 +308,54 @@ export default function CalendarPage() {
     setAppointments((prev) => prev.filter((a) => a.id !== id))
   }
 
+  const handleReschedule = async () => {
+    if (!rescheduleJob || !rescheduleDate || rescheduling) return
+    setRescheduling(true)
+    const { error } = await supabase
+      .from("jobs")
+      .update({ scheduled_date: rescheduleDate })
+      .eq("id", rescheduleJob.id)
+    if (error) {
+      toast.error("Error rescheduling: " + error.message)
+    } else {
+      setJobs((prev) => prev.map((j) => j.id === rescheduleJob.id ? { ...j, scheduled_date: rescheduleDate } : j))
+      toast.success(`Rescheduled ${rescheduleJob.customer_name} to ${new Date(rescheduleDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`)
+      // Optionally post portal message
+      if (rescheduleNotify) {
+        fetch("/api/portal/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_id: rescheduleJob.id,
+            sender: "contractor",
+            message: `Your project has been rescheduled to ${new Date(rescheduleDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} due to weather conditions. We'll keep you updated!`,
+          }),
+        }).catch(() => {})
+      }
+    }
+    setRescheduleJob(null)
+    setRescheduleDate("")
+    setRescheduling(false)
+  }
+
+  // Compute weather alerts for the current week
+  const weatherAlertCount = (() => {
+    const now = new Date()
+    const weekEnd = new Date(now)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+    let count = 0
+    for (const j of jobs) {
+      if (!j.scheduled_date) continue
+      const jDate = j.scheduled_date.slice(0, 10)
+      const w = weather.find((wd) => wd.date === jDate)
+      if (isBadWeather(w)) {
+        const d = new Date(jDate + "T12:00:00")
+        if (d >= now && d <= weekEnd) count++
+      }
+    }
+    return count
+  })()
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -313,6 +374,16 @@ export default function CalendarPage() {
         <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
           Job Calendar
         </h2>
+
+        {weatherAlertCount > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-amber-300">{weatherAlertCount} job{weatherAlertCount !== 1 ? "s" : ""} scheduled during bad weather this week</p>
+              <p className="text-[11px] text-amber-400/70">Click a day to review and reschedule affected jobs.</p>
+            </div>
+          </div>
+        )}
 
         {!hasAnyEvents && (
           <div className="rounded-xl border border-dashed border-border/60 bg-card/50 p-4 text-center">
@@ -356,6 +427,7 @@ export default function CalendarPage() {
                   const isToday = ds === todayStr
                   const isSelected = ds === selectedDate
                   const totalEvents = dayJobs.length + dayFollowups.length + dayAutomations.length + dayAppointments.length
+                  const hasBadWeatherJobsMobile = dayJobs.length > 0 && isBadWeather(dayWeather)
 
                   return (
                     <button
@@ -363,7 +435,7 @@ export default function CalendarPage() {
                       onClick={() => setSelectedDate(ds === selectedDate ? null : ds)}
                       className={`min-h-[80px] flex flex-col items-center gap-1 p-2 border-r last:border-r-0 border-border/50 transition-colors ${
                         isToday ? "bg-primary/10" : ""
-                      } ${isSelected ? "ring-2 ring-primary ring-inset" : ""}`}
+                      } ${isSelected ? "ring-2 ring-primary ring-inset" : ""} ${hasBadWeatherJobsMobile ? "bg-red-500/5" : ""}`}
                     >
                       <span className="text-[10px] font-semibold text-muted-foreground uppercase">
                         {dayDate.toLocaleString("en-US", { weekday: "short" })}
@@ -373,8 +445,9 @@ export default function CalendarPage() {
                       } ${isSelected && !isToday ? "bg-primary/20" : ""}`}>
                         {dayDate.getDate()}
                       </span>
+                      {hasBadWeatherJobsMobile && <AlertTriangle className="h-3 w-3 text-amber-400" />}
                       {dayWeather && (
-                        <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                        <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobsMobile ? "text-amber-400 font-semibold" : "text-muted-foreground"}`}>
                           <WeatherIcon description={dayWeather.description} className="h-3 w-3" />
                           {dayWeather.temp}°
                         </span>
@@ -434,6 +507,7 @@ export default function CalendarPage() {
                   const isToday = ds === todayStr
                   const isSelected = ds === selectedDate
                   const totalEvents = dayJobs.length + dayFollowups.length + dayAutomations.length + dayAppointments.length
+                  const hasBadWeatherJobs = dayJobs.length > 0 && isBadWeather(dayWeather)
 
                   return (
                     <button
@@ -441,18 +515,21 @@ export default function CalendarPage() {
                       onClick={() => setSelectedDate(ds === selectedDate ? null : ds)}
                       className={`min-h-[80px] border-b border-r border-border/50 p-1 text-left transition-colors hover:bg-primary/5 ${
                         isToday ? "bg-primary/10" : ""
-                      } ${isSelected ? "ring-2 ring-primary ring-inset" : ""}`}
+                      } ${isSelected ? "ring-2 ring-primary ring-inset" : ""} ${hasBadWeatherJobs ? "bg-red-500/5" : ""}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className={`text-xs font-medium ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
                           {day}
                         </span>
-                        {dayWeather && (
-                          <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                            <WeatherIcon description={dayWeather.description} className="h-3 w-3" />
-                            {dayWeather.temp}°
-                          </span>
-                        )}
+                        <span className="flex items-center gap-0.5">
+                          {hasBadWeatherJobs && <AlertTriangle className="h-3 w-3 text-amber-400" />}
+                          {dayWeather && (
+                            <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobs ? "text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+                              <WeatherIcon description={dayWeather.description} className="h-3 w-3" />
+                              {dayWeather.temp}°
+                            </span>
+                          )}
+                        </span>
                       </div>
 
                       {/* Event dots */}
@@ -534,24 +611,42 @@ export default function CalendarPage() {
               </h5>
               {selectedEvents.dayJobs.length > 0 ? (
                 <div className="flex flex-col gap-1.5">
-                  {selectedEvents.dayJobs.map((j) => (
-                    <div key={j.id} className="flex items-center justify-between rounded-lg border border-border bg-secondary/20 px-3 py-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-foreground truncate">{j.customer_name}</p>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 truncate">
-                          <MapPin className="h-2.5 w-2.5 flex-shrink-0" /> {j.address}
-                        </p>
+                  {selectedEvents.dayJobs.map((j) => {
+                    const jobHasBadWeather = isBadWeather(selectedEvents.dayWeather)
+                    return (
+                      <div key={j.id} className={`rounded-lg border px-3 py-2 ${jobHasBadWeather ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-secondary/20"}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-foreground truncate">{j.customer_name}</p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1 truncate">
+                              <MapPin className="h-2.5 w-2.5 flex-shrink-0" /> {j.address}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 ml-2">
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white ${statusColor(j.status)}`}>
+                              {j.status}
+                            </span>
+                            <button onClick={() => handleUnschedule(j.id)} className="text-[10px] text-muted-foreground hover:text-red-400">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                        {jobHasBadWeather && (
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-400">
+                              <AlertTriangle className="h-3 w-3" /> Bad weather
+                            </span>
+                            <button
+                              onClick={() => { setRescheduleJob(j); setRescheduleDate("") }}
+                              className="flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400 hover:bg-amber-500/25 transition-colors"
+                            >
+                              <RefreshCw className="h-2.5 w-2.5" /> Reschedule
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 ml-2">
-                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white ${statusColor(j.status)}`}>
-                          {j.status}
-                        </span>
-                        <button onClick={() => handleUnschedule(j.id)} className="text-[10px] text-muted-foreground hover:text-red-400">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-[11px] text-muted-foreground/60">No jobs</p>
@@ -706,6 +801,65 @@ export default function CalendarPage() {
                   <Plus className="h-3 w-3" /> Add Appointment
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Dialog */}
+      {rescheduleJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-amber-400" /> Reschedule Job
+              </h3>
+              <button onClick={() => setRescheduleJob(null)} className="rounded-lg p-1 hover:bg-secondary">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="mb-4 rounded-lg border border-border bg-secondary/20 px-3 py-2">
+              <p className="text-xs font-bold text-foreground">{rescheduleJob.customer_name}</p>
+              <p className="text-[10px] text-muted-foreground">{rescheduleJob.address}</p>
+              {rescheduleJob.scheduled_date && (
+                <p className="text-[10px] text-amber-400 mt-0.5">
+                  Currently: {new Date(rescheduleJob.scheduled_date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                </p>
+              )}
+            </div>
+            <div className="mb-3">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">New Date</label>
+              <input
+                type="date"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                min={todayStr}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <label className="mb-4 flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rescheduleNotify}
+                onChange={(e) => setRescheduleNotify(e.target.checked)}
+                className="rounded border-border"
+              />
+              <span className="text-[11px] text-muted-foreground">Notify homeowner via portal message</span>
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={handleReschedule}
+                disabled={!rescheduleDate || rescheduling}
+                className="flex-1 rounded-lg bg-amber-500 py-2 text-xs font-bold text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {rescheduling ? "Rescheduling..." : "Reschedule"}
+              </button>
+              <button
+                onClick={() => setRescheduleJob(null)}
+                className="rounded-lg border border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

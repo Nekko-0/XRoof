@@ -12,7 +12,7 @@ import {
   Sun, CloudRain, CloudSnow,
   MessageSquare, Play, MapPinned, ChevronDown,
   ChevronUp, Loader2, ChevronLeft, ChevronRight,
-  ClipboardList, AlertTriangle,
+  ClipboardList, AlertTriangle, Receipt, DollarSign, Plus,
 } from "lucide-react"
 
 type Job = {
@@ -123,6 +123,14 @@ export default function FieldModePage() {
   // Time tracking
   const [activeTimers, setActiveTimers] = useState<Record<string, { id: string; started_at: string }>>({})
   const [clockingIn, setClockingIn] = useState<string | null>(null)
+
+  // Expenses state
+  const [showExpenses, setShowExpenses] = useState(false)
+  const [expenses, setExpenses] = useState<{ id: string; amount: number; vendor: string; date: string; category: string; description: string; job_id: string | null; receipt_url: string | null; created_at: string }[]>([])
+  const [expenseForm, setExpenseForm] = useState({ amount: "", vendor: "", date: new Date().toISOString().slice(0, 10), category: "materials", description: "", job_id: "" })
+  const [savingExpense, setSavingExpense] = useState(false)
+  const [uploadingReceipt, setUploadingReceipt] = useState(false)
+  const receiptInputRef = useRef<HTMLInputElement>(null)
 
   const today = new Date().toISOString().slice(0, 10)
   const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
@@ -425,6 +433,90 @@ export default function FieldModePage() {
     }
     setClockingIn(null)
   }
+
+  // --- Expense handlers ---
+
+  const loadExpenses = useCallback(async () => {
+    if (!accountId) return
+    try {
+      const res = await authFetch(`/api/expenses`)
+      const data = await res.json()
+      if (Array.isArray(data)) setExpenses(data)
+    } catch {}
+  }, [accountId])
+
+  useEffect(() => {
+    if (showExpenses && accountId) loadExpenses()
+  }, [showExpenses, accountId, loadExpenses])
+
+  const handleSaveExpense = async () => {
+    if (!expenseForm.amount || !expenseForm.vendor || !accountId) return
+    setSavingExpense(true)
+    try {
+      const res = await authFetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parseFloat(expenseForm.amount),
+          vendor: expenseForm.vendor,
+          date: expenseForm.date,
+          category: expenseForm.category,
+          description: expenseForm.description,
+          job_id: expenseForm.job_id || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success("Expense saved")
+        setExpenseForm({ amount: "", vendor: "", date: today, category: "materials", description: "", job_id: "" })
+        loadExpenses()
+      } else {
+        toast.error("Failed to save expense")
+      }
+    } catch {
+      toast.error("Failed to save expense")
+    }
+    setSavingExpense(false)
+  }
+
+  const handleReceiptCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !accountId) return
+    if (file.size > 10 * 1024 * 1024) { toast.error("File too large (max 10MB)"); return }
+    setUploadingReceipt(true)
+    try {
+      const ext = file.name.split(".").pop() || "jpg"
+      const fileName = `receipt-${accountId}-${Date.now()}.${ext}`
+      const { error: uploadErr } = await supabase.storage.from("job-photos").upload(fileName, file, { contentType: file.type })
+      if (uploadErr) { toast.error("Upload failed"); setUploadingReceipt(false); return }
+      const { data: urlData } = supabase.storage.from("job-photos").getPublicUrl(fileName)
+
+      const res = await authFetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: 0,
+          vendor: "Receipt upload",
+          date: today,
+          category: "materials",
+          description: "Uploaded receipt — edit to add details",
+          receipt_url: urlData.publicUrl,
+          job_id: null,
+        }),
+      })
+      if (res.ok) {
+        toast.success("Receipt uploaded — add details to the expense")
+        loadExpenses()
+      } else {
+        toast.error("Failed to save receipt expense")
+      }
+    } catch {
+      toast.error("Failed to upload receipt")
+    }
+    setUploadingReceipt(false)
+    if (receiptInputRef.current) receiptInputRef.current.value = ""
+  }
+
+  const EXPENSE_CATEGORIES = ["materials", "labor", "equipment", "permits", "travel", "other"]
 
   // --- Render helpers ---
 
@@ -859,6 +951,153 @@ export default function FieldModePage() {
           </div>
         )
       })}
+
+      {/* Expenses Section */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <button
+          onClick={() => setShowExpenses(!showExpenses)}
+          className="w-full flex items-center justify-between p-4 active:bg-secondary/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-primary" />
+            <span className="text-sm font-bold text-foreground">Expenses</span>
+          </div>
+          {showExpenses ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {showExpenses && (
+          <div className="border-t border-border p-4 space-y-4">
+            {/* Hidden receipt input */}
+            <input
+              ref={receiptInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleReceiptCapture}
+            />
+
+            {/* Snap Receipt button */}
+            <button
+              onClick={() => receiptInputRef.current?.click()}
+              disabled={uploadingReceipt}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary active:bg-primary/10 transition-colors disabled:opacity-50"
+            >
+              {uploadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              {uploadingReceipt ? "Uploading..." : "Snap Receipt"}
+            </button>
+
+            {/* Manual expense form */}
+            <div className="space-y-3 rounded-xl border border-border bg-background p-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Add Expense</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Amount ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Vendor</label>
+                  <input
+                    type="text"
+                    value={expenseForm.vendor}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, vendor: e.target.value })}
+                    placeholder="Home Depot"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Date</label>
+                  <input
+                    type="date"
+                    value={expenseForm.date}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Category</label>
+                  <select
+                    value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {EXPENSE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Description</label>
+                <input
+                  type="text"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                  placeholder="Shingles, nails, etc."
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Job (optional)</label>
+                <select
+                  value={expenseForm.job_id}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, job_id: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">No job selected</option>
+                  {[...weekJobs, ...activeJobs].map((j) => (
+                    <option key={j.id} value={j.id}>{j.customer_name} — {j.address}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleSaveExpense}
+                disabled={!expenseForm.amount || !expenseForm.vendor || savingExpense}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {savingExpense ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                {savingExpense ? "Saving..." : "Add Expense"}
+              </button>
+            </div>
+
+            {/* Recent expenses list */}
+            {expenses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Recent Expenses</p>
+                {expenses.slice(0, 10).map((exp) => (
+                  <div key={exp.id} className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2.5">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground truncate">{exp.vendor}</span>
+                        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground capitalize">{exp.category}</span>
+                      </div>
+                      {exp.description && <p className="text-xs text-muted-foreground truncate">{exp.description}</p>}
+                      <p className="text-[10px] text-muted-foreground">{exp.date}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {exp.receipt_url && (
+                        <a href={exp.receipt_url} target="_blank" rel="noopener noreferrer" className="text-primary">
+                          <Receipt className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <span className="text-sm font-bold text-foreground">${exp.amount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -8,10 +8,11 @@ import {
   CheckCircle, Clock, Wrench, Camera, Star, Building2,
   AlertCircle, ArrowRight, MessageSquare, Send,
   FileSignature, CreditCard, Activity, ExternalLink, Eye,
-  ArrowLeftRight,
+  ArrowLeftRight, Upload, Download, Package,
 } from "lucide-react"
 import { BeforeAfterSlider } from "@/components/before-after-slider"
 import { GoogleReviewsBadge } from "@/components/google-reviews-badge"
+import { t } from "@/lib/translations"
 
 type PortalMessage = {
   id: string
@@ -57,6 +58,30 @@ type DocEvent = {
   id: string
   document_type: string
   event_type: string
+  created_at: string
+}
+
+type CatalogItem = {
+  id: string
+  brand: string
+  product_line: string
+  color: string
+  description: string | null
+  image_url: string | null
+  price_tier: string | null
+}
+
+type MaterialBrand = {
+  name: string
+  products: CatalogItem[]
+}
+
+type CustomerDocument = {
+  id: string
+  job_id: string
+  file_url: string
+  file_name: string
+  category: string
   created_at: string
 }
 
@@ -127,7 +152,7 @@ const STATUS_STEPS = [
   { status: "Completed", label: "Completed" },
 ]
 
-type TabId = "overview" | "documents" | "activity" | "messages"
+type TabId = "overview" | "documents" | "materials" | "activity" | "messages"
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -172,6 +197,16 @@ export default function HomeownerPortal() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
 
+  // Materials state
+  const [materialBrands, setMaterialBrands] = useState<MaterialBrand[]>([])
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<Set<string>>(new Set())
+  const [selectingMaterial, setSelectingMaterial] = useState<string | null>(null)
+
+  // Customer documents state
+  const [customerDocs, setCustomerDocs] = useState<CustomerDocument[]>([])
+  const [uploadCategory, setUploadCategory] = useState("Photos")
+  const [uploading, setUploading] = useState(false)
+
   // Visit request state
   const [showVisitRequest, setShowVisitRequest] = useState(false)
   const [visitPreferredDates, setVisitPreferredDates] = useState("")
@@ -192,6 +227,54 @@ export default function HomeownerPortal() {
       const res = await fetch(`/api/portal/invoices?job_id=${jobId}`)
       if (res.ok) { const json = await res.json(); setInvoices(json.invoices || []) }
     } catch {}
+  }
+
+  const fetchMaterials = async (jobId: string) => {
+    try {
+      const res = await fetch(`/api/portal/materials?job_id=${jobId}`)
+      if (res.ok) {
+        const json = await res.json()
+        setMaterialBrands(json.brands || [])
+        setSelectedMaterialIds(new Set(json.selectedIds || []))
+      }
+    } catch {}
+  }
+
+  const fetchCustomerDocs = async (jobId: string) => {
+    try {
+      const res = await fetch(`/api/portal/documents?job_id=${jobId}`)
+      if (res.ok) { const json = await res.json(); setCustomerDocs(Array.isArray(json) ? json : []) }
+    } catch {}
+  }
+
+  const selectMaterial = async (catalogItemId: string) => {
+    if (!data?.job.id || selectingMaterial) return
+    setSelectingMaterial(catalogItemId)
+    try {
+      const res = await fetch("/api/portal/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: data.job.id, catalog_item_id: catalogItemId }),
+      })
+      if (res.ok) {
+        setSelectedMaterialIds((prev) => new Set([...prev, catalogItemId]))
+      }
+    } catch {}
+    setSelectingMaterial(null)
+  }
+
+  const uploadDocument = async (file: File) => {
+    if (!data?.job.id || uploading) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("job_id", data.job.id)
+      formData.append("category", uploadCategory)
+      formData.append("file", file)
+      const res = await fetch("/api/portal/documents", { method: "POST", body: formData })
+      if (res.ok) { await fetchCustomerDocs(data.job.id) }
+    } catch {}
+    setUploading(false)
   }
 
   const sendMessage = async () => {
@@ -237,6 +320,8 @@ export default function HomeownerPortal() {
         setData(json)
         fetchMessages(json.job.id)
         fetchInvoices(json.job.id)
+        fetchMaterials(json.job.id)
+        fetchCustomerDocs(json.job.id)
       } catch { setError(true) }
       setLoading(false)
     }
@@ -283,11 +368,14 @@ export default function HomeownerPortal() {
 
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid")
 
+  const lang = (job as any).preferred_language || undefined
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "overview", label: "Overview", icon: <Wrench className="h-4 w-4" /> },
-    { id: "documents", label: "Documents", icon: <FileText className="h-4 w-4" />, badge: unpaidInvoices.length || undefined },
-    { id: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> },
-    { id: "messages", label: "Messages", icon: <MessageSquare className="h-4 w-4" /> },
+    { id: "overview", label: t("portal.tab.overview", lang), icon: <Wrench className="h-4 w-4" /> },
+    { id: "documents", label: t("portal.tab.documents", lang), icon: <FileText className="h-4 w-4" />, badge: unpaidInvoices.length || undefined },
+    { id: "materials", label: t("portal.tab.materials", lang), icon: <Package className="h-4 w-4" /> },
+    { id: "activity", label: t("portal.tab.activity", lang), icon: <Activity className="h-4 w-4" /> },
+    { id: "messages", label: t("portal.tab.messages", lang), icon: <MessageSquare className="h-4 w-4" /> },
   ]
 
   return (
@@ -341,7 +429,7 @@ export default function HomeownerPortal() {
       <main className="mx-auto max-w-3xl px-5 py-6 flex flex-col gap-5">
         <div>
           <h2 className="text-2xl font-bold">Hi {job.customer_name.split(" ")[0]},</h2>
-          <p className="mt-1 text-sm text-gray-400">Here&apos;s the latest on your roofing project</p>
+          <p className="mt-1 text-sm text-gray-400">{t("portal.greeting", lang)}</p>
         </div>
 
         {/* ===== OVERVIEW ===== */}
@@ -350,7 +438,7 @@ export default function HomeownerPortal() {
             {/* Status */}
             <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
               <h3 className="mb-4 flex items-center gap-2 text-sm font-bold">
-                <Wrench className="h-4 w-4" style={{ color: brandColor }} /> Project Status
+                <Wrench className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.status", lang)}
               </h3>
               <div className="mb-4">
                 <div className="h-2 w-full rounded-full bg-gray-800">
@@ -376,7 +464,7 @@ export default function HomeownerPortal() {
             {/* Details Grid */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MapPin className="h-4 w-4" style={{ color: brandColor }} /> Project Details</h3>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MapPin className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.details", lang)}</h3>
                 <div className="flex flex-col gap-2.5">
                   <div><p className="text-[10px] font-medium text-gray-500 uppercase">Address</p><p className="text-sm text-white">{job.address}</p></div>
                   <div><p className="text-[10px] font-medium text-gray-500 uppercase">Job Type</p><p className="text-sm text-white">{job.job_type || "Roofing"}</p></div>
@@ -386,7 +474,7 @@ export default function HomeownerPortal() {
                 </div>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Building2 className="h-4 w-4" style={{ color: brandColor }} /> Your Contractor</h3>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Building2 className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.contractor", lang)}</h3>
                 <div className="flex flex-col gap-2.5">
                   <div><p className="text-[10px] font-medium text-gray-500 uppercase">Company</p><p className="text-sm text-white">{companyName}</p></div>
                   {contractor.phone && <div><p className="text-[10px] font-medium text-gray-500 uppercase">Phone</p><a href={`tel:${contractor.phone}`} className="text-sm hover:underline flex items-center gap-1" style={{ color: brandColor }}><Phone className="h-3 w-3" /> {contractor.phone}</a></div>}
@@ -398,7 +486,7 @@ export default function HomeownerPortal() {
             {/* Estimate */}
             {report && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><DollarSign className="h-4 w-4" style={{ color: brandColor }} /> Your Estimate</h3>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><DollarSign className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.estimate", lang)}</h3>
                 {report.pricing_tiers && report.pricing_tiers.length > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-3">
                     {report.pricing_tiers.map((tier, i) => (
@@ -457,7 +545,7 @@ export default function HomeownerPortal() {
             {/* Photos */}
             {photos.length > 0 && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Camera className="h-4 w-4" style={{ color: brandColor }} /> Project Photos ({photos.length})</h3>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Camera className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.photos", lang)} ({photos.length})</h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {photos.map((p) => (
                     <div key={p.id} className="group relative overflow-hidden rounded-xl">
@@ -473,7 +561,7 @@ export default function HomeownerPortal() {
             {/* Action Required Banner */}
             {(unpaidInvoices.length > 0 || (contracts || []).some((c) => c.status !== "signed" && c.signing_token)) && (
               <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
-                <h3 className="mb-3 text-sm font-bold text-amber-400">Action Required</h3>
+                <h3 className="mb-3 text-sm font-bold text-amber-400">{t("portal.action_required", lang)}</h3>
                 <div className="flex flex-col gap-2">
                   {unpaidInvoices.map((inv) => (
                     <a key={inv.id} href={`/pay/${inv.id}`} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3 hover:bg-gray-800 transition-colors">
@@ -501,7 +589,7 @@ export default function HomeownerPortal() {
             {appointments.length > 0 && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
-                  <Calendar className="h-4 w-4" style={{ color: brandColor }} /> Upcoming
+                  <Calendar className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.upcoming", lang)}
                 </h3>
                 <div className="flex flex-col gap-3">
                   {appointments.map((appt) => {
@@ -642,6 +730,68 @@ export default function HomeownerPortal() {
         {/* ===== DOCUMENTS ===== */}
         {activeTab === "documents" && (
           <>
+            {/* Document Upload */}
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <Upload className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.documents.upload", lang)}
+              </h3>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] font-medium text-gray-500 uppercase">{t("portal.documents.category", lang)}</label>
+                  <select
+                    value={uploadCategory}
+                    onChange={(e) => setUploadCategory(e.target.value)}
+                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Insurance">Insurance</option>
+                    <option value="Photos">Photos</option>
+                    <option value="HOA">HOA</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-colors" style={{ backgroundColor: uploading ? "#6b7280" : brandColor }}>
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Uploading..." : t("portal.documents.upload", lang)}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadDocument(file)
+                      e.target.value = ""
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Customer Uploaded Documents */}
+            {customerDocs.length > 0 && (
+              <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
+                  <FileText className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.documents.your_uploads", lang)} ({customerDocs.length})
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {customerDocs.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white truncate">{doc.file_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400">{doc.category}</span>
+                          <span className="text-[10px] text-gray-500">{formatDate(doc.created_at)}</span>
+                        </div>
+                      </div>
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors" title="Download">
+                        <Download className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {(estimates || []).length > 0 && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><FileText className="h-4 w-4" style={{ color: brandColor }} /> Estimates ({estimates.length})</h3>
@@ -717,10 +867,76 @@ export default function HomeownerPortal() {
           </>
         )}
 
+        {/* ===== MATERIALS ===== */}
+        {activeTab === "materials" && (
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold">
+              <Package className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.materials.title", lang)}
+            </h3>
+            {materialBrands.length === 0 ? (
+              <div className="py-8 text-center">
+                <Package className="mx-auto mb-3 h-10 w-10 text-gray-600" />
+                <p className="text-sm text-gray-400">{t("portal.materials.empty", lang)}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {materialBrands.map((brand) => (
+                  <div key={brand.name}>
+                    <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">{brand.name}</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {brand.products.map((item) => {
+                        const isSelected = selectedMaterialIds.has(item.id)
+                        return (
+                          <div
+                            key={item.id}
+                            className={`rounded-xl border p-4 transition-colors ${
+                              isSelected
+                                ? "border-emerald-500/40 bg-emerald-500/5"
+                                : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                            }`}
+                          >
+                            {item.image_url && (
+                              <img src={item.image_url} alt={item.color} className="mb-3 h-24 w-full rounded-lg object-cover" />
+                            )}
+                            <p className="text-sm font-bold text-white">{item.color}</p>
+                            <p className="text-[11px] text-gray-400">{item.product_line}</p>
+                            {item.description && <p className="mt-1 text-[10px] text-gray-500">{item.description}</p>}
+                            {item.price_tier && (
+                              <span className="mt-2 inline-block rounded-full bg-gray-700 px-2 py-0.5 text-[9px] font-semibold text-gray-300">
+                                {item.price_tier}
+                              </span>
+                            )}
+                            <div className="mt-3">
+                              {isSelected ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-400">
+                                  <CheckCircle className="h-3.5 w-3.5" /> {t("portal.materials.selected", lang)}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => selectMaterial(item.id)}
+                                  disabled={selectingMaterial === item.id}
+                                  className="rounded-lg px-4 py-1.5 text-xs font-bold text-white transition-colors disabled:opacity-50"
+                                  style={{ backgroundColor: brandColor }}
+                                >
+                                  {selectingMaterial === item.id ? "..." : t("portal.materials.select", lang)}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== ACTIVITY ===== */}
         {activeTab === "activity" && (
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold"><Activity className="h-4 w-4" style={{ color: brandColor }} /> Project Timeline</h3>
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold"><Activity className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.timeline", lang)}</h3>
             <div className="relative ml-3 border-l-2 border-gray-800 pl-6">
               <div className="relative mb-6">
                 <div className="absolute -left-[31px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-800 bg-gray-900"><Star className="h-3 w-3" style={{ color: brandColor }} /></div>
@@ -748,7 +964,7 @@ export default function HomeownerPortal() {
         {/* ===== MESSAGES ===== */}
         {activeTab === "messages" && (
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MessageSquare className="h-4 w-4" style={{ color: brandColor }} /> Messages</h3>
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MessageSquare className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.messages", lang)}</h3>
             <div className="mb-4 flex max-h-[50vh] flex-col gap-2 overflow-y-auto rounded-xl bg-gray-800/30 p-3">
               {messages.length === 0 ? (
                 <p className="py-6 text-center text-xs text-gray-500">No messages yet. Send a message to your contractor below.</p>

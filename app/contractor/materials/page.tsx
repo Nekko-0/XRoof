@@ -3,9 +3,33 @@
 import { useState, useEffect } from "react"
 import { useRole } from "@/lib/role-context"
 import { supabase } from "@/lib/supabaseClient"
+import { authFetch } from "@/lib/auth-fetch"
 import { MaterialCalculator, type MaterialLine } from "@/components/material-calculator"
 import { useToast } from "@/lib/toast-context"
-import { Calculator, FileText } from "lucide-react"
+import { Calculator, FileText, Eye, EyeOff, Plus, CheckCircle, Package } from "lucide-react"
+
+type CatalogProduct = {
+  id: string
+  brand: string
+  product_line: string
+  color_name: string
+  price_tier: "economy" | "mid" | "premium" | "luxury"
+  description: string | null
+}
+
+type BrandPreference = {
+  brand: string
+  visible: boolean
+}
+
+const BRANDS = ["GAF", "Owens Corning", "CertainTeed", "Atlas", "IKO", "Tamko", "Home Depot"] as const
+
+const TIER_COLORS: Record<string, string> = {
+  economy: "bg-gray-500 text-white",
+  mid: "bg-blue-500 text-white",
+  premium: "bg-amber-500 text-white",
+  luxury: "bg-purple-500 text-white",
+}
 
 export default function MaterialsPage() {
   const { accountId, loading: roleLoading } = useRole()
@@ -13,6 +37,78 @@ export default function MaterialsPage() {
   const [jobs, setJobs] = useState<{ id: string; customer_name: string; address: string; budget: number | null }[]>([])
   const [selectedJob, setSelectedJob] = useState("")
   const [jobData, setJobData] = useState<{ roofArea: number; pitch: string }>({ roofArea: 0, pitch: "4/12" })
+
+  // Catalog state
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
+  const [brandPrefs, setBrandPrefs] = useState<Record<string, boolean>>({})
+  const [activeBrand, setActiveBrand] = useState<string>(BRANDS[0])
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
+
+  // Load catalog + preferences
+  useEffect(() => {
+    if (roleLoading || !accountId) return
+    const loadCatalog = async () => {
+      setCatalogLoading(true)
+      try {
+        const [catRes, prefRes] = await Promise.all([
+          authFetch(`/api/materials/catalog?contractor_id=${accountId}`),
+          authFetch(`/api/materials/preferences`),
+        ])
+        const catData = await catRes.json()
+        const prefData = await prefRes.json()
+        if (Array.isArray(catData)) setCatalogProducts(catData)
+        if (Array.isArray(prefData)) {
+          const prefs: Record<string, boolean> = {}
+          for (const b of BRANDS) prefs[b] = true
+          for (const p of prefData as BrandPreference[]) prefs[p.brand] = p.visible
+          setBrandPrefs(prefs)
+        } else {
+          const prefs: Record<string, boolean> = {}
+          for (const b of BRANDS) prefs[b] = true
+          setBrandPrefs(prefs)
+        }
+      } catch {
+        // Catalog endpoints may not exist yet — degrade gracefully
+        const prefs: Record<string, boolean> = {}
+        for (const b of BRANDS) prefs[b] = true
+        setBrandPrefs(prefs)
+      }
+      setCatalogLoading(false)
+    }
+    loadCatalog()
+  }, [accountId, roleLoading])
+
+  const toggleBrandVisibility = async (brand: string) => {
+    const newVal = !brandPrefs[brand]
+    setBrandPrefs((prev) => ({ ...prev, [brand]: newVal }))
+    try {
+      await authFetch(`/api/materials/preferences`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand, visible: newVal }),
+      })
+    } catch {
+      toast.error("Failed to update preference")
+      setBrandPrefs((prev) => ({ ...prev, [brand]: !newVal }))
+    }
+  }
+
+  const handleAddToEstimate = (product: CatalogProduct) => {
+    const existing = JSON.parse(sessionStorage.getItem("material_estimate_items") || "[]")
+    existing.push({ description: `${product.brand} ${product.product_line} — ${product.color_name}`, quantity: 1, unit_price: 0 })
+    sessionStorage.setItem("material_estimate_items", JSON.stringify(existing))
+    setAddedProducts((prev) => new Set(prev).add(product.id))
+    toast.success(`Added ${product.color_name} to estimate items`)
+  }
+
+  // Group products by product_line for the active brand
+  const brandProducts = catalogProducts.filter((p) => p.brand === activeBrand)
+  const productsByLine: Record<string, CatalogProduct[]> = {}
+  for (const p of brandProducts) {
+    if (!productsByLine[p.product_line]) productsByLine[p.product_line] = []
+    productsByLine[p.product_line].push(p)
+  }
 
   // Load active jobs for picker
   useEffect(() => {
@@ -125,6 +221,112 @@ export default function MaterialsPage() {
         <p className="mt-1 text-xs text-muted-foreground">
           Calculate material quantities and costs for any roofing job. Customize prices to match your supplier.
         </p>
+      </div>
+
+      {/* Material Catalog */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="mb-4">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
+            <Package className="h-4 w-4 text-primary" /> Material Catalog
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Browse products by brand. Add items to your estimate or hide brands you don&apos;t carry.
+          </p>
+        </div>
+
+        {/* Brand Tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+          {BRANDS.map((brand) => (
+            <button
+              key={brand}
+              onClick={() => setActiveBrand(brand)}
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                activeBrand === brand
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              {brand}
+              {brandPrefs[brand] === false && <EyeOff className="h-3 w-3 opacity-50" />}
+            </button>
+          ))}
+        </div>
+
+        {/* Visibility Toggle */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-xs text-muted-foreground">
+            Show <strong>{activeBrand}</strong> products to customers
+          </span>
+          <button
+            onClick={() => toggleBrandVisibility(activeBrand)}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              brandPrefs[activeBrand] !== false
+                ? "bg-emerald-500/10 text-emerald-500"
+                : "bg-secondary text-muted-foreground"
+            }`}
+          >
+            {brandPrefs[activeBrand] !== false ? (
+              <><Eye className="h-3.5 w-3.5" /> Visible</>
+            ) : (
+              <><EyeOff className="h-3.5 w-3.5" /> Hidden</>
+            )}
+          </button>
+        </div>
+
+        {/* Products grouped by product_line */}
+        {catalogLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : Object.keys(productsByLine).length === 0 ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">
+            No catalog products found for {activeBrand}. Catalog data will appear once the API is populated.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(productsByLine).map(([line, products]) => (
+              <div key={line}>
+                <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{line}</h4>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {products.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-start justify-between rounded-xl border border-border bg-background p-3"
+                    >
+                      <div className="flex-1 min-w-0 mr-2">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-semibold text-foreground truncate">{product.color_name}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${TIER_COLORS[product.price_tier] || "bg-gray-500 text-white"}`}>
+                            {product.price_tier}
+                          </span>
+                        </div>
+                        {product.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAddToEstimate(product)}
+                        disabled={addedProducts.has(product.id)}
+                        className={`flex-shrink-0 rounded-lg p-2 transition-colors ${
+                          addedProducts.has(product.id)
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "bg-primary/10 text-primary hover:bg-primary/20"
+                        }`}
+                        title="Add to Estimate"
+                      >
+                        {addedProducts.has(product.id) ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Job Picker */}
