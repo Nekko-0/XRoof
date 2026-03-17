@@ -23,7 +23,7 @@ type BrandPreference = {
   visible: boolean
 }
 
-const BRANDS = ["GAF", "Owens Corning", "CertainTeed", "Atlas", "IKO", "Tamko", "Home Depot"] as const
+const BRANDS = ["GAF", "Owens Corning", "CertainTeed", "Atlas", "IKO", "Tamko", "Malarkey", "PABCO", "Castlebrook", "DaVinci", "Decra", "Boral", "Eagle", "Home Depot", "Lowe's"] as const
 
 const TIER_COLORS: Record<string, string> = {
   economy: "bg-gray-500 text-white",
@@ -61,7 +61,31 @@ const SWATCH_COLORS: Record<string, string> = {
   "birchwood": "#a09080", "heather blend": "#8a7e72",
   // Red tones
   "aged redwood": "#7a4838", "harvard slate": "#5a4858",
-  "sierra brown": "#7a5a42",
+  "sierra brown": "#7a5a42", "colonial red": "#8a3a30", "terra cotta": "#c05a3a",
+  "red blend": "#8a4238", "mesa red": "#9a4a38",
+  // Malarkey colors
+  "midnight black": "#181818", "storm grey": "#5a5e62", "silverwood": "#8a8e90",
+  "antique brown": "#6a5040", "natural wood": "#7a6850", "thunderstorm grey": "#4e5258",
+  "max def weathered wood": "#6e5d4e", "max def driftwood": "#8a7e6e",
+  "max def moire black": "#222222", "max def pewter gray": "#7a7d7e",
+  // PABCO colors
+  "black walnut": "#3a2e28", "autumn blend": "#7a5a40", "pacific redwood": "#6a3a30",
+  "granite gray": "#686c70", "shadow gray": "#505458", "white oak": "#c0b8a8",
+  "cascade green": "#3a5a48",
+  // Castlebrook / Menards colors
+  "carbon": "#2a2c2e", "autumn": "#7a5838", "coastal gray": "#6e7478",
+  "sandalwood": "#a08868",
+  // DaVinci synthetic colors
+  "slate gray": "#5a6068", "european": "#5e5650", "castle": "#686058",
+  "tahoe": "#4e4640", "brownstone blend": "#6a5a48", "multi-width slate": "#5a5e62",
+  // Decra metal colors
+  "charcoal (metal)": "#3a3c3e", "terracotta (metal)": "#b85838",
+  "stone (metal)": "#8a8680", "bark (metal)": "#5e4e40",
+  "forest green (metal)": "#2e4a38", "shadowood": "#5a4e42",
+  // Boral / Eagle concrete tile colors
+  "charcoal blend": "#3e4042", "cocoa": "#5a4838", "cafe": "#7a6a58",
+  "adobe sunset": "#b07050", "capri": "#9a8878", "santa fe": "#c09068",
+  "mocha": "#5e4a3c", "villa blend": "#8a7058",
 }
 
 function getSwatchColor(colorName: string): string {
@@ -372,13 +396,18 @@ export default function MaterialsPage() {
                           style={{
                             backgroundColor: getSwatchColor(product.color_name),
                             backgroundImage: [
-                              "radial-gradient(ellipse 1px 1px at 25% 30%, rgba(255,255,255,0.12) 0%, transparent 100%)",
-                              "radial-gradient(ellipse 1px 1px at 75% 60%, rgba(0,0,0,0.15) 0%, transparent 100%)",
-                              "radial-gradient(circle 0.5px at 50% 20%, rgba(255,255,255,0.08) 0%, transparent 100%)",
-                              "radial-gradient(circle 0.5px at 30% 70%, rgba(0,0,0,0.1) 0%, transparent 100%)",
-                              "repeating-linear-gradient(90deg, transparent 0px, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
-                              "repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)",
-                              "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.08) 100%)",
+                              "radial-gradient(ellipse 2px 1.5px at 20% 25%, rgba(255,255,255,0.18) 0%, transparent 100%)",
+                              "radial-gradient(ellipse 2px 1.5px at 70% 15%, rgba(0,0,0,0.22) 0%, transparent 100%)",
+                              "radial-gradient(ellipse 1.5px 1px at 45% 55%, rgba(255,255,255,0.15) 0%, transparent 100%)",
+                              "radial-gradient(ellipse 2px 1px at 80% 70%, rgba(0,0,0,0.18) 0%, transparent 100%)",
+                              "radial-gradient(circle 1px at 15% 65%, rgba(255,255,255,0.12) 0%, transparent 100%)",
+                              "radial-gradient(circle 1px at 60% 40%, rgba(0,0,0,0.14) 0%, transparent 100%)",
+                              "radial-gradient(circle 1px at 35% 85%, rgba(255,255,255,0.1) 0%, transparent 100%)",
+                              "radial-gradient(circle 1px at 90% 35%, rgba(0,0,0,0.16) 0%, transparent 100%)",
+                              "repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 5px)",
+                              "repeating-linear-gradient(0deg, transparent 0px, transparent 4px, rgba(255,255,255,0.05) 4px, rgba(255,255,255,0.05) 6px)",
+                              "linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.15) 58%, rgba(0,0,0,0.12) 62%, transparent 65%)",
+                              "linear-gradient(145deg, rgba(255,255,255,0.1) 0%, transparent 35%, rgba(0,0,0,0.12) 100%)",
                             ].join(", "),
                           }}
                         />
