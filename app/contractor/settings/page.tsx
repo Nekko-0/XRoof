@@ -25,6 +25,7 @@ type SettingsProfile = {
   widget_color: string
   logo_url: string
   widget_price_per_sqft: number | null
+  estimate_prices: Record<string, number> | null
   sms_notifications: Record<string, boolean>
   google_calendar_connected: boolean
   quickbooks_connected: boolean
@@ -103,7 +104,7 @@ export default function SettingsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from("profiles")
-        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, google_place_id, widget_color, logo_url, widget_price_per_sqft, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min, warranty_enabled, warranty_years, warranty_terms")
+        .select("company_name, company_tagline, phone, email, service_zips, google_review_url, google_place_id, widget_color, logo_url, widget_price_per_sqft, estimate_prices, sms_notifications, google_calendar_connected, quickbooks_connected, quickbooks_last_sync, notification_preferences, booking_enabled, booking_hours, booking_duration_min, booking_buffer_min, warranty_enabled, warranty_years, warranty_terms")
         .eq("id", accountId)
         .single()
 
@@ -111,7 +112,7 @@ export default function SettingsPage() {
         setProfile({
           company_name: "", company_tagline: "", phone: "", email: "", service_zips: [],
           google_review_url: "", google_place_id: "", widget_color: "#059669", logo_url: "",
-          widget_price_per_sqft: null, sms_notifications: {},
+          widget_price_per_sqft: null, estimate_prices: null, sms_notifications: {},
           google_calendar_connected: false, quickbooks_connected: false, quickbooks_last_sync: null,
           notification_preferences: { email: {}, sms: {} },
           booking_enabled: false, booking_hours: { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
@@ -130,6 +131,7 @@ export default function SettingsPage() {
           widget_color: data.widget_color || "#059669",
           logo_url: data.logo_url || "",
           widget_price_per_sqft: data.widget_price_per_sqft || null,
+          estimate_prices: data.estimate_prices || null,
           sms_notifications: data.sms_notifications || {},
           google_calendar_connected: data.google_calendar_connected || false,
           quickbooks_connected: data.quickbooks_connected || false,
@@ -404,22 +406,38 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Price per sq ft */}
+            {/* Material Pricing */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Default Price ($/sq ft)</label>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-muted-foreground">$</span>
-                <input
-                  type="number"
-                  step="0.25"
-                  value={profile.widget_price_per_sqft?.toString() || ""}
-                  onChange={(e) => setProfile({ ...profile, widget_price_per_sqft: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="4.50"
-                  className="w-32 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
-                />
+              <label className="mb-2 block text-xs font-semibold text-muted-foreground">Material Pricing ($/square)</label>
+              <div className="space-y-2">
+                {[
+                  { key: "3_tab", label: "3-Tab Shingles", default: 350 },
+                  { key: "architectural", label: "Architectural Shingles", default: 450 },
+                  { key: "premium", label: "Premium Shingles", default: 600 },
+                  { key: "metal", label: "Metal Roofing", default: 900 },
+                  { key: "flat_tpo", label: "Flat/TPO", default: 500 },
+                ].map((m) => (
+                  <div key={m.key} className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-foreground">{m.label}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground">$</span>
+                      <input
+                        type="number"
+                        step="25"
+                        value={profile.estimate_prices?.[m.key]?.toString() ?? m.default.toString()}
+                        onChange={(e) => {
+                          const prices = { ...(profile.estimate_prices || {}), [m.key]: e.target.value ? Number(e.target.value) : m.default }
+                          setProfile({ ...profile, estimate_prices: prices })
+                        }}
+                        placeholder={m.default.toString()}
+                        className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground text-right outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Used for instant estimates on your lead capture widget.
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Used for quick estimates. Prices are per roofing square (100 sq ft).
               </p>
             </div>
 
@@ -458,6 +476,7 @@ export default function SettingsPage() {
                 widget_color: profile.widget_color,
                 logo_url: profile.logo_url,
                 widget_price_per_sqft: profile.widget_price_per_sqft,
+                estimate_prices: profile.estimate_prices,
               })}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"

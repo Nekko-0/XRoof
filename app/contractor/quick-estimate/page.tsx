@@ -1,15 +1,25 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Calculator, ArrowRight, ChevronDown } from "lucide-react"
+import { useRole } from "@/lib/role-context"
+import { supabase } from "@/lib/supabaseClient"
 
-const MATERIALS: { label: string; basePrice: number }[] = [
-  { label: "3-Tab Shingles", basePrice: 350 },
-  { label: "Architectural Shingles", basePrice: 450 },
-  { label: "Premium Shingles", basePrice: 600 },
-  { label: "Metal Roofing", basePrice: 900 },
-  { label: "Flat/TPO", basePrice: 500 },
+const DEFAULT_PRICES: Record<string, number> = {
+  "3_tab": 350,
+  architectural: 450,
+  premium: 600,
+  metal: 900,
+  flat_tpo: 500,
+}
+
+const MATERIAL_DEFS: { key: string; label: string }[] = [
+  { key: "3_tab", label: "3-Tab Shingles" },
+  { key: "architectural", label: "Architectural Shingles" },
+  { key: "premium", label: "Premium Shingles" },
+  { key: "metal", label: "Metal Roofing" },
+  { key: "flat_tpo", label: "Flat/TPO" },
 ]
 
 const PITCHES: { label: string; multiplier: number }[] = [
@@ -37,12 +47,34 @@ type EstimateLineItem = {
 
 export default function QuickEstimatePage() {
   const router = useRouter()
+  const { accountId } = useRole()
   const [squares, setSquares] = useState("")
   const [materialIdx, setMaterialIdx] = useState(1) // default to Architectural
   const [pitchIdx, setPitchIdx] = useState(0)
   const [complexityIdx, setComplexityIdx] = useState(0)
+  const [prices, setPrices] = useState<Record<string, number>>(DEFAULT_PRICES)
 
-  const material = MATERIALS[materialIdx]
+  // Fetch contractor's custom prices
+  useEffect(() => {
+    if (!accountId) return
+    supabase
+      .from("profiles")
+      .select("estimate_prices")
+      .eq("id", accountId)
+      .single()
+      .then(({ data }) => {
+        if (data?.estimate_prices) {
+          setPrices({ ...DEFAULT_PRICES, ...data.estimate_prices })
+        }
+      })
+  }, [accountId])
+
+  const materials = useMemo(
+    () => MATERIAL_DEFS.map((m) => ({ label: m.label, key: m.key, basePrice: prices[m.key] || DEFAULT_PRICES[m.key] })),
+    [prices]
+  )
+
+  const material = materials[materialIdx]
   const pitch = PITCHES[pitchIdx]
   const complexity = COMPLEXITIES[complexityIdx]
   const sqNum = parseFloat(squares) || 0
@@ -139,8 +171,8 @@ export default function QuickEstimatePage() {
               onChange={(e) => setMaterialIdx(Number(e.target.value))}
               className="w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 pr-10 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              {MATERIALS.map((m, i) => (
-                <option key={m.label} value={i}>
+              {materials.map((m, i) => (
+                <option key={m.key} value={i}>
                   {m.label} — ${m.basePrice}/sq
                 </option>
               ))}

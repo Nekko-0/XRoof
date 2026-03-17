@@ -10,31 +10,18 @@ const supabase = createClient(
   { auth: { persistSession: false } }
 )
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Max-Age": "86400",
-}
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders })
-}
-
 export async function POST(req: Request) {
   // Rate limit: 20 leads per minute per IP
   const ip = getClientIP(req)
   const rl = rateLimit(`lead:${ip}`, 20, 60_000)
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429, headers: corsHeaders })
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 })
   }
 
   const body = await req.json()
   const v = validateBody(LeadCaptureSchema, body)
-  if (v.error) return NextResponse.json({ error: v.error }, { status: 400, headers: corsHeaders })
-  const { page_id, contractor_id, name, phone, email, address, utm_source, utm_medium, utm_campaign, source_type } = v.data!
-
-  const isEmbed = source_type === "embed_form"
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { page_id, contractor_id, name, phone, email, address, utm_source, utm_medium, utm_campaign } = v.data!
 
   // Create lead as a new job
   const { data: job, error } = await supabase
@@ -46,8 +33,8 @@ export async function POST(req: Request) {
       customer_email: email || null,
       address,
       status: "New",
-      source: isEmbed ? "embed_form" : "landing_page",
-      source_detail: utm_campaign || utm_source || (isEmbed ? "embed_form" : "landing_page"),
+      source: "landing_page",
+      source_detail: utm_campaign || utm_source || "landing_page",
       utm_source: utm_source || null,
       utm_medium: utm_medium || null,
       utm_campaign: utm_campaign || null,
@@ -58,7 +45,7 @@ export async function POST(req: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   // Auto-create customer record (skip if one with same phone already exists)
@@ -97,11 +84,10 @@ export async function POST(req: Request) {
     .single()
 
   if (profile?.phone) {
-    const sourceLabel = isEmbed ? "your website" : "landing page"
     const source = utm_campaign ? ` (${utm_campaign})` : utm_source ? ` (${utm_source})` : ""
     sendSMS(
       profile.phone,
-      `New lead from ${sourceLabel}${source}: ${name}, ${phone}, ${address}`
+      `New lead from landing page${source}: ${name}, ${phone}, ${address}`
     ).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
   }
 
@@ -113,5 +99,5 @@ export async function POST(req: Request) {
     body: JSON.stringify({ trigger: "new_lead", job_id: job.id, contractor_id, internal_secret: process.env.CRON_SECRET }),
   }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
 
-  return NextResponse.json({ success: true }, { headers: corsHeaders })
+  return NextResponse.json({ success: true })
 }
