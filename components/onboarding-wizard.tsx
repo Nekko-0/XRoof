@@ -28,7 +28,7 @@ export function OnboardingWizard({ userId, onComplete }: { userId: string; onCom
     phone: "",
     email: "",
     service_zips: "",
-    widget_color: "#14532d",
+    widget_color: "#0891b2",
     widget_price_per_sqft: "",
     logo_url: "",
   })

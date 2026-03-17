@@ -138,8 +138,8 @@ export function RevenueChart({
           <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                <stop offset="5%" stopColor="#0891b2" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
@@ -165,13 +165,13 @@ export function RevenueChart({
               />
             ))}
             {/* Main revenue area */}
-            <Area type="monotone" dataKey={dataKey} stroke="#22c55e" strokeWidth={2} fill="url(#revenueGrad)" connectNulls={false} />
+            <Area type="monotone" dataKey={dataKey} stroke="#0891b2" strokeWidth={2} fill="url(#revenueGrad)" connectNulls={false} />
             {/* Forecast line */}
             {hasForecast && (
               <Line
                 type="monotone"
                 dataKey="forecastRevenue"
-                stroke="#22c55e"
+                stroke="#0891b2"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 strokeOpacity={0.5}
@@ -205,7 +205,7 @@ export function JobsChart({ data, barKey = "jobs", label = "Jobs Completed" }: {
               contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12, color: "#e5e5e5" }}
               labelStyle={{ color: "#e5e5e5", fontWeight: 600 }}
             />
-            <Bar dataKey={barKey} fill="#22c55e" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={barKey} fill="#0891b2" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -254,14 +254,14 @@ export function MiniStatCard({
             <AreaChart data={sparkData.map((v, i) => ({ i, v }))} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={`spark-${label.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#0891b2" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <Area
                 type="monotone"
                 dataKey="v"
-                stroke="#22c55e"
+                stroke="#0891b2"
                 strokeWidth={1.5}
                 fill={`url(#spark-${label.replace(/\s/g, "")})`}
                 dot={false}
@@ -470,8 +470,8 @@ export function ProfitChart({ data }: { data: MonthlyData[] }) {
           <ComposedChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="revenueBarGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#22c55e" stopOpacity={0.3} />
+                <stop offset="0%" stopColor="#0891b2" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#0891b2" stopOpacity={0.3} />
               </linearGradient>
               <linearGradient id="costsBarGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />

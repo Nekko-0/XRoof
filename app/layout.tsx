@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, DM_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ThemeProvider } from '@/components/theme-provider'
 import { ToastWrapper } from '@/components/toast-wrapper'
 import { CookieConsent } from '@/components/cookie-consent'
 import './globals.css'
@@ -12,7 +13,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#0a0a0a',
+  themeColor: '#09090b',
 }
 
 export const metadata: Metadata = {
@@ -48,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
@@ -93,9 +94,11 @@ export default function RootLayout({
         )}
       </head>
       <body className={`${inter.variable} ${dmSans.variable} font-sans antialiased`}>
-        <ToastWrapper>
-          {children}
-        </ToastWrapper>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <ToastWrapper>
+            {children}
+          </ToastWrapper>
+        </ThemeProvider>
         <Analytics />
         <CookieConsent />
         <script

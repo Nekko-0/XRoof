@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;color:#111;">
-      <div style="text-align:center;background:#22c55e;color:white;padding:15px;border-radius:8px 8px 0 0;margin-bottom:0;">
+      <div style="text-align:center;background:#0891b2;color:white;padding:15px;border-radius:8px 8px 0 0;margin-bottom:0;">
         <h2 style="margin:0;font-size:18px;">Contract Signed!</h2>
         <p style="margin:5px 0 0;font-size:12px;opacity:0.9;">${contract.customer_name} signed on ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
       </div>

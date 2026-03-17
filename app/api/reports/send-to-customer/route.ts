@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       </div>
 
       <div style="text-align:center;margin:25px 0;">
-        <a href="${viewUrl}" style="display:inline-block;background:#22c55e;color:white;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:bold;">
+        <a href="${viewUrl}" style="display:inline-block;background:#0891b2;color:white;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:15px;font-weight:bold;">
           View Full Estimate
         </a>
       </div>
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
         This link expires on ${expiryDate}
       </p>
 
-      ${report.job_id ? `<p style="font-size:12px;text-align:center;margin:0 0 20px;"><a href="${appUrl}/portal/${report.job_id}" style="color:#22c55e;text-decoration:underline;">View Your Project Portal</a></p>` : ""}
+      ${report.job_id ? `<p style="font-size:12px;text-align:center;margin:0 0 20px;"><a href="${appUrl}/portal/${report.job_id}" style="color:#0891b2;text-decoration:underline;">View Your Project Portal</a></p>` : ""}
 
       <div style="border-top:1px solid #eee;padding-top:15px;margin-top:20px;">
         <p style="font-size:11px;color:#aaa;margin:0;">

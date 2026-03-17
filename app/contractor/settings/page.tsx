@@ -9,7 +9,7 @@ import { useRole } from "@/lib/role-context"
 import {
   Building2, Phone, Mail, MapPin, Star, DollarSign,
   Palette, Upload, Link2, Calendar, CreditCard, MessageSquare,
-  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database, AlarmClock, Shield, ClipboardList, Trash2, Plus, Gift, Copy, Check,
+  Bell, Save, CheckCircle, ExternalLink, Settings, Download, Database, AlarmClock, Shield, ClipboardList, Trash2, Plus, Gift, Copy, Check, Sun, Moon,
 } from "lucide-react"
 
 type BookingHours = { start: string; end: string; days: number[] }
@@ -47,6 +47,7 @@ type NotificationPreferences = {
 const TABS = [
   { id: "general", label: "General", icon: Building2 },
   { id: "branding", label: "Branding", icon: Palette },
+  { id: "appearance", label: "Appearance", icon: Sun },
   { id: "scheduling", label: "Scheduling", icon: Calendar },
   { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "notifications", label: "Notifications", icon: Bell },
@@ -1058,6 +1059,10 @@ export default function SettingsPage() {
         <ReferralTab />
       )}
 
+      {activeTab === "appearance" && (
+        <AppearanceTab />
+      )}
+
       {activeTab === "data" && (
         <DataExportTab />
       )}
@@ -1217,6 +1222,130 @@ function RemindersTab() {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function AppearanceTab() {
+  // Dynamic import to avoid SSR issues with next-themes
+  const [mounted, setMounted] = useState(false)
+  const [currentTheme, setCurrentTheme] = useState<string>("dark")
+
+  useEffect(() => {
+    setMounted(true)
+    // Read theme from document class
+    const isLight = document.documentElement.classList.contains("light")
+    setCurrentTheme(isLight ? "light" : "dark")
+  }, [])
+
+  const applyTheme = (mode: "dark" | "light") => {
+    setCurrentTheme(mode)
+    if (mode === "light") {
+      document.documentElement.classList.add("light")
+    } else {
+      document.documentElement.classList.remove("light")
+    }
+    // Persist via next-themes localStorage
+    localStorage.setItem("theme", mode)
+  }
+
+  if (!mounted) return null
+
+  const themes = [
+    {
+      id: "dark" as const,
+      label: "Dark",
+      description: "Easy on the eyes. Great for low-light environments.",
+      icon: Moon,
+      bg: "#09090b",
+      sidebar: "#0f0f12",
+      card: "#18181b",
+      text: "#e4e4e7",
+      muted: "#27272a",
+    },
+    {
+      id: "light" as const,
+      label: "Light",
+      description: "Clean and bright. Better for well-lit workspaces.",
+      icon: Sun,
+      bg: "#ffffff",
+      sidebar: "#f8fafc",
+      card: "#f4f4f5",
+      text: "#09090b",
+      muted: "#e4e4e7",
+    },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+          Appearance
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Choose how XRoof looks for you. This only affects your device.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {themes.map((t) => {
+          const selected = currentTheme === t.id
+          const cyan = "#0891b2"
+          return (
+            <button
+              key={t.id}
+              onClick={() => applyTheme(t.id)}
+              className={`group relative rounded-2xl border-2 p-4 text-left transition-all ${
+                selected
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/40"
+              }`}
+            >
+              {/* Mini mockup */}
+              <div className="mb-3 overflow-hidden rounded-xl border" style={{ borderColor: t.muted, background: t.bg }}>
+                {/* Header */}
+                <div className="flex items-center gap-2 px-3 py-1.5" style={{ borderBottom: `1px solid ${t.muted}` }}>
+                  <div className="h-2 w-2 rounded-full" style={{ background: cyan }} />
+                  <div className="h-1.5 w-12 rounded" style={{ background: t.muted }} />
+                  <div className="ml-auto h-1.5 w-6 rounded" style={{ background: t.muted }} />
+                </div>
+                <div className="flex">
+                  {/* Sidebar */}
+                  <div className="w-10 space-y-1.5 p-2" style={{ background: t.sidebar, borderRight: `1px solid ${t.muted}` }}>
+                    <div className="h-1.5 w-full rounded" style={{ background: cyan }} />
+                    <div className="h-1.5 w-full rounded" style={{ background: t.muted }} />
+                    <div className="h-1.5 w-full rounded" style={{ background: t.muted }} />
+                    <div className="h-1.5 w-full rounded" style={{ background: t.muted }} />
+                    <div className="h-1.5 w-full rounded" style={{ background: t.muted }} />
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 space-y-1.5 p-2">
+                    <div className="flex gap-1.5">
+                      <div className="h-6 flex-1 rounded-md" style={{ background: t.card }} />
+                      <div className="h-6 flex-1 rounded-md" style={{ background: t.card }} />
+                      <div className="h-6 flex-1 rounded-md" style={{ background: t.card }} />
+                    </div>
+                    <div className="h-10 w-full rounded-md" style={{ background: t.card }} />
+                    <div className="flex gap-1.5">
+                      <div className="h-3 flex-1 rounded" style={{ background: cyan, opacity: 0.5 }} />
+                      <div className="h-3 flex-1 rounded" style={{ background: t.muted }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <t.icon className="h-4 w-4 text-foreground" />
+                <span className="text-sm font-semibold text-foreground">{t.label}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t.description}</p>
+              {selected && (
+                <div className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                  <Check className="h-3 w-3 text-primary-foreground" />
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

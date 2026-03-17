@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111;">
         <div style="text-align:center;border-bottom:2px solid #e5e5e5;padding-bottom:15px;margin-bottom:20px;">
-          <p style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#22c55e;margin:0 0 5px;">Test Email</p>
+          <p style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#0891b2;margin:0 0 5px;">Test Email</p>
           <h1 style="font-size:20px;margin:0;">${renderedSubject || "Automation Step Preview"}</h1>
         </div>
         <p style="font-size:14px;color:#333;white-space:pre-wrap;">${renderedBody}</p>

@@ -39,7 +39,7 @@ type EdgeType =
 
 const EDGE_TYPE_CONFIG: Record<EdgeType, { label: string; color: string; dashed: boolean }> = {
   unspecified:   { label: "Unspecified",   color: "#94a3b8", dashed: false },
-  eaves:         { label: "Eaves",         color: "#22c55e", dashed: false },
+  eaves:         { label: "Eaves",         color: "#0891b2", dashed: false },
   valleys:       { label: "Valleys",       color: "#ef4444", dashed: false },
   hips:          { label: "Hips",          color: "#7c3aed", dashed: false },
   ridges:        { label: "Ridges",        color: "#facc15", dashed: false },
@@ -333,7 +333,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       const lastPt = currentPlane.points[currentPlane.points.length - 1]
       const cursor = { lat: e.latLng.lat(), lng: e.latLng.lng() }
 
-      const color = "#22c55e"
+      const color = "#0891b2"
 
       if (previewLineRef.current) {
         previewLineRef.current.setPath([lastPt, cursor])
@@ -532,7 +532,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 8,
-            fillColor: "#22c55e",
+            fillColor: "#0891b2",
             fillOpacity: 1,
             strokeWeight: 2,
             strokeColor: "#fff",
@@ -655,7 +655,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
 
     const lastPt = currentPlane.points[currentPlane.points.length - 1]
     const cursor = { lat: center.lat(), lng: center.lng() }
-    const color = "#22c55e"
+    const color = "#0891b2"
 
     if (previewLineRef.current) {
       previewLineRef.current.setPath([lastPt, cursor])
@@ -737,7 +737,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     const showLabels = mapZoom >= 19
 
     planes.forEach((plane, planeIdx) => {
-      const planeColor = planeIdx === activePlaneIndex ? "#22c55e" : "#3b82f6"
+      const planeColor = planeIdx === activePlaneIndex ? "#0891b2" : "#3b82f6"
 
       // Draw semi-transparent fill polygon (no stroke — edges drawn separately)
       if (plane.points.length >= 3) {
@@ -765,7 +765,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         const isDrawingThisPlane = drawingActive && planeIdx === activePlaneIndex
         let edgeStrokeColor = config.color
         if (isDrawingThisPlane) {
-          edgeStrokeColor = "#22c55e"
+          edgeStrokeColor = "#0891b2"
         } else if (edgeType === "unspecified") {
           edgeStrokeColor = "#3b82f6"
         }
@@ -925,8 +925,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     if (streetViewPoints.length === 0) return
 
     // Draw points and lines
-    ctx.strokeStyle = "#22c55e"
-    ctx.fillStyle = "#22c55e"
+    ctx.strokeStyle = "#0891b2"
+    ctx.fillStyle = "#0891b2"
     ctx.lineWidth = 2
 
     streetViewPoints.forEach((pt, i) => {
@@ -942,8 +942,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       ctx.fillStyle = "#fff"
       ctx.font = "bold 12px sans-serif"
       ctx.fillText(`P${i + 1}`, pt.x + 10, pt.y - 5)
-      ctx.fillStyle = "#22c55e"
-      ctx.strokeStyle = "#22c55e"
+      ctx.fillStyle = "#0891b2"
+      ctx.strokeStyle = "#0891b2"
       ctx.lineWidth = 2
     })
 
@@ -954,7 +954,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       for (let i = 1; i < streetViewPoints.length; i++) {
         ctx.lineTo(streetViewPoints[i].x, streetViewPoints[i].y)
       }
-      ctx.strokeStyle = "#22c55e"
+      ctx.strokeStyle = "#0891b2"
       ctx.lineWidth = 2
       ctx.stroke()
 
@@ -995,7 +995,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         // Display angle on canvas
         ctx.fillStyle = "rgba(0,0,0,0.7)"
         ctx.fillRect(10, 10, 180, 55)
-        ctx.fillStyle = "#22c55e"
+        ctx.fillStyle = "#0891b2"
         ctx.font = "bold 14px sans-serif"
         ctx.fillText(`Angle: ${angle.toFixed(1)}°`, 20, 30)
         ctx.fillText(`Pitch: ${pitch}`, 20, 48)
@@ -1072,8 +1072,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     if (satPitchPoints.length === 0) return
 
-    ctx.strokeStyle = "#22c55e"
-    ctx.fillStyle = "#22c55e"
+    ctx.strokeStyle = "#0891b2"
+    ctx.fillStyle = "#0891b2"
     ctx.lineWidth = 2
 
     satPitchPoints.forEach((pt, i) => {
@@ -1086,8 +1086,8 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       ctx.fillStyle = "#fff"
       ctx.font = "bold 12px sans-serif"
       ctx.fillText(`P${i + 1}`, pt.x + 10, pt.y - 5)
-      ctx.fillStyle = "#22c55e"
-      ctx.strokeStyle = "#22c55e"
+      ctx.fillStyle = "#0891b2"
+      ctx.strokeStyle = "#0891b2"
       ctx.lineWidth = 2
     })
 
@@ -1097,7 +1097,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
       for (let i = 1; i < satPitchPoints.length; i++) {
         ctx.lineTo(satPitchPoints[i].x, satPitchPoints[i].y)
       }
-      ctx.strokeStyle = "#22c55e"
+      ctx.strokeStyle = "#0891b2"
       ctx.lineWidth = 2
       ctx.stroke()
 
@@ -1129,7 +1129,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
         const { pitch, factor } = getPitchFromDegrees(angle)
         ctx.fillStyle = "rgba(0,0,0,0.7)"
         ctx.fillRect(10, 10, 180, 55)
-        ctx.fillStyle = "#22c55e"
+        ctx.fillStyle = "#0891b2"
         ctx.font = "bold 14px sans-serif"
         ctx.fillText(`Angle: ${angle.toFixed(1)}°`, 20, 30)
         ctx.fillText(`Pitch: ${pitch}`, 20, 48)
@@ -1563,7 +1563,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     style={{
                       zIndex: 40,
                       backgroundColor: "rgba(0,0,0,0.75)",
-                      color: angleIndicator.snapped ? "#22c55e" : "#ffffff",
+                      color: angleIndicator.snapped ? "#0891b2" : "#ffffff",
                       border: angleIndicator.snapped ? "1px solid rgba(34,197,94,0.5)" : "1px solid rgba(255,255,255,0.2)",
                     }}
                   >

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
   const branding = contract.contractor_id
     ? await getContractorBranding(contract.contractor_id)
-    : { company_name: contract.contractor_company || "XRoof", primary_color: "#22c55e" }
+    : { company_name: contract.contractor_company || "XRoof", primary_color: "#0891b2" }
 
   // Generate signing token with 30-day expiry
   const token = randomUUID()

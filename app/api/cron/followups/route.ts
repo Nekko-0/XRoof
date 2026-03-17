@@ -61,7 +61,7 @@ export async function GET(req: Request) {
             <p style="margin:4px 0 0;font-size:13px;color:#666;">${job.address || ""}</p>
             ${f.note ? `<p style="margin:8px 0 0;font-size:13px;color:#333;">Note: ${f.note}</p>` : ""}
           </div>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/contractor/pipeline" style="display:inline-block;background:#22c55e;color:white;text-decoration:none;padding:10px 24px;border-radius:6px;font-size:14px;font-weight:bold;">View Pipeline</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/contractor/pipeline" style="display:inline-block;background:#0891b2;color:white;text-decoration:none;padding:10px 24px;border-radius:6px;font-size:14px;font-weight:bold;">View Pipeline</a>
           <p style="font-size:10px;color:#aaa;margin-top:20px;">Sent by XRoof</p>
         </div>
       `,

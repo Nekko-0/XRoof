@@ -85,7 +85,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
       <div className="mx-auto max-w-3xl print:max-w-none print:mx-0">
         <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden print:border-none print:shadow-none print:rounded-none">
           {/* Green accent bar */}
-          <div className="h-2 bg-primary print:bg-[#14532d]" />
+          <div className="h-2 bg-primary print:bg-[#0891b2]" />
 
           <div className="p-8 print:p-10 print:text-black print:bg-white">
             {/* Header */}
@@ -115,7 +115,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
                 )}
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-primary print:text-[#14532d]">ROOF ESTIMATE</p>
+                <p className="text-lg font-bold text-primary print:text-[#0891b2]">ROOF ESTIMATE</p>
                 <p className="mt-1 flex items-center justify-end gap-2 text-sm text-muted-foreground print:text-gray-600">
                   <Hash className="h-3.5 w-3.5" />
                   {report.id.slice(0, 8).toUpperCase()}
@@ -131,7 +131,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
 
             {/* Property Info */}
             <div className="mb-6">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                 Property Information
               </h3>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -168,7 +168,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Roof Details */}
             {(report.roof_squares || report.roof_pitch) && (
               <div className="mb-6">
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Roof Details
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -191,7 +191,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Edge Measurements */}
             {report.measurement_data?.edge_totals && Object.keys(report.measurement_data.edge_totals).length > 0 && (
               <div className="mb-6">
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Edge Measurements
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -232,7 +232,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
 
               return (
                 <div className="mb-6">
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                     Materials Estimate
                   </h3>
                   <div className="rounded-lg border border-border overflow-hidden print:border-gray-300">
@@ -262,7 +262,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Photos */}
             {visiblePhotos.length > 0 && (
               <div className="mb-6">
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Property Photos
                 </h3>
                 <div className={`grid gap-3 ${visiblePhotos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
@@ -285,7 +285,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Scope of Work */}
             {report.scope_of_work && (
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Scope of Work
                 </h3>
                 <p className="whitespace-pre-wrap text-sm text-foreground print:text-black">{report.scope_of_work}</p>
@@ -295,7 +295,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Recommendations */}
             {report.recommendations && (
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Recommendations
                 </h3>
                 <p className="whitespace-pre-wrap text-sm text-foreground print:text-black">{report.recommendations}</p>
@@ -305,7 +305,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Line Items */}
             {report.estimate_line_items && report.estimate_line_items.length > 0 && (
               <div className="mb-6">
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Line Items
                 </h3>
                 <div className="rounded-lg border border-border overflow-hidden print:border-gray-300">
@@ -344,7 +344,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Pricing Tiers */}
             {report.pricing_tiers && report.pricing_tiers.length > 0 && (
               <div className="mb-6">
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Pricing Options
                 </h3>
                 <div className="grid grid-cols-3 gap-3">
@@ -354,7 +354,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
                       {tier.description && (
                         <p className="mt-1 text-xs text-muted-foreground print:text-gray-500">{tier.description}</p>
                       )}
-                      <p className="mt-2 text-2xl font-bold text-primary print:text-[#14532d]">
+                      <p className="mt-2 text-2xl font-bold text-primary print:text-[#0891b2]">
                         ${tier.price.toLocaleString()}
                       </p>
                       {report.deposit_percent != null && report.deposit_percent > 0 && (
@@ -371,10 +371,10 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Estimated Cost */}
             {report.price_quote != null && (
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Estimated Cost
                 </h3>
-                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 print:border-[#14532d]/30 print:bg-green-50">
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 print:border-[#0891b2]/30 print:bg-cyan-50">
                   <p className="text-3xl font-bold text-foreground print:text-black">
                     ${report.price_quote.toLocaleString()}
                   </p>
@@ -388,7 +388,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Material */}
             {report.material && (
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Material
                 </h3>
                 <p className="text-sm text-foreground print:text-black">{report.material}</p>
@@ -398,7 +398,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Notes */}
             {report.notes && (
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Notes
                 </h3>
                 <p className="whitespace-pre-wrap text-sm text-foreground print:text-black">{report.notes}</p>
@@ -410,7 +410,7 @@ export default function ReportViewPage({ params }: { params: Promise<{ reportId:
             {/* Prepared By */}
             {(report.worker_name || report.worker_title || report.worker_phone) && (
               <div>
-                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#14532d]">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-primary print:text-[#0891b2]">
                   Prepared By
                 </h3>
                 <div className="text-sm">
