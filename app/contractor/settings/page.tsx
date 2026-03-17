@@ -878,8 +878,8 @@ export default function SettingsPage() {
 
             {/* Rows */}
             {NOTIFICATION_EVENTS.map((event, idx) => {
-              const emailOn = profile.notification_preferences?.email?.[event.key] ?? false
-              const smsOn = profile.notification_preferences?.sms?.[event.key] ?? profile.sms_notifications?.[event.key] ?? false
+              const emailOn = profile.notification_preferences?.email?.[event.key] ?? true
+              const smsOn = profile.notification_preferences?.sms?.[event.key] ?? profile.sms_notifications?.[event.key] ?? true
 
               return (
                 <div
