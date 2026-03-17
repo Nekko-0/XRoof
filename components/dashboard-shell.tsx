@@ -15,6 +15,7 @@ import { CommandPalette } from "@/components/command-palette"
 import { useRole } from "@/lib/role-context"
 import { getRoleLabel } from "@/lib/permissions"
 import { InstallPrompt } from "@/components/install-prompt"
+import { AnnouncementBanner } from "@/components/announcement-banner"
 
 interface NavItem {
   label: string
@@ -264,6 +265,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           </h1>
           <NotificationBell />
         </header>
+        {isContractor && <AnnouncementBanner />}
         <main className={cn(
           "flex-1 p-4 md:p-8",
           isContractor && "pb-24 md:pb-8"
