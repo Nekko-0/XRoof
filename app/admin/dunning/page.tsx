@@ -135,12 +135,12 @@ export default function AdminDunningPage() {
 
       {/* Error / Success */}
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">
           {success}
         </div>
       )}
@@ -155,14 +155,14 @@ export default function AdminDunningPage() {
           <p className="text-[10px] font-medium text-muted-foreground">Total Sent</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-900/30 text-emerald-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600">
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <p className="mt-2 text-xl font-bold text-foreground">{stats.recovered}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Recovered</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-900/30 text-amber-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600">
             <DollarSign className="h-4 w-4" />
           </div>
           <p className="mt-2 text-xl font-bold text-foreground">
@@ -186,8 +186,8 @@ export default function AdminDunningPage() {
           >
             {settings.enabled ? (
               <>
-                <ToggleRight className="h-5 w-5 text-emerald-400" />
-                <span className="text-emerald-400">Enabled</span>
+                <ToggleRight className="h-5 w-5 text-emerald-600" />
+                <span className="text-emerald-600">Enabled</span>
               </>
             ) : (
               <>
@@ -293,8 +293,8 @@ export default function AdminDunningPage() {
                       <span
                         className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${
                           seq.recovered
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                            : "bg-amber-500/15 text-amber-600 border-amber-500/30"
                         }`}
                       >
                         {seq.recovered ? "Recovered" : "Pending"}

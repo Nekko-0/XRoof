@@ -483,7 +483,7 @@ export default function ContractPage() {
           </p>
           <p className="text-xl font-bold text-foreground print:text-black">XRoof</p>
           {contract?.id && (
-            <p className="mt-1 text-[10px] text-muted-foreground print:text-gray-400">
+            <p className="mt-1 text-[10px] text-muted-foreground print:text-gray-500">
               Contract #{contract.id.slice(0, 8).toUpperCase()}
             </p>
           )}
@@ -540,7 +540,7 @@ export default function ContractPage() {
                       className="flex-1 rounded border border-border bg-background px-2 py-1 text-sm"
                       placeholder="Scope item..."
                     />
-                    <button onClick={() => removeScopeItem(i)} className="text-xs text-red-400 hover:text-red-300 px-1">x</button>
+                    <button onClick={() => removeScopeItem(i)} className="text-xs text-red-600 hover:text-red-300 px-1">x</button>
                   </div>
                 )}
               </div>
@@ -765,9 +765,9 @@ export default function ContractPage() {
                 </p>
               </div>
             ) : isPendingCustomer ? (
-              <div className="flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-500/30 bg-amber-900/10">
-                <Mail className="mb-1 h-5 w-5 text-amber-400" />
-                <p className="text-xs text-amber-400 font-medium">Sent to customer</p>
+              <div className="flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-500/30 bg-amber-500/10">
+                <Mail className="mb-1 h-5 w-5 text-amber-600" />
+                <p className="text-xs text-amber-600 font-medium">Sent to customer</p>
                 <p className="text-[10px] text-muted-foreground">Awaiting signature</p>
               </div>
             ) : signingMode === "in-person" && contract?.contractor_signature_url ? (
@@ -864,8 +864,8 @@ export default function ContractPage() {
       {(isPendingCustomer || isSigned) && (
         <div className={`mt-4 rounded-xl p-3 text-center text-sm font-semibold print:hidden ${
           isSigned
-            ? "bg-emerald-900/20 text-emerald-400 border border-emerald-800/30"
-            : "bg-amber-900/20 text-amber-400 border border-amber-800/30"
+            ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+            : "bg-amber-500/15 text-amber-600 border border-amber-500/30"
         }`}>
           {isSigned ? "Contract fully signed by both parties" : "Awaiting customer signature — signing link sent via email"}
         </div>
@@ -971,9 +971,9 @@ export default function ContractPage() {
           <h3 className="mb-3 text-sm font-bold text-foreground">Document Activity</h3>
           <div className="space-y-2">
             {docEvents.map((ev) => {
-              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-400" />
-                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-400" />
-                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-400" />
+              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-600" />
+                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-600" />
+                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-600" />
                 : <Clock className="h-3.5 w-3.5 text-muted-foreground" />
               const label = ev.event_type === "sent" ? "Contract sent"
                 : ev.event_type === "opened" ? "Email opened"
@@ -1006,7 +1006,7 @@ export default function ContractPage() {
           .print\\:text-black { color: black !important; }
           .print\\:border-gray-300 { border-color: #d1d5db !important; }
           .print\\:text-gray-500 { color: #6b7280 !important; }
-          .print\\:text-gray-400 { color: #9ca3af !important; }
+          .print\\:text-gray-500 { color: #9ca3af !important; }
           .print\\:bg-transparent { background: transparent !important; }
           .print\\:p-0 { padding: 0 !important; }
           .print\\:bg-gray-50 { background: #f9fafb !important; }

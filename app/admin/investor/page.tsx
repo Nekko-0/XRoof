@@ -52,17 +52,17 @@ export default function InvestorPage() {
   }
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" /></div>
-  if (error || !data) return <p className="p-6 text-red-400">{error || "Failed to load"}</p>
+  if (error || !data) return <p className="p-6 text-red-600">{error || "Failed to load"}</p>
 
   const metrics = [
-    { label: "Monthly Recurring Revenue", value: `$${data.mrr.toLocaleString()}`, icon: DollarSign, color: "bg-emerald-900/30 text-emerald-400" },
-    { label: "MRR Growth Rate", value: `${data.mrr_growth_rate}%`, icon: TrendingUp, color: data.mrr_growth_rate >= 0 ? "bg-emerald-900/30 text-emerald-400" : "bg-red-900/30 text-red-400" },
+    { label: "Monthly Recurring Revenue", value: `$${data.mrr.toLocaleString()}`, icon: DollarSign, color: "bg-emerald-500/15 text-emerald-600" },
+    { label: "MRR Growth Rate", value: `${data.mrr_growth_rate}%`, icon: TrendingUp, color: data.mrr_growth_rate >= 0 ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/15 text-red-600" },
     { label: "Annual Recurring Revenue", value: `$${data.arr.toLocaleString()}`, icon: BarChart3, color: "bg-indigo-900/30 text-indigo-400" },
-    { label: "Churn Rate", value: `${data.churn_rate}%`, icon: Activity, color: data.churn_rate <= 5 ? "bg-emerald-900/30 text-emerald-400" : "bg-amber-900/30 text-amber-400" },
+    { label: "Churn Rate", value: `${data.churn_rate}%`, icon: Activity, color: data.churn_rate <= 5 ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600" },
     { label: "Average LTV", value: `$${data.average_ltv.toLocaleString()}`, icon: Heart, color: "bg-pink-900/30 text-pink-400" },
-    { label: "Net Revenue Retention", value: `${data.nrr}%`, icon: Percent, color: data.nrr >= 100 ? "bg-emerald-900/30 text-emerald-400" : "bg-amber-900/30 text-amber-400" },
+    { label: "Net Revenue Retention", value: `${data.nrr}%`, icon: Percent, color: data.nrr >= 100 ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600" },
     { label: "ARPU", value: `$${data.arpu.toLocaleString()}`, icon: Zap, color: "bg-purple-900/30 text-purple-400" },
-    { label: "Total Contractors", value: data.total_contractors.toString(), icon: Users, color: "bg-blue-900/30 text-blue-400" },
+    { label: "Total Contractors", value: data.total_contractors.toString(), icon: Users, color: "bg-blue-500/15 text-blue-600" },
     { label: "Active Subscribers", value: data.active_subs.toString(), icon: UserCheck, color: "bg-indigo-900/30 text-indigo-400" },
     { label: "Trials", value: data.trials.toString(), icon: Clock, color: "bg-sky-900/30 text-sky-400" },
   ]
@@ -150,7 +150,7 @@ export default function InvestorPage() {
                       <td className="py-2.5 pr-4 font-medium text-foreground">{row.month}</td>
                       <td className="py-2.5 pr-4 text-right text-muted-foreground">${row.subscriptions.toLocaleString()}</td>
                       <td className="py-2.5 pr-4 text-right text-muted-foreground">${row.reports.toLocaleString()}</td>
-                      <td className="py-2.5 text-right font-medium text-emerald-400">${row.total.toLocaleString()}</td>
+                      <td className="py-2.5 text-right font-medium text-emerald-600">${row.total.toLocaleString()}</td>
                     </tr>
                   ))}
                   {/* Total row */}
@@ -162,7 +162,7 @@ export default function InvestorPage() {
                     <td className="py-2.5 pr-4 text-right font-bold text-muted-foreground">
                       ${data.monthly_revenue.reduce((s, r) => s + r.reports, 0).toLocaleString()}
                     </td>
-                    <td className="py-2.5 text-right font-bold text-emerald-400">
+                    <td className="py-2.5 text-right font-bold text-emerald-600">
                       ${data.monthly_revenue.reduce((s, r) => s + r.total, 0).toLocaleString()}
                     </td>
                   </tr>
@@ -177,7 +177,7 @@ export default function InvestorPage() {
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Key Highlights</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex items-start gap-3 rounded-xl bg-secondary/30 p-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-900/30 text-emerald-400 flex-shrink-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 flex-shrink-0">
                 <DollarSign className="h-4 w-4" />
               </div>
               <div>
@@ -186,7 +186,7 @@ export default function InvestorPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 rounded-xl bg-secondary/30 p-3">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 ${data.nrr >= 100 ? "bg-emerald-900/30 text-emerald-400" : "bg-amber-900/30 text-amber-400"}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 ${data.nrr >= 100 ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"}`}>
                 <Percent className="h-4 w-4" />
               </div>
               <div>
@@ -204,7 +204,7 @@ export default function InvestorPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 rounded-xl bg-secondary/30 p-3">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 ${data.churn_rate <= 5 ? "bg-emerald-900/30 text-emerald-400" : "bg-red-900/30 text-red-400"}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 ${data.churn_rate <= 5 ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/15 text-red-600"}`}>
                 <Activity className="h-4 w-4" />
               </div>
               <div>

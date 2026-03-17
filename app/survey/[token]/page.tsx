@@ -65,7 +65,7 @@ export default function SurveyPage() {
             <div className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-5">
               <div className="flex justify-center gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                  <Star key={s} className="h-5 w-5 fill-amber-400 text-amber-600" />
                 ))}
               </div>
               <p className="text-sm font-semibold text-slate-800 mb-1">
@@ -134,7 +134,7 @@ export default function SurveyPage() {
                 <Star
                   className={`h-10 w-10 transition-colors ${
                     star <= (hoverRating || rating)
-                      ? "fill-amber-400 text-amber-400"
+                      ? "fill-amber-400 text-amber-600"
                       : "text-slate-300"
                   }`}
                 />

@@ -127,7 +127,7 @@ export function RevenueChart({
       <div className="mb-1 flex items-center justify-between">
         <h4 className="text-sm font-bold text-foreground">Revenue</h4>
         {hasForecast && forecastTotal != null && (
-          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
             Projected ${forecastTotal.toLocaleString()}
           </span>
         )}
@@ -235,12 +235,12 @@ export function MiniStatCard({
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="mt-1 flex items-baseline gap-2">
         <p className="text-2xl font-bold text-foreground">{value}</p>
-        {trend === "up" && <span className="text-xs font-semibold text-emerald-400">&uarr;</span>}
-        {trend === "down" && <span className="text-xs font-semibold text-red-400">&darr;</span>}
+        {trend === "up" && <span className="text-xs font-semibold text-emerald-600">&uarr;</span>}
+        {trend === "down" && <span className="text-xs font-semibold text-red-600">&darr;</span>}
         {change && (
           <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-            change.startsWith("+") ? "bg-emerald-500/10 text-emerald-400" :
-            change.startsWith("-") ? "bg-red-500/10 text-red-400" :
+            change.startsWith("+") ? "bg-emerald-500/10 text-emerald-600" :
+            change.startsWith("-") ? "bg-red-500/10 text-red-600" :
             "bg-secondary text-muted-foreground"
           }`}>
             {change}
@@ -294,9 +294,9 @@ export function PipelineTicker({ items }: { items: TickerItem[] }) {
           <div className="ticker-scroll flex gap-6 whitespace-nowrap px-4">
             {doubled.map((item, i) => {
               const colorClass =
-                item.color === "emerald" ? "text-emerald-400" :
-                item.color === "blue" ? "text-blue-400" :
-                item.color === "amber" ? "text-amber-400" :
+                item.color === "emerald" ? "text-emerald-600" :
+                item.color === "blue" ? "text-blue-600" :
+                item.color === "amber" ? "text-amber-600" :
                 "text-muted-foreground"
               const dotClass =
                 item.color === "emerald" ? "bg-emerald-400" :
@@ -359,7 +359,7 @@ export function DealVelocityMeter({ stages }: { stages: VelocityStage[] }) {
         <h4 className="text-sm font-bold text-foreground">Deal Velocity</h4>
         <div className="flex items-center gap-3">
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-            totalDays <= totalBenchmark ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+            totalDays <= totalBenchmark ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
           }`}>
             Your avg: {totalDays}d
           </span>
@@ -385,7 +385,7 @@ export function DealVelocityMeter({ stages }: { stages: VelocityStage[] }) {
               title={`${stage.name}: ${stage.avgDays}d (benchmark: ${stage.benchmark}d)`}
             >
               <span className="text-[10px] font-bold text-foreground truncate px-1">{stage.name}</span>
-              <span className={`text-[9px] font-semibold ${isFaster ? "text-emerald-400" : "text-red-400"}`}>
+              <span className={`text-[9px] font-semibold ${isFaster ? "text-emerald-600" : "text-red-600"}`}>
                 {stage.avgDays}d
               </span>
             </div>
@@ -400,7 +400,7 @@ export function DealVelocityMeter({ stages }: { stages: VelocityStage[] }) {
           return (
             <div key={stage.name} className="flex-1 rounded-lg bg-secondary/30 p-2 text-center">
               <p className="text-[10px] font-medium text-muted-foreground">{stage.name}</p>
-              <p className={`text-sm font-bold ${isFaster ? "text-emerald-400" : "text-red-400"}`}>
+              <p className={`text-sm font-bold ${isFaster ? "text-emerald-600" : "text-red-600"}`}>
                 {stage.avgDays}d
               </p>
               <p className="text-[9px] text-muted-foreground">bench: {stage.benchmark}d</p>
@@ -443,7 +443,7 @@ export function ZipHeatmap({ data }: { data: ZipData[] }) {
               style={{ backgroundColor: `rgba(34, 197, 94, ${intensity * 0.25})` }}
             >
               <span className="text-sm font-bold text-foreground">{z.zip}</span>
-              <span className="text-xs font-semibold text-emerald-400">${z.revenue.toLocaleString()}</span>
+              <span className="text-xs font-semibold text-emerald-600">${z.revenue.toLocaleString()}</span>
               <span className="text-[10px] text-muted-foreground">{z.count} job{z.count !== 1 ? "s" : ""}</span>
             </div>
           )

@@ -887,7 +887,7 @@ export default function MyJobsPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-foreground">{job.customer_name || "Customer"}</h3>
                     {portalMsgCounts[job.id] > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                         <MessageSquare className="h-3 w-3" /> {portalMsgCounts[job.id]}
                       </span>
                     )}
@@ -903,15 +903,15 @@ export default function MyJobsPage() {
                     <button
                       onClick={() => handleDelete(job.id)}
                       title="Delete lead"
-                      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                     <StatusBadge status={job.status} />
                     {job.source && (
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        job.source === "widget" ? "bg-blue-500/15 text-blue-400" :
-                        job.source === "manual" ? "bg-emerald-500/15 text-emerald-400" :
+                        job.source === "widget" ? "bg-blue-500/15 text-blue-600" :
+                        job.source === "manual" ? "bg-emerald-500/15 text-emerald-600" :
                         job.source === "referral" ? "bg-primary/15 text-primary" :
                         "bg-secondary text-muted-foreground"
                       }`}>
@@ -981,7 +981,7 @@ export default function MyJobsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
                     {job.budget && (
-                      <span className="flex items-center gap-1 text-sm font-semibold text-emerald-400">
+                      <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
                         <DollarSign className="h-4 w-4" />
                         ${job.budget.toLocaleString()}
                       </span>
@@ -1035,7 +1035,7 @@ export default function MyJobsPage() {
                       onClick={() => setExpandedPhotos(expandedPhotos === job.id ? null : job.id)}
                       className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
                         expandedPhotos === job.id
-                          ? "bg-blue-900/30 text-blue-400 border border-blue-700"
+                          ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
                           : "border border-border bg-card text-foreground hover:bg-secondary"
                       }`}
                     >
@@ -1054,7 +1054,7 @@ export default function MyJobsPage() {
                         href={`/pay/${jobInvoices[job.id]}?preview=true`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-900/30"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/15"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         View Invoice
@@ -1269,7 +1269,7 @@ export default function MyJobsPage() {
                       />
                       <button type="button"
                         onClick={() => setInvoiceForm({ ...invoiceForm, line_items: invoiceForm.line_items.filter((_, j) => j !== i) })}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                        className="rounded-lg p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-500/10"
                       ><X className="h-4 w-4" /></button>
                     </div>
                   ))}
@@ -1311,7 +1311,7 @@ export default function MyJobsPage() {
                     </div>
                   )}
                   {discRaw > 0 && (
-                    <div className="flex justify-between text-xs text-emerald-400">
+                    <div className="flex justify-between text-xs text-emerald-600">
                       <span>Discount {invoiceForm.discountType === "percent" ? `(${discRaw}%)` : ""}</span>
                       <span>-${discDollars.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                     </div>
@@ -1425,7 +1425,7 @@ export default function MyJobsPage() {
                 ))}
               </div>
               {stripeConnected === false && invoiceForm.payment_methods.includes("card") && (
-                <div className="mt-2 rounded-lg border border-amber-700/30 bg-amber-900/20 px-3 py-2.5 text-xs text-amber-400">
+                <div className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/15 px-3 py-2.5 text-xs text-amber-600">
                   Card payments require Stripe Connect. <a href="/contractor/billing" className="underline font-semibold">Connect your Stripe account</a> in Billing, or deselect &quot;Card (Stripe)&quot; and use other payment methods.
                 </div>
               )}
@@ -1474,7 +1474,7 @@ export default function MyJobsPage() {
                       {invoiceForm.milestones.length > 2 && (
                         <button
                           onClick={() => setInvoiceForm((prev) => ({ ...prev, milestones: prev.milestones.filter((_, idx) => idx !== i) }))}
-                          className="rounded p-1 text-muted-foreground hover:text-red-400"
+                          className="rounded p-1 text-muted-foreground hover:text-red-600"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -1501,12 +1501,12 @@ export default function MyJobsPage() {
               <div className="mt-6">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
-                  <span className="text-sm font-bold text-emerald-400">Invoice Created!</span>
+                  <span className="text-sm font-bold text-emerald-600">Invoice Created!</span>
                 </div>
                 {invoiceForm.customer_email ? (
                   <p className="text-xs text-muted-foreground mb-3">Invoice emailed to {invoiceForm.customer_email}</p>
                 ) : (
-                  <p className="text-xs text-amber-400 mb-3">No email sent — add a customer email to auto-send invoices.</p>
+                  <p className="text-xs text-amber-600 mb-3">No email sent — add a customer email to auto-send invoices.</p>
                 )}
                 <div className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground break-all select-all mb-3">
                   {createdPayUrl}
@@ -1595,8 +1595,8 @@ export default function MyJobsPage() {
             </p>
 
             {!googleReviewUrl ? (
-              <div className="mb-4 rounded-lg bg-amber-900/20 border border-amber-700/30 p-3">
-                <p className="text-sm text-amber-400">
+              <div className="mb-4 rounded-lg bg-amber-500/15 border border-amber-500/30 p-3">
+                <p className="text-sm text-amber-600">
                   Set your Google Review URL in your <a href="/contractor/profile" className="underline font-semibold">Profile</a> first.
                 </p>
               </div>

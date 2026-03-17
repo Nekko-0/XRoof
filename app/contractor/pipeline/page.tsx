@@ -60,12 +60,12 @@ const PIPELINE_STAGES = ["New", "Accepted", "Estimate Sent", "Scheduled", "In Pr
 
 const STAGE_CONFIG: Record<string, { bg: string; hex: string; text: string; light: string; lightText: string; border: string }> = {
   "New":           { bg: "bg-slate-500",   hex: "#64748b", text: "text-slate-700 dark:text-slate-300",   light: "bg-slate-500/10",   lightText: "text-slate-600 dark:text-slate-400",   border: "border-t-slate-500" },
-  "Accepted":      { bg: "bg-amber-500",   hex: "#f59e0b", text: "text-amber-700 dark:text-amber-300",   light: "bg-amber-500/10",   lightText: "text-amber-600 dark:text-amber-400",   border: "border-t-amber-500" },
-  "Estimate Sent": { bg: "bg-blue-500",    hex: "#3b82f6", text: "text-blue-700 dark:text-blue-300",    light: "bg-blue-500/10",    lightText: "text-blue-600 dark:text-blue-400",    border: "border-t-blue-500" },
-  "Scheduled":     { bg: "bg-blue-500",  hex: "#3b82f6", text: "text-blue-700 dark:text-blue-300",  light: "bg-blue-500/10",  lightText: "text-blue-600 dark:text-blue-400",  border: "border-t-blue-500" },
-  "In Progress":   { bg: "bg-cyan-500",    hex: "#06b6d4", text: "text-cyan-700 dark:text-cyan-300",    light: "bg-cyan-500/10",    lightText: "text-cyan-600 dark:text-cyan-400",    border: "border-t-cyan-500" },
-  "Completed":     { bg: "bg-emerald-500", hex: "#10b981", text: "text-emerald-700 dark:text-emerald-300", light: "bg-emerald-500/10", lightText: "text-emerald-600 dark:text-emerald-400", border: "border-t-emerald-500" },
-  "Lost":          { bg: "bg-red-500",     hex: "#ef4444", text: "text-red-700 dark:text-red-300",     light: "bg-red-500/10",     lightText: "text-red-600 dark:text-red-400",     border: "border-t-red-500" },
+  "Accepted":      { bg: "bg-amber-500",   hex: "#f59e0b", text: "text-amber-700 dark:text-amber-300",   light: "bg-amber-500/10",   lightText: "text-amber-600 dark:text-amber-600",   border: "border-t-amber-500" },
+  "Estimate Sent": { bg: "bg-blue-500",    hex: "#3b82f6", text: "text-blue-700 dark:text-blue-300",    light: "bg-blue-500/10",    lightText: "text-blue-600 dark:text-blue-600",    border: "border-t-blue-500" },
+  "Scheduled":     { bg: "bg-blue-500",  hex: "#3b82f6", text: "text-blue-700 dark:text-blue-300",  light: "bg-blue-500/10",  lightText: "text-blue-600 dark:text-blue-600",  border: "border-t-blue-500" },
+  "In Progress":   { bg: "bg-cyan-500",    hex: "#06b6d4", text: "text-cyan-700 dark:text-cyan-300",    light: "bg-cyan-500/10",    lightText: "text-cyan-600 dark:text-cyan-600",    border: "border-t-cyan-500" },
+  "Completed":     { bg: "bg-emerald-500", hex: "#10b981", text: "text-emerald-700 dark:text-emerald-300", light: "bg-emerald-500/10", lightText: "text-emerald-600 dark:text-emerald-600", border: "border-t-emerald-500" },
+  "Lost":          { bg: "bg-red-500",     hex: "#ef4444", text: "text-red-700 dark:text-red-300",     light: "bg-red-500/10",     lightText: "text-red-600 dark:text-red-600",     border: "border-t-red-500" },
 }
 
 const NEXT_STAGES: Record<string, string[]> = {
@@ -478,7 +478,7 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between pb-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <p className="text-sm text-muted-foreground">
-            {activeJobs} active · <span className="font-semibold text-emerald-600 dark:text-emerald-400">${pipelineValue.toLocaleString()}</span> in pipeline
+            {activeJobs} active · <span className="font-semibold text-emerald-600 dark:text-emerald-600">${pipelineValue.toLocaleString()}</span> in pipeline
           </p>
           {canEdit && (
             <button
@@ -600,7 +600,7 @@ export default function PipelinePage() {
                     </span>
                   </div>
                   {stageValue > 0 && (
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-600">
                       ${stageValue >= 1000 ? `${(stageValue / 1000).toFixed(stageValue >= 10000 ? 0 : 1)}k` : stageValue}
                     </span>
                   )}
@@ -680,7 +680,7 @@ export default function PipelinePage() {
             <>
               {stageValue > 0 && (
                 <p className="text-xs text-muted-foreground px-1">
-                  Stage total: <span className="font-semibold text-emerald-600 dark:text-emerald-400">${stageValue.toLocaleString()}</span>
+                  Stage total: <span className="font-semibold text-emerald-600 dark:text-emerald-600">${stageValue.toLocaleString()}</span>
                 </p>
               )}
               {stageJobs.length === 0 ? (
@@ -887,10 +887,10 @@ type JobCardProps = {
 const COST_CATEGORIES = ["Materials", "Labor", "Subcontractor", "Permits", "Dumpster", "Other"] as const
 
 const SCORE_COLORS: Record<number, string> = {
-  1: "bg-red-500/20 text-red-400",
-  2: "bg-orange-500/20 text-orange-400",
-  3: "bg-yellow-500/20 text-yellow-400",
-  4: "bg-emerald-500/20 text-emerald-400",
+  1: "bg-red-500/20 text-red-600",
+  2: "bg-orange-500/20 text-orange-600",
+  3: "bg-yellow-500/20 text-yellow-600",
+  4: "bg-emerald-500/20 text-emerald-600",
   5: "bg-emerald-600/20 text-emerald-300",
 }
 
@@ -987,7 +987,7 @@ function JobCard({
                   </span>
                 )}
                 {job.budget ? (
-                  <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-600 tabular-nums">
                     ${job.budget.toLocaleString()}
                   </span>
                 ) : null}
@@ -1009,37 +1009,37 @@ function JobCard({
         {hasBadges && (
           <div className="flex flex-wrap items-center gap-1 mt-2">
             {report?.sent && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-600">
                 <FileText className="h-2.5 w-2.5" /> Estimate Sent
               </span>
             )}
             {report && !report.sent && report.completed && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-600">
                 <FileText className="h-2.5 w-2.5" /> Estimate Ready
               </span>
             )}
             {contract?.signed && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-600">
                 <PenTool className="h-2.5 w-2.5" /> Signed
               </span>
             )}
             {contract && !contract.signed && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-600">
                 <PenTool className="h-2.5 w-2.5" /> Contract Pending
               </span>
             )}
             {invoice && invoice.count > 0 && invoice.paidCount === invoice.count && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-600">
                 <Receipt className="h-2.5 w-2.5" /> Paid
               </span>
             )}
             {invoice && invoice.count > 0 && invoice.paidCount < invoice.count && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-600">
                 <Receipt className="h-2.5 w-2.5" /> {invoice.paidCount}/{invoice.count} Paid
               </span>
             )}
             {job.scheduled_date && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-600">
                 <Calendar className="h-2.5 w-2.5" /> {formatShortDate(job.scheduled_date)}
               </span>
             )}
@@ -1060,7 +1060,7 @@ function JobCard({
               </span>
             )}
             {job.source === "widget" && (
-              <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+              <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-600">
                 Widget
               </span>
             )}

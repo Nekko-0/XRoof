@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, MessageSquare, User, Wrench, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, HelpCircle, Mail, Calculator, Truck, Globe, Receipt} from "lucide-react"
+import { Home, FileText, MessageSquare, User, BarChart3, Menu, X, LogOut, Users, ClipboardList, Ruler, CreditCard, Calendar, Kanban, Crosshair, Zap, Search, UserCircle, Smartphone, Settings, Calculator, Truck, Globe, Receipt, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -34,31 +34,55 @@ interface NavItem {
   desktopOnly?: boolean
 }
 
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
 interface DashboardShellProps {
   children: React.ReactNode
   role: "contractor" | "admin"
 }
 
-const contractorNav: NavItem[] = [
-  { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
-  { label: "My Jobs", href: "/contractor/leads", icon: FileText },
-  { label: "Customers", href: "/contractor/customers", icon: UserCircle },
-  { label: "Measure", href: "/contractor/measure", icon: Ruler },
-  { label: "Estimates", href: "/contractor/reports", icon: FileText },
-  { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
-  { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
-  { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true, desktopOnly: true },
-  { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true, desktopOnly: true },
-  { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true, desktopOnly: true },
-  { label: "Materials", href: "/contractor/materials", icon: Calculator },
-  { label: "Quick Estimate", href: "/contractor/quick-estimate", icon: Receipt, desktopOnly: true },
-
-  { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true, desktopOnly: true },
-  { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true, desktopOnly: true },
-  { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
-  { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true, desktopOnly: true },
-  { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true, desktopOnly: true },
-  { label: "Profile", href: "/contractor/profile", icon: User },
+const contractorNavGroups: NavGroup[] = [
+  {
+    label: "Home",
+    items: [
+      { label: "Dashboard", href: "/contractor/dashboard", icon: BarChart3 },
+      { label: "My Jobs", href: "/contractor/leads", icon: FileText },
+      { label: "Customers", href: "/contractor/customers", icon: UserCircle },
+      { label: "Calendar", href: "/contractor/calendar", icon: Calendar },
+      { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { label: "Measure", href: "/contractor/measure", icon: Ruler },
+      { label: "Estimates", href: "/contractor/reports", icon: FileText },
+      { label: "Pipeline", href: "/contractor/pipeline", icon: Kanban },
+      { label: "Materials", href: "/contractor/materials", icon: Calculator },
+      { label: "Quick Estimate", href: "/contractor/quick-estimate", icon: Receipt, desktopOnly: true },
+    ],
+  },
+  {
+    label: "Manage",
+    items: [
+      { label: "Work Orders", href: "/contractor/work-orders", icon: ClipboardList, adminOnly: true, desktopOnly: true },
+      { label: "Dispatch", href: "/contractor/dispatch", icon: Truck, adminOnly: true, desktopOnly: true },
+      { label: "Team", href: "/contractor/team", icon: Users, adminOnly: true, desktopOnly: true },
+      { label: "Automations", href: "/contractor/automations", icon: Zap, adminOnly: true, desktopOnly: true },
+      { label: "Landing Pages", href: "/contractor/landing-pages", icon: Globe, adminOnly: true, desktopOnly: true },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Billing", href: "/contractor/billing", icon: CreditCard, adminOnly: true, desktopOnly: true },
+      { label: "Settings", href: "/contractor/settings", icon: Settings, adminOnly: true, desktopOnly: true },
+      { label: "Profile", href: "/contractor/profile", icon: User },
+    ],
+  },
 ]
 
 const adminNav: NavItem[] = [
@@ -80,6 +104,8 @@ const contractorTabs: NavItem[] = [
   { label: "Messages", href: "/contractor/messages", icon: MessageSquare },
 ]
 
+const COLLAPSED_KEY = "xroof_sidebar_collapsed"
+
 export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -87,6 +113,19 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const { role: teamRole, granularRole, isOwner, accountId, can } = useRole()
   const isContractor = role === "contractor"
   const unreadPortalCount = useUnreadPortalCount()
+
+  // Sidebar collapse (desktop only)
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCollapsed(localStorage.getItem(COLLAPSED_KEY) === "true")
+    }
+  }, [])
+  const toggleCollapsed = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    localStorage.setItem(COLLAPSED_KEY, String(next))
+  }
 
   // Search
   const [searchQuery, setSearchQuery] = useState("")
@@ -136,16 +175,33 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  // Filter nav items based on granular permissions
-  const navItems = useMemo(() => {
-    const items = role === "admin" ? adminNav : contractorNav
-    if (role === "admin" || isOwner) return items
-    return items.filter((item) => {
-      const requiredPerm = NAV_PERMISSIONS[item.href]
-      if (!requiredPerm) return !item.adminOnly // fallback to legacy check
-      return can(requiredPerm)
-    })
-  }, [role, teamRole, can])
+  // Filter nav items based on granular permissions — grouped for contractor, flat for admin
+  const filteredGroups = useMemo(() => {
+    if (role === "admin") return null // admin uses flat nav
+    return contractorNavGroups
+      .map((group) => ({
+        ...group,
+        items: isOwner
+          ? group.items
+          : group.items.filter((item) => {
+              const requiredPerm = NAV_PERMISSIONS[item.href]
+              if (!requiredPerm) return !item.adminOnly
+              return can(requiredPerm)
+            }),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [role, isOwner, teamRole, can])
+
+  const adminItems = useMemo(() => {
+    if (role !== "admin") return []
+    return adminNav
+  }, [role])
+
+  // All items flat (for header title lookup)
+  const allNavItems = useMemo(() => {
+    if (filteredGroups) return filteredGroups.flatMap((g) => g.items)
+    return adminItems
+  }, [filteredGroups, adminItems])
 
   const roleLabel = isOwner ? "Owner" : getRoleLabel(granularRole)
 
@@ -153,6 +209,9 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     await supabase.auth.signOut()
     router.push("/")
   }
+
+  const isActiveLink = (href: string) =>
+    pathname === href || (href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -163,108 +222,196 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar — hidden on mobile for contractor, hamburger for admin */}
+      {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 md:static md:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-200 md:static md:translate-x-0",
+          isContractor && collapsed ? "w-16" : "w-56 sm:w-64",
           isContractor
             ? "-translate-x-full lg:translate-x-0"
             : mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
+        {/* Logo */}
+        <div className={cn("flex h-16 items-center border-b border-sidebar-border", collapsed ? "justify-center px-2" : "justify-between px-6")}>
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
               <Home className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-sidebar-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-              XRoof
-            </span>
+            {!collapsed && (
+              <span className="text-lg font-semibold text-sidebar-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+                XRoof
+              </span>
+            )}
           </Link>
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground md:hidden"
-            onClick={() => setMobileOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="px-4 pt-4">
-          <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {isContractor ? `${roleLabel} Portal` : "XRoof Owner Portal"}
-          </p>
-          {isContractor && (
-            <div ref={searchRef} className="relative mb-2" data-tour="search">
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true) }}
-                  onFocus={() => setSearchOpen(true)}
-                  placeholder="Search jobs, customers..."
-                  className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/50"
-                />
-              </div>
-              {searchOpen && searchResults.length > 0 && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
-                  {searchResults.map((r, i) => (
-                    <Link
-                      key={i}
-                      href={r.href}
-                      onClick={() => { setSearchOpen(false); setSearchQuery(""); setMobileOpen(false) }}
-                      className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-secondary transition-colors"
-                    >
-                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary">{r.type}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground truncate">{r.label}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+          {!collapsed && (
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground md:hidden"
+              onClick={() => setMobileOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
           )}
         </div>
 
-        <nav className="flex-1 px-4 py-2">
-          <ul className="flex flex-col gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
-              return (
-                <li key={item.href} className={cn(item.desktopOnly && "hidden lg:block")}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    data-tour={TOUR_IDS[item.label]}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                    {item.label === "Messages" && unreadPortalCount > 0 && (
-                      <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold text-destructive-foreground">
-                        {unreadPortalCount > 9 ? "9+" : unreadPortalCount}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+        {/* Portal label + Search */}
+        {!collapsed && (
+          <div className="px-4 pt-4">
+            <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {isContractor ? `${roleLabel} Portal` : "XRoof Owner Portal"}
+            </p>
+            {isContractor && (
+              <div ref={searchRef} className="relative mb-2" data-tour="search">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                  <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true) }}
+                    onFocus={() => setSearchOpen(true)}
+                    placeholder="Search jobs, customers..."
+                    className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                {searchOpen && searchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+                    {searchResults.map((r, i) => (
+                      <Link
+                        key={i}
+                        href={r.href}
+                        onClick={() => { setSearchOpen(false); setSearchQuery(""); setMobileOpen(false) }}
+                        className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-secondary transition-colors"
+                      >
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary">{r.type}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground truncate">{r.label}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Collapsed: search icon button */}
+        {collapsed && isContractor && (
+          <div className="flex justify-center pt-3 pb-1">
+            <button
+              onClick={() => toggleCollapsed()}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+              title="Search (expand sidebar)"
+              data-tour="search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          {isContractor && filteredGroups ? (
+            // Grouped contractor nav
+            <div className="flex flex-col gap-4">
+              {filteredGroups.map((group) => (
+                <div key={group.label}>
+                  {!collapsed && (
+                    <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      {group.label}
+                    </p>
+                  )}
+                  <ul className="flex flex-col gap-0.5">
+                    {group.items.map((item) => {
+                      const active = isActiveLink(item.href)
+                      return (
+                        <li key={item.href} className={cn(item.desktopOnly && "hidden lg:block")}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setMobileOpen(false)}
+                            data-tour={TOUR_IDS[item.label]}
+                            title={collapsed ? item.label : undefined}
+                            className={cn(
+                              "flex items-center rounded-lg text-sm font-medium transition-colors",
+                              collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2",
+                              active
+                                ? "bg-sidebar-accent text-sidebar-primary"
+                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            )}
+                          >
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            {!collapsed && item.label}
+                            {item.label === "Messages" && unreadPortalCount > 0 && (
+                              collapsed ? (
+                                <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-destructive" />
+                              ) : (
+                                <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold text-destructive-foreground">
+                                  {unreadPortalCount > 9 ? "9+" : unreadPortalCount}
+                                </span>
+                              )
+                            )}
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Flat admin nav
+            <ul className="flex flex-col gap-1">
+              {adminItems.map((item) => {
+                const active = isActiveLink(item.href)
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-primary"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </nav>
 
-        <div className="border-t border-sidebar-border p-4">
+        {/* Bottom: collapse toggle + logout */}
+        <div className="border-t border-sidebar-border p-2">
+          {/* Collapse toggle — contractor desktop only */}
+          {isContractor && (
+            <button
+              onClick={toggleCollapsed}
+              className="hidden lg:flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : (
+                <>
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="text-xs">Collapse</span>
+                </>
+              )}
+            </button>
+          )}
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            title={collapsed ? "Log Out" : undefined}
+            className={cn(
+              "flex w-full items-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
+              collapsed ? "justify-center" : "gap-2"
+            )}
           >
-            <LogOut className="h-4 w-4" />
-            Log Out
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && "Log Out"}
           </button>
         </div>
       </aside>
@@ -291,7 +438,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
             )}
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {navItems.find((item) => item.href === pathname || (item.href === "/contractor/settings" && pathname.startsWith("/contractor/settings")))?.label || "Dashboard"}
+            {allNavItems.find((item) => isActiveLink(item.href))?.label || "Dashboard"}
           </h1>
           <div className="flex items-center gap-2">
             {isContractor && <WhatsNewBell />}

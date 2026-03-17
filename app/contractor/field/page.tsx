@@ -587,7 +587,7 @@ export default function FieldModePage() {
               {job.customer_phone && (
                 <button
                   onClick={() => handleCall(job.customer_phone)}
-                  className="flex flex-col items-center gap-1.5 rounded-xl bg-emerald-500/10 p-3 text-emerald-400 active:bg-emerald-500/20 transition-colors"
+                  className="flex flex-col items-center gap-1.5 rounded-xl bg-emerald-500/10 p-3 text-emerald-600 active:bg-emerald-500/20 transition-colors"
                 >
                   <Phone className="h-6 w-6" />
                   <span className="text-[10px] font-bold">Call</span>
@@ -596,7 +596,7 @@ export default function FieldModePage() {
               {job.customer_phone && (
                 <button
                   onClick={() => handleText(job.customer_phone)}
-                  className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-500/10 p-3 text-blue-400 active:bg-blue-500/20 transition-colors"
+                  className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-500/10 p-3 text-blue-600 active:bg-blue-500/20 transition-colors"
                 >
                   <MessageSquare className="h-6 w-6" />
                   <span className="text-[10px] font-bold">Text</span>
@@ -604,7 +604,7 @@ export default function FieldModePage() {
               )}
               <button
                 onClick={() => handleNavigate(job.address)}
-                className="flex flex-col items-center gap-1.5 rounded-xl bg-purple-500/10 p-3 text-purple-400 active:bg-purple-500/20 transition-colors"
+                className="flex flex-col items-center gap-1.5 rounded-xl bg-purple-500/10 p-3 text-purple-600 active:bg-purple-500/20 transition-colors"
               >
                 <Navigation className="h-6 w-6" />
                 <span className="text-[10px] font-bold">Navigate</span>
@@ -612,7 +612,7 @@ export default function FieldModePage() {
               <button
                 onClick={() => handlePhotoCapture(job.id)}
                 disabled={uploading}
-                className="flex flex-col items-center gap-1.5 rounded-xl bg-amber-500/10 p-3 text-amber-400 active:bg-amber-500/20 transition-colors disabled:opacity-50"
+                className="flex flex-col items-center gap-1.5 rounded-xl bg-amber-500/10 p-3 text-amber-600 active:bg-amber-500/20 transition-colors disabled:opacity-50"
               >
                 {uploading && photoJobId === job.id ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -651,7 +651,7 @@ export default function FieldModePage() {
                 <button
                   onClick={() => handleClockOut(job.id)}
                   disabled={clockingIn === job.id}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-400 active:bg-red-500/20 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-600 active:bg-red-500/20 transition-colors disabled:opacity-50"
                 >
                   {clockingIn === job.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -664,7 +664,7 @@ export default function FieldModePage() {
                 <button
                   onClick={() => handleClockIn(job.id)}
                   disabled={clockingIn === job.id}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-bold text-emerald-400 active:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-bold text-emerald-600 active:bg-emerald-500/20 transition-colors disabled:opacity-50"
                 >
                   {clockingIn === job.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -677,7 +677,7 @@ export default function FieldModePage() {
             </div>
 
             {activeTimers[job.id] && (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -821,7 +821,7 @@ export default function FieldModePage() {
       {/* Active In-Progress Jobs (always visible) */}
       {activeJobs.length > 0 && (
         <div>
-          <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-blue-400 px-1">
+          <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-blue-600 px-1">
             <Play className="h-3 w-3" /> In Progress
           </h3>
           <div className="flex flex-col gap-3">
@@ -878,7 +878,7 @@ export default function FieldModePage() {
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {data.appts.map((a) => (
                       <div key={a.id} className="flex-shrink-0 rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 min-w-[140px]">
-                        <p className="text-sm font-bold text-blue-400">{a.time || "TBD"}</p>
+                        <p className="text-sm font-bold text-blue-600">{a.time || "TBD"}</p>
                         <p className="text-xs font-medium text-foreground truncate">{a.title}</p>
                         <span className="text-[9px] text-muted-foreground capitalize">{a.type.replace("_", " ")}</span>
                       </div>
@@ -890,7 +890,7 @@ export default function FieldModePage() {
                 {data.workOrders.map((wo) => (
                   <div key={wo.id} className="rounded-xl border border-border bg-card px-4 py-3">
                     <div className="flex items-start gap-3">
-                      <ClipboardList className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <ClipboardList className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-bold text-foreground truncate">{wo.title}</p>
@@ -914,7 +914,7 @@ export default function FieldModePage() {
                           )}
                         </div>
                         {wo.priority === "urgent" && (
-                          <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-red-400">
+                          <div className="flex items-center gap-1 mt-1.5 text-[10px] font-bold text-red-600">
                             <AlertTriangle className="h-3 w-3" /> Urgent
                           </div>
                         )}
@@ -931,7 +931,7 @@ export default function FieldModePage() {
                   <div className="flex flex-col gap-2">
                     {completedJobs.map((j) => (
                       <div key={j.id} className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 opacity-70">
-                        <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                        <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{j.customer_name}</p>
                           <p className="text-xs text-muted-foreground truncate">{j.address}</p>

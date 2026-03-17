@@ -418,7 +418,7 @@ export default function AdminLeadsPage() {
                     <button
                       onClick={() => handleUnassign(lead.id)}
                       disabled={assigning === lead.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-red-900/30 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-900/50 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/20 disabled:opacity-50"
                     >
                       <UserMinus className="h-3.5 w-3.5" />
                       {assigning === lead.id ? "Removing..." : "Remove"}

@@ -23,10 +23,10 @@ type ReportOrder = {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  requested: { label: "Pending", color: "text-amber-400", bg: "bg-amber-500/10", icon: Clock },
-  in_progress: { label: "In Progress", color: "text-blue-400", bg: "bg-blue-500/10", icon: Loader2 },
-  delivered: { label: "Delivered", color: "text-emerald-400", bg: "bg-emerald-500/10", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "text-red-400", bg: "bg-red-500/10", icon: AlertCircle },
+  requested: { label: "Pending", color: "text-amber-600", bg: "bg-amber-500/10", icon: Clock },
+  in_progress: { label: "In Progress", color: "text-blue-600", bg: "bg-blue-500/10", icon: Loader2 },
+  delivered: { label: "Delivered", color: "text-emerald-600", bg: "bg-emerald-500/10", icon: CheckCircle },
+  cancelled: { label: "Cancelled", color: "text-red-600", bg: "bg-red-500/10", icon: AlertCircle },
 }
 
 const TIERS = [
@@ -199,8 +199,8 @@ export default function RequestMeasurementPage() {
       {/* Payment Success */}
       {paymentSuccess && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
-          <CheckCircle className="mx-auto mb-1 h-6 w-6 text-emerald-400" />
-          <p className="text-sm font-bold text-emerald-400">Payment successful! Your report has been ordered.</p>
+          <CheckCircle className="mx-auto mb-1 h-6 w-6 text-emerald-600" />
+          <p className="text-sm font-bold text-emerald-600">Payment successful! Your report has been ordered.</p>
           <p className="mt-1 text-xs text-muted-foreground">We&apos;ll deliver it within 24 hours.</p>
         </div>
       )}
@@ -245,7 +245,7 @@ export default function RequestMeasurementPage() {
               <div className="flex flex-col gap-1.5">
                 {tier.features.map((f) => (
                   <div key={f} className="flex items-start gap-2 text-xs">
-                    <CheckCircle className="mt-0.5 h-3 w-3 flex-shrink-0 text-emerald-400" />
+                    <CheckCircle className="mt-0.5 h-3 w-3 flex-shrink-0 text-emerald-600" />
                     <span className="text-muted-foreground">{f}</span>
                   </div>
                 ))}
@@ -402,7 +402,7 @@ export default function RequestMeasurementPage() {
                       )}
                       <button
                         onClick={() => handleDelete(r.id)}
-                        className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                        className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-600"
                         title="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

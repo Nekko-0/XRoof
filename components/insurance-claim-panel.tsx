@@ -105,7 +105,7 @@ export function InsuranceClaimPanel({ jobId }: { jobId: string }) {
     return (
       <button
         onClick={() => setData({ ...data, is_insurance_claim: true })}
-        className="flex items-center gap-2 rounded-xl border border-dashed border-blue-500/30 bg-blue-500/5 px-4 py-2.5 text-xs font-semibold text-blue-400 hover:bg-blue-500/10 transition-colors w-full"
+        className="flex items-center gap-2 rounded-xl border border-dashed border-blue-500/30 bg-blue-500/5 px-4 py-2.5 text-xs font-semibold text-blue-600 hover:bg-blue-500/10 transition-colors w-full"
       >
         <Shield className="h-4 w-4" /> Mark as Insurance Claim
       </button>
@@ -113,20 +113,20 @@ export function InsuranceClaimPanel({ jobId }: { jobId: string }) {
   }
 
   const statusColor = {
-    pending: "text-gray-400",
-    filed: "text-blue-400",
-    adjuster_scheduled: "text-amber-400",
+    pending: "text-gray-500",
+    filed: "text-blue-600",
+    adjuster_scheduled: "text-amber-600",
     adjuster_visited: "text-purple-400",
-    approved: "text-emerald-400",
-    denied: "text-red-400",
+    approved: "text-emerald-600",
+    denied: "text-red-600",
     supplement_filed: "text-orange-400",
     closed: "text-gray-500",
-  }[data.claim_status] || "text-gray-400"
+  }[data.claim_status] || "text-gray-500"
 
   return (
     <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+        <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
           <Shield className="h-3.5 w-3.5" /> Insurance Claim
         </h4>
         <span className={`text-[10px] font-bold uppercase ${statusColor}`}>

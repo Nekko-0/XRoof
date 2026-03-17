@@ -41,18 +41,18 @@ const iconMap: Record<string, typeof Clock> = {
 }
 
 const colorMap: Record<string, string> = {
-  status_change: "text-blue-400",
-  email_sent: "text-amber-400",
+  status_change: "text-blue-600",
+  email_sent: "text-amber-600",
   note_added: "text-slate-400",
   sms_sent: "text-green-400",
-  payment_received: "text-emerald-400",
+  payment_received: "text-emerald-600",
   // document_events types
-  sent: "text-blue-400",
-  opened: "text-amber-400",
-  viewed: "text-amber-400",
-  interested: "text-emerald-400",
-  signed: "text-emerald-400",
-  paid: "text-emerald-400",
+  sent: "text-blue-600",
+  opened: "text-amber-600",
+  viewed: "text-amber-600",
+  interested: "text-emerald-600",
+  signed: "text-emerald-600",
+  paid: "text-emerald-600",
   reminder_sent: "text-orange-400",
 }
 

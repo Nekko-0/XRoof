@@ -348,7 +348,7 @@ export default function CustomersPage() {
                         className="flex-1 rounded border border-border bg-background px-2 py-1 text-xs text-foreground" />
                       <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone"
                         className="w-28 rounded border border-border bg-background px-2 py-1 text-xs text-foreground" />
-                      <button onClick={() => handleSaveEdit(c.id)} className="text-emerald-400 hover:text-emerald-300">
+                      <button onClick={() => handleSaveEdit(c.id)} className="text-emerald-600 hover:text-emerald-300">
                         <Check className="h-4 w-4" />
                       </button>
                       <button onClick={() => setEditId(null)} className="text-muted-foreground hover:text-foreground">
@@ -360,12 +360,12 @@ export default function CustomersPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold text-foreground truncate">{c.name}</p>
                         {customerStats(c.name).totalSpend > 0 && (
-                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
                             ${customerStats(c.name).totalSpend.toLocaleString()}
                           </span>
                         )}
                         {customerStats(c.name).jobCount > 1 && (
-                          <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                          <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                             Repeat
                           </span>
                         )}
@@ -384,7 +384,7 @@ export default function CustomersPage() {
                     <Edit3 className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => handleDelete(c.id)}
-                    className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
+                    className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-600">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => handleExpand(c)}

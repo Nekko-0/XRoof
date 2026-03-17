@@ -152,10 +152,10 @@ export default function AdminReportsPage() {
                 )}
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                   report.status === "Completed"
-                    ? "bg-blue-900/30 text-blue-400 border border-blue-700"
+                    ? "bg-blue-500/15 text-blue-600 border border-blue-700"
                     : report.status === "Reviewed"
-                    ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
-                    : "bg-amber-900/30 text-amber-400 border border-amber-700"
+                    ? "bg-emerald-500/15 text-emerald-600 border border-emerald-700"
+                    : "bg-amber-500/15 text-amber-600 border border-amber-700"
                 }`}>
                   {report.status}
                 </span>
@@ -211,7 +211,7 @@ export default function AdminReportsPage() {
                 {report.status === "Reviewed" && (
                   <button
                     onClick={() => handleMarkCompleted(report.id)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-900/30 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-900/50"
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-500/20"
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
                     Mark Completed

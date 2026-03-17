@@ -505,9 +505,9 @@ export default function HomeownerPortal() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950 p-6">
         <div className="text-center">
-          <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-400" />
+          <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-600" />
           <h1 className="text-xl font-bold text-white">Project Not Found</h1>
-          <p className="mt-2 text-sm text-gray-400">This project link may be invalid or expired.</p>
+          <p className="mt-2 text-sm text-gray-500">This project link may be invalid or expired.</p>
         </div>
       </div>
     )
@@ -545,7 +545,7 @@ export default function HomeownerPortal() {
             <div>
               <h1 className="text-lg font-bold">{companyName}</h1>
               <div className="flex items-center gap-2">
-                <p className="text-xs text-gray-400">Project Portal</p>
+                <p className="text-xs text-gray-500">Project Portal</p>
                 {contractor.google_reviews_cache && (
                   <GoogleReviewsBadge
                     rating={contractor.google_reviews_cache.rating}
@@ -586,7 +586,7 @@ export default function HomeownerPortal() {
       <main className="mx-auto max-w-3xl px-5 py-6 flex flex-col gap-5">
         <div>
           <h2 className="text-2xl font-bold">Hi {job.customer_name.split(" ")[0]},</h2>
-          <p className="mt-1 text-sm text-gray-400">{t("portal.greeting", lang)}</p>
+          <p className="mt-1 text-sm text-gray-500">{t("portal.greeting", lang)}</p>
         </div>
 
         {/* ===== OVERVIEW ===== */}
@@ -651,14 +651,14 @@ export default function HomeownerPortal() {
                         {i === 1 && <p className="mb-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: brandColor }}>Most Popular</p>}
                         <p className="text-sm font-bold text-white">{tier.name}</p>
                         <p className="mt-1 text-2xl font-bold" style={{ color: brandColor }}>{tier.price ? `$${tier.price.toLocaleString()}` : "TBD"}</p>
-                        {tier.description && <p className="mt-1 text-[11px] text-gray-400">{tier.description}</p>}
+                        {tier.description && <p className="mt-1 text-[11px] text-gray-500">{tier.description}</p>}
                       </div>
                     ))}
                   </div>
                 ) : report.price_quote ? (
                   <div className="text-center py-2">
                     <p className="text-3xl font-bold" style={{ color: brandColor }}>${report.price_quote.toLocaleString()}</p>
-                    {report.deposit_percent && <p className="mt-1 text-xs text-gray-400">Deposit: ${Math.round(report.price_quote * report.deposit_percent / 100).toLocaleString()} ({report.deposit_percent}%)</p>}
+                    {report.deposit_percent && <p className="mt-1 text-xs text-gray-500">Deposit: ${Math.round(report.price_quote * report.deposit_percent / 100).toLocaleString()} ({report.deposit_percent}%)</p>}
                   </div>
                 ) : null}
                 {report.scope_of_work && (
@@ -681,7 +681,7 @@ export default function HomeownerPortal() {
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
                     <ArrowLeftRight className="h-4 w-4" style={{ color: brandColor }} /> Before &amp; After
                   </h3>
-                  <p className="text-xs text-gray-400 mb-3">Drag the slider to compare.</p>
+                  <p className="text-xs text-gray-500 mb-3">Drag the slider to compare.</p>
                   <div className="space-y-3">
                     {beforePhotos.slice(0, pairs).map((bp, i) => (
                       <BeforeAfterSlider
@@ -718,13 +718,13 @@ export default function HomeownerPortal() {
             {/* Action Required Banner */}
             {(unpaidInvoices.length > 0 || (contracts || []).some((c) => c.status !== "signed" && c.signing_token)) && (
               <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
-                <h3 className="mb-3 text-sm font-bold text-amber-400">{t("portal.action_required", lang)}</h3>
+                <h3 className="mb-3 text-sm font-bold text-amber-600">{t("portal.action_required", lang)}</h3>
                 <div className="flex flex-col gap-2">
                   {unpaidInvoices.map((inv) => (
                     <a key={inv.id} href={`/pay/${inv.id}`} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3 hover:bg-gray-800 transition-colors">
                       <div className="flex items-center gap-3">
-                        <CreditCard className="h-4 w-4 text-amber-400" />
-                        <div><p className="text-sm font-semibold text-white">Pay Invoice — ${(inv.amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p><p className="text-[10px] text-gray-400">{inv.invoice_number || formatDate(inv.created_at)}</p></div>
+                        <CreditCard className="h-4 w-4 text-amber-600" />
+                        <div><p className="text-sm font-semibold text-white">Pay Invoice — ${(inv.amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p><p className="text-[10px] text-gray-500">{inv.invoice_number || formatDate(inv.created_at)}</p></div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-500" />
                     </a>
@@ -732,8 +732,8 @@ export default function HomeownerPortal() {
                   {(contracts || []).filter((c) => c.status !== "signed" && c.signing_token).map((c) => (
                     <a key={c.id} href={`/sign/${c.signing_token}`} className="flex items-center justify-between rounded-xl bg-gray-800/50 px-4 py-3 hover:bg-gray-800 transition-colors">
                       <div className="flex items-center gap-3">
-                        <FileSignature className="h-4 w-4 text-amber-400" />
-                        <div><p className="text-sm font-semibold text-white">Sign Contract</p><p className="text-[10px] text-gray-400">{c.contract_price ? `$${c.contract_price.toLocaleString()}` : ""}</p></div>
+                        <FileSignature className="h-4 w-4 text-amber-600" />
+                        <div><p className="text-sm font-semibold text-white">Sign Contract</p><p className="text-[10px] text-gray-500">{c.contract_price ? `$${c.contract_price.toLocaleString()}` : ""}</p></div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-500" />
                     </a>
@@ -771,7 +771,7 @@ export default function HomeownerPortal() {
                           <TypeIcon className="h-4 w-4 flex-shrink-0" style={{ color: brandColor }} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-white">{appt.title || typeLabels[appt.type] || "Appointment"}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-gray-500">
                               {formatDate(appt.date)}{timeStr && ` at ${timeStr}`}
                               {appt.duration_min && !isWorkStart ? ` · ${appt.duration_min} min` : ""}
                             </p>
@@ -808,7 +808,7 @@ export default function HomeownerPortal() {
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
                   <Calendar className="h-4 w-4" style={{ color: brandColor }} /> Need a Site Visit?
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">Request a visit and your contractor will schedule a time that works.</p>
+                <p className="text-xs text-gray-500 mb-4">Request a visit and your contractor will schedule a time that works.</p>
                 {!showVisitRequest ? (
                   <button
                     onClick={() => { setShowVisitRequest(true); setVisitPhone(job.customer_phone || "") }}
@@ -860,7 +860,7 @@ export default function HomeownerPortal() {
                       </button>
                       <button
                         onClick={() => setShowVisitRequest(false)}
-                        className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:bg-gray-800 transition-colors"
+                        className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-800 transition-colors"
                       >
                         Cancel
                       </button>
@@ -876,7 +876,7 @@ export default function HomeownerPortal() {
                   <Clock className="h-6 w-6" style={{ color: brandColor }} />
                   <div>
                     <h3 className="text-sm font-bold text-white">Visit Request Sent</h3>
-                    <p className="text-xs text-gray-400">Your contractor will schedule a time and you&apos;ll be notified.</p>
+                    <p className="text-xs text-gray-500">Your contractor will schedule a time and you&apos;ll be notified.</p>
                   </div>
                 </div>
               </div>
@@ -936,11 +936,11 @@ export default function HomeownerPortal() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-white truncate">{doc.file_name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400">{doc.category}</span>
+                          <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600">{doc.category}</span>
                           <span className="text-[10px] text-gray-500">{formatDate(doc.created_at)}</span>
                         </div>
                       </div>
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors" title="Download">
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="Download">
                         <Download className="h-3.5 w-3.5" />
                       </a>
                     </div>
@@ -960,8 +960,8 @@ export default function HomeownerPortal() {
                         <p className="text-[10px] text-gray-500">{formatDate(est.created_at)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${est.estimate_accepted ? "bg-emerald-500/20 text-emerald-400" : "bg-blue-500/20 text-blue-400"}`}>{est.estimate_accepted ? "Accepted" : "Pending"}</span>
-                        {est.viewing_token && <a href={`/estimate/${est.viewing_token}`} className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors" title="View Estimate"><ExternalLink className="h-3.5 w-3.5" /></a>}
+                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${est.estimate_accepted ? "bg-emerald-500/20 text-emerald-600" : "bg-blue-500/20 text-blue-600"}`}>{est.estimate_accepted ? "Accepted" : "Pending"}</span>
+                        {est.viewing_token && <a href={`/estimate/${est.viewing_token}`} className="rounded-lg p-2 text-gray-500 hover:text-white hover:bg-gray-700 transition-colors" title="View Estimate"><ExternalLink className="h-3.5 w-3.5" /></a>}
                       </div>
                     </div>
                   ))}
@@ -982,7 +982,7 @@ export default function HomeownerPortal() {
                           <p className="text-[10px] text-gray-500">{formatDate(c.created_at)}{c.customer_signed_at && ` · Signed ${formatDate(c.customer_signed_at)}`}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${signed ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>{signed ? "Signed" : "Pending"}</span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${signed ? "bg-emerald-500/20 text-emerald-600" : "bg-amber-500/20 text-amber-600"}`}>{signed ? "Signed" : "Pending"}</span>
                           {!signed && c.signing_token && <a href={`/sign/${c.signing_token}`} className="rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: brandColor }}>Sign Now</a>}
                         </div>
                       </div>
@@ -1005,7 +1005,7 @@ export default function HomeownerPortal() {
                           <p className="text-[10px] text-gray-500">{formatDate(inv.created_at)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${paid ? "bg-emerald-500/20 text-emerald-400" : inv.status === "overdue" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{inv.status}</span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${paid ? "bg-emerald-500/20 text-emerald-600" : inv.status === "overdue" ? "bg-red-500/20 text-red-600" : "bg-amber-500/20 text-amber-600"}`}>{inv.status}</span>
                           {!paid && <a href={`/pay/${inv.id}`} className="rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: brandColor }}>Pay Now</a>}
                         </div>
                       </div>
@@ -1018,7 +1018,7 @@ export default function HomeownerPortal() {
             {(estimates || []).length === 0 && (contracts || []).length === 0 && invoices.length === 0 && (
               <div className="rounded-2xl border border-gray-800 bg-gray-900 p-10 text-center">
                 <FileText className="mx-auto mb-3 h-10 w-10 text-gray-600" />
-                <p className="text-sm text-gray-400">No documents yet. Your contractor will share estimates, contracts, and invoices here.</p>
+                <p className="text-sm text-gray-500">No documents yet. Your contractor will share estimates, contracts, and invoices here.</p>
               </div>
             )}
           </>
@@ -1033,13 +1033,13 @@ export default function HomeownerPortal() {
             {materialBrands.length === 0 ? (
               <div className="py-8 text-center">
                 <Package className="mx-auto mb-3 h-10 w-10 text-gray-600" />
-                <p className="text-sm text-gray-400">{t("portal.materials.empty", lang)}</p>
+                <p className="text-sm text-gray-500">{t("portal.materials.empty", lang)}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-6">
                 {materialBrands.map((brand) => (
                   <div key={brand.name}>
-                    <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">{brand.name}</h4>
+                    <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">{brand.name}</h4>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {brand.products.map((item) => {
                         const isSelected = selectedMaterialIds.has(item.id)
@@ -1051,15 +1051,15 @@ export default function HomeownerPortal() {
                             className={`rounded-xl border p-4 transition-colors ${
                               isSelected
                                 ? "border-emerald-500/40 bg-emerald-500/10"
-                                : "border-gray-600 bg-gray-800 hover:border-gray-500"
+                                : "border-gray-500/30 bg-gray-800 hover:border-gray-500"
                             }`}
                           >
                             <div className="flex items-start gap-3">
                               {item.image_url ? (
-                                <img src={item.image_url} alt={item.color} className="h-12 w-12 rounded-lg object-cover flex-shrink-0 border border-gray-600" />
+                                <img src={item.image_url} alt={item.color} className="h-12 w-12 rounded-lg object-cover flex-shrink-0 border border-gray-500/30" />
                               ) : (
                                 <div
-                                  className="h-12 w-12 rounded-lg flex-shrink-0 border border-gray-600"
+                                  className="h-12 w-12 rounded-lg flex-shrink-0 border border-gray-500/30"
                                   style={{
                                     backgroundColor: getSwatchColor(item.color),
                                     backgroundImage: [
@@ -1077,7 +1077,7 @@ export default function HomeownerPortal() {
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-white">{item.color}</p>
-                                <p className="text-[11px] text-gray-400">{item.product_line}</p>
+                                <p className="text-[11px] text-gray-500">{item.product_line}</p>
                                 {valueDesc && (
                                   <p className="mt-0.5 text-[10px] text-gray-500">{valueDesc}</p>
                                 )}
@@ -1090,7 +1090,7 @@ export default function HomeownerPortal() {
                                 </span>
                               ) : <span />}
                               {isSelected ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-400">
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-600">
                                   <CheckCircle className="h-3.5 w-3.5" /> {t("portal.materials.selected", lang)}
                                 </span>
                               ) : (
@@ -1147,7 +1147,7 @@ export default function HomeownerPortal() {
         {activeTab === "messages" && (
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MessageSquare className="h-4 w-4" style={{ color: brandColor }} /> {t("portal.messages", lang)}</h3>
-            <div className="mb-4 flex max-h-[50vh] flex-col gap-2 overflow-y-auto rounded-xl bg-gray-800/30 p-3">
+            <div className="mb-4 flex max-h-[50vh] flex-col gap-2 overflow-y-auto rounded-xl bg-gray-500/15 p-3">
               {messages.length === 0 ? (
                 <p className="py-6 text-center text-xs text-gray-500">No messages yet. Send a message to your contractor below.</p>
               ) : messages.map((msg) => {
@@ -1156,7 +1156,7 @@ export default function HomeownerPortal() {
                   <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 ${mine ? "rounded-br-md text-white" : "rounded-bl-md bg-gray-700 text-gray-100"}`} style={mine ? { backgroundColor: brandColor } : undefined}>
                       <p className="text-sm leading-relaxed">{msg.message}</p>
-                      <p className={`mt-1 text-[9px] ${mine ? "text-white/60" : "text-gray-400"}`}>{formatDateTime(msg.created_at)}</p>
+                      <p className={`mt-1 text-[9px] ${mine ? "text-white/60" : "text-gray-500"}`}>{formatDateTime(msg.created_at)}</p>
                     </div>
                   </div>
                 )
@@ -1173,41 +1173,41 @@ export default function HomeownerPortal() {
         {/* Warranty Tab */}
         {activeTab === "warranty" && showWarranty && (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-gray-600 bg-gray-800 p-6 text-center">
+            <div className="rounded-2xl border border-gray-500/30 bg-gray-800 p-6 text-center">
               <Shield className="mx-auto mb-3 h-12 w-12" style={{ color: brandColor }} />
               <h3 className="text-xl font-bold text-white mb-1">Warranty Certificate</h3>
-              <p className="text-sm text-gray-400">Your project is covered by the following warranties</p>
+              <p className="text-sm text-gray-500">Your project is covered by the following warranties</p>
             </div>
 
             {/* Workmanship Warranty */}
-            <div className="rounded-2xl border border-gray-600 bg-gray-800 p-5">
+            <div className="rounded-2xl border border-gray-500/30 bg-gray-800 p-5">
               <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
                 <Shield className="h-4 w-4" style={{ color: brandColor }} />
                 Workmanship Warranty
               </h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl bg-gray-700/50 p-3">
-                  <p className="text-xs text-gray-400 mb-1">Contractor</p>
+                  <p className="text-xs text-gray-500 mb-1">Contractor</p>
                   <p className="font-semibold text-white">{contractor.company_name}</p>
                 </div>
                 <div className="rounded-xl bg-gray-700/50 p-3">
-                  <p className="text-xs text-gray-400 mb-1">Coverage Period</p>
+                  <p className="text-xs text-gray-500 mb-1">Coverage Period</p>
                   <p className="font-semibold text-white">
                     {contractor.warranty_years === 0 ? "Lifetime" : `${contractor.warranty_years} Year${(contractor.warranty_years || 1) > 1 ? "s" : ""}`}
                   </p>
                 </div>
                 <div className="rounded-xl bg-gray-700/50 p-3">
-                  <p className="text-xs text-gray-400 mb-1">Completion Date</p>
+                  <p className="text-xs text-gray-500 mb-1">Completion Date</p>
                   <p className="font-semibold text-white">{formatDate(job.created_at)}</p>
                 </div>
                 <div className="rounded-xl bg-gray-700/50 p-3">
-                  <p className="text-xs text-gray-400 mb-1">Property</p>
+                  <p className="text-xs text-gray-500 mb-1">Property</p>
                   <p className="font-semibold text-white truncate">{job.address}</p>
                 </div>
               </div>
               {contractor.warranty_terms && (
                 <div className="mt-4 rounded-xl bg-gray-700/30 p-4">
-                  <p className="text-xs font-medium text-gray-400 mb-2">Terms & Conditions</p>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Terms & Conditions</p>
                   <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{contractor.warranty_terms}</p>
                 </div>
               )}
@@ -1215,7 +1215,7 @@ export default function HomeownerPortal() {
 
             {/* Manufacturer Warranty — show for each selected material */}
             {materialBrands.length > 0 && (
-              <div className="rounded-2xl border border-gray-600 bg-gray-800 p-5">
+              <div className="rounded-2xl border border-gray-500/30 bg-gray-800 p-5">
                 <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
                   <Package className="h-4 w-4" style={{ color: brandColor }} />
                   Manufacturer Warranties
@@ -1230,9 +1230,9 @@ export default function HomeownerPortal() {
                           <div key={item.id} className="flex items-center justify-between rounded-xl bg-gray-700/50 px-4 py-3">
                             <div>
                               <p className="text-sm font-medium text-white">{brand.name} {item.product_line}</p>
-                              <p className="text-xs text-gray-400">{item.color}</p>
+                              <p className="text-xs text-gray-500">{item.color}</p>
                             </div>
-                            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">{mfgWarranty}</span>
+                            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-600">{mfgWarranty}</span>
                           </div>
                         )
                       })
@@ -1245,7 +1245,7 @@ export default function HomeownerPortal() {
             )}
 
             <div className="rounded-xl bg-gray-700/30 p-4 text-center">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500">
                 Questions about your warranty? Contact {contractor.company_name} at{" "}
                 <a href={`tel:${contractor.phone}`} className="underline" style={{ color: brandColor }}>{contractor.phone}</a>
                 {contractor.email && (
@@ -1261,7 +1261,7 @@ export default function HomeownerPortal() {
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 text-center">
             <Star className="mx-auto mb-2 h-8 w-8" style={{ color: brandColor }} />
             <h3 className="text-lg font-bold text-white">How did we do?</h3>
-            <p className="mt-1 text-sm text-gray-400">Your feedback helps us serve you better</p>
+            <p className="mt-1 text-sm text-gray-500">Your feedback helps us serve you better</p>
             <a href={contractor.google_review_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-amber-500">
               Leave a Review <ArrowRight className="h-4 w-4" />
             </a>
@@ -1269,7 +1269,7 @@ export default function HomeownerPortal() {
         )}
 
         <footer className="border-t border-gray-800 py-4 text-center">
-          <p className="text-[10px] text-gray-500">Powered by <span className="font-bold text-gray-400">XRoof</span> — Professional roofing software</p>
+          <p className="text-[10px] text-gray-500">Powered by <span className="font-bold text-gray-500">XRoof</span> — Professional roofing software</p>
         </footer>
       </main>
     </div>

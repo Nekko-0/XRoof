@@ -299,7 +299,7 @@ export default function PublicSigningPage() {
                 <span className="text-sm font-semibold">{depositPercent}%</span>
                 <span className="text-xs font-semibold text-gray-900">(${depositAmount.toLocaleString()})</span>
               </div>
-              <span className="text-xs text-gray-400">|</span>
+              <span className="text-xs text-gray-500">|</span>
               <div className="flex items-center gap-1">
                 <span className="text-xs text-gray-500">Final:</span>
                 <span className="text-sm font-semibold">{100 - depositPercent}%</span>
@@ -359,27 +359,27 @@ export default function PublicSigningPage() {
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Contract Summary</h4>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-[10px] text-gray-400">Contractor</p>
+                <p className="text-[10px] text-gray-500">Contractor</p>
                 <p className="font-medium text-gray-900">{contract.contractor_company || contract.contractor_name}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">Customer</p>
+                <p className="text-[10px] text-gray-500">Customer</p>
                 <p className="font-medium text-gray-900">{contract.customer_name}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">Project Address</p>
+                <p className="text-[10px] text-gray-500">Project Address</p>
                 <p className="font-medium text-gray-900">{contract.project_address}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">Contract Price</p>
+                <p className="text-[10px] text-gray-500">Contract Price</p>
                 <p className="font-medium text-gray-900">${contract.contract_price.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">Deposit</p>
+                <p className="text-[10px] text-gray-500">Deposit</p>
                 <p className="font-medium text-gray-900">{contract.deposit_percent}% (${Math.round(contract.contract_price * contract.deposit_percent / 100).toLocaleString()})</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">Date</p>
+                <p className="text-[10px] text-gray-500">Date</p>
                 <p className="font-medium text-gray-900">{new Date(contract.contract_date).toLocaleDateString()}</p>
               </div>
             </div>
@@ -408,13 +408,13 @@ export default function PublicSigningPage() {
             {contract.contractor_signature_url ? (
               <div>
                 <img src={contract.contractor_signature_url} alt="Contractor signature" className="h-24 w-full rounded-lg border border-gray-200 bg-white object-contain" />
-                <p className="mt-1 text-[10px] text-gray-400">
+                <p className="mt-1 text-[10px] text-gray-500">
                   Signed {contract.contractor_signed_at && new Date(contract.contractor_signed_at).toLocaleDateString()}
                 </p>
               </div>
             ) : (
               <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50">
-                <p className="text-xs text-gray-400">Pending</p>
+                <p className="text-xs text-gray-500">Pending</p>
               </div>
             )}
           </div>
@@ -432,11 +432,11 @@ export default function PublicSigningPage() {
             <div className="mt-1 flex items-center justify-between">
               <button
                 onClick={() => { padRef.current?.clear(); setSigEmpty(true) }}
-                className="text-[11px] text-gray-400 hover:text-gray-600"
+                className="text-[11px] text-gray-500 hover:text-gray-600"
               >
                 Clear signature
               </button>
-              <p className="text-[10px] text-gray-400">Draw your signature above</p>
+              <p className="text-[10px] text-gray-500">Draw your signature above</p>
             </div>
           </div>
 
@@ -465,7 +465,7 @@ export default function PublicSigningPage() {
           </button>
         </div>
 
-        <p className="mt-4 text-center text-[10px] text-gray-400">
+        <p className="mt-4 text-center text-[10px] text-gray-500">
           Powered by XRoof
         </p>
       </div>

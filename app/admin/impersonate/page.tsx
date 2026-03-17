@@ -95,21 +95,21 @@ export default function ImpersonatePage() {
 
   if (!contractorId) return <p className="p-6 text-muted-foreground">No contractor ID provided.</p>
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
-  if (!data?.profile) return <p className="p-6 text-red-400">Contractor not found.</p>
+  if (!data?.profile) return <p className="p-6 text-red-600">Contractor not found.</p>
 
   const p = data.profile
   const sub = data.subscription
   const churn = data.churnScore
 
   const statusColor = (s: string) => {
-    if (s === "active") return "bg-emerald-500/15 text-emerald-400"
-    if (s === "trialing") return "bg-blue-500/15 text-blue-400"
-    if (s === "past_due") return "bg-amber-500/15 text-amber-400"
-    if (s === "canceled") return "bg-red-500/15 text-red-400"
-    return "bg-gray-500/15 text-gray-400"
+    if (s === "active") return "bg-emerald-500/15 text-emerald-600"
+    if (s === "trialing") return "bg-blue-500/15 text-blue-600"
+    if (s === "past_due") return "bg-amber-500/15 text-amber-600"
+    if (s === "canceled") return "bg-red-500/15 text-red-600"
+    return "bg-gray-500/15 text-gray-500"
   }
 
-  const churnColor = churn?.risk_level === "high" ? "text-red-400 bg-red-500/15" : churn?.risk_level === "medium" ? "text-amber-400 bg-amber-500/15" : "text-emerald-400 bg-emerald-500/15"
+  const churnColor = churn?.risk_level === "high" ? "text-red-600 bg-red-500/15" : churn?.risk_level === "medium" ? "text-amber-600 bg-amber-500/15" : "text-emerald-600 bg-emerald-500/15"
 
   const TABS = [
     { id: "overview", label: "Overview", icon: BarChart3 },
@@ -170,7 +170,7 @@ export default function ImpersonatePage() {
       </div>
 
       {actionMessage && (
-        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 text-xs text-emerald-400">
+        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 text-xs text-emerald-600">
           <CheckCircle className="mr-1 inline h-3 w-3" /> {actionMessage}
         </div>
       )}
@@ -219,13 +219,13 @@ export default function ImpersonatePage() {
         {/* Revenue collected */}
         <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Revenue Collected</p>
-          <p className="text-lg font-bold text-emerald-400">${data.totalRevenue.toLocaleString()}</p>
+          <p className="text-lg font-bold text-emerald-600">${data.totalRevenue.toLocaleString()}</p>
         </div>
 
         {/* Pending */}
         <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pending Invoices</p>
-          <p className="text-lg font-bold text-amber-400">${data.pendingInvoiceTotal.toLocaleString()}</p>
+          <p className="text-lg font-bold text-amber-600">${data.pendingInvoiceTotal.toLocaleString()}</p>
         </div>
       </div>
 
@@ -311,7 +311,7 @@ export default function ImpersonatePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{m.role}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${m.status === "active" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{m.status}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${m.status === "active" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"}`}>{m.status}</span>
                     </div>
                   </div>
                 ))}
@@ -329,11 +329,11 @@ export default function ImpersonatePage() {
                 {(Array.isArray(churn.factors) ? churn.factors : []).map((f: any, i: number) => (
                   <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 text-xs">
                     <span className="text-foreground">{f.detail}</span>
-                    <span className="font-bold text-red-400">+{f.points} pts</span>
+                    <span className="font-bold text-red-600">+{f.points} pts</span>
                   </div>
                 ))}
                 {(!churn.factors || (Array.isArray(churn.factors) && churn.factors.length === 0)) && (
-                  <p className="text-xs text-emerald-400">No risk factors detected</p>
+                  <p className="text-xs text-emerald-600">No risk factors detected</p>
                 )}
               </div>
             </div>
@@ -359,7 +359,7 @@ export default function ImpersonatePage() {
                       <td className="py-2 pr-4 font-medium text-foreground">{r.customer_name || "—"}</td>
                       <td className="py-2 pr-4">
                         {r.estimate_accepted ? (
-                          <CheckCircle className="h-4 w-4 text-emerald-400" />
+                          <CheckCircle className="h-4 w-4 text-emerald-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-muted-foreground/50" />
                         )}
@@ -396,10 +396,10 @@ export default function ImpersonatePage() {
                     <td className="py-2.5 pr-4 font-medium text-foreground">{j.budget ? `$${Number(j.budget).toLocaleString()}` : "—"}</td>
                     <td className="py-2.5 pr-4">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        j.status === "Completed" ? "bg-emerald-500/15 text-emerald-400" :
-                        j.status === "In Progress" ? "bg-blue-500/15 text-blue-400" :
+                        j.status === "Completed" ? "bg-emerald-500/15 text-emerald-600" :
+                        j.status === "In Progress" ? "bg-blue-500/15 text-blue-600" :
                         j.status === "Scheduled" ? "bg-purple-500/15 text-purple-400" :
-                        "bg-gray-500/15 text-gray-400"
+                        "bg-gray-500/15 text-gray-500"
                       }`}>{j.status}</span>
                     </td>
                     <td className="py-2.5 text-muted-foreground">{new Date(j.created_at).toLocaleDateString()}</td>
@@ -431,10 +431,10 @@ export default function ImpersonatePage() {
                     <td className="py-2.5 pr-4 font-bold text-foreground">${Number(inv.amount || 0).toLocaleString()}</td>
                     <td className="py-2.5 pr-4">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        inv.status === "paid" ? "bg-emerald-500/15 text-emerald-400" :
-                        inv.status === "sent" ? "bg-amber-500/15 text-amber-400" :
-                        inv.status === "draft" ? "bg-gray-500/15 text-gray-400" :
-                        "bg-red-500/15 text-red-400"
+                        inv.status === "paid" ? "bg-emerald-500/15 text-emerald-600" :
+                        inv.status === "sent" ? "bg-amber-500/15 text-amber-600" :
+                        inv.status === "draft" ? "bg-gray-500/15 text-gray-500" :
+                        "bg-red-500/15 text-red-600"
                       }`}>{inv.status}</span>
                     </td>
                     <td className="py-2.5 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString()}</td>
@@ -491,11 +491,11 @@ export default function ImpersonatePage() {
                       a.event_type === "signed" || a.event_type === "paid" ? "bg-emerald-500/15" :
                       "bg-gray-500/15"
                     }`}>
-                      {a.event_type === "sent" ? <Send className="h-3 w-3 text-blue-400" /> :
-                       a.event_type === "opened" ? <Eye className="h-3 w-3 text-amber-400" /> :
-                       a.event_type === "paid" ? <DollarSign className="h-3 w-3 text-emerald-400" /> :
-                       a.event_type === "signed" ? <CheckCircle className="h-3 w-3 text-emerald-400" /> :
-                       <Activity className="h-3 w-3 text-gray-400" />}
+                      {a.event_type === "sent" ? <Send className="h-3 w-3 text-blue-600" /> :
+                       a.event_type === "opened" ? <Eye className="h-3 w-3 text-amber-600" /> :
+                       a.event_type === "paid" ? <DollarSign className="h-3 w-3 text-emerald-600" /> :
+                       a.event_type === "signed" ? <CheckCircle className="h-3 w-3 text-emerald-600" /> :
+                       <Activity className="h-3 w-3 text-gray-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="font-medium text-foreground capitalize">{a.document_type}</span>
@@ -552,7 +552,7 @@ export default function ImpersonatePage() {
                     <span className="font-medium text-foreground">{t.subject}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${t.status === "open" ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"}`}>{t.status}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${t.status === "open" ? "bg-amber-500/15 text-amber-600" : "bg-emerald-500/15 text-emerald-600"}`}>{t.status}</span>
                     <span className="text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</span>
                   </div>
                 </Link>

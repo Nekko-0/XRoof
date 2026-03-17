@@ -116,7 +116,7 @@ export default function LandingPageView() {
       <div className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-center">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Page Not Found</h1>
-          <p className="text-gray-400">This landing page doesn&apos;t exist or has been deactivated.</p>
+          <p className="text-gray-500">This landing page doesn&apos;t exist or has been deactivated.</p>
         </div>
       </div>
     )
@@ -137,7 +137,7 @@ export default function LandingPageView() {
     step === "form" ? (
       <div className={`rounded-2xl border p-6 shadow-xl ${dark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-xl font-bold text-center mb-1 ${dark ? "text-white" : "text-gray-900"}`}>{page.cta_text}</h2>
-        <p className={`text-xs text-center mb-5 ${dark ? "text-gray-400" : "text-gray-500"}`}>No commitment. No spam. Just a free quote.</p>
+        <p className={`text-xs text-center mb-5 ${dark ? "text-gray-500" : "text-gray-500"}`}>No commitment. No spam. Just a free quote.</p>
         <div className="space-y-3">
           {[
             { val: name, set: setName, ph: "Your Name *", type: "text" },
@@ -152,7 +152,7 @@ export default function LandingPageView() {
               type={type}
               placeholder={ph}
               className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                dark ? "border-gray-700 bg-gray-800 text-white placeholder:text-gray-500" : "border-gray-300 bg-gray-50 text-gray-900 placeholder:text-gray-400"
+                dark ? "border-gray-700 bg-gray-800 text-white placeholder:text-gray-500" : "border-gray-300 bg-gray-50 text-gray-900 placeholder:text-gray-500"
               }`}
             />
           ))}
@@ -166,7 +166,7 @@ export default function LandingPageView() {
             {submitting ? "Submitting..." : page.cta_text}
           </button>
         </div>
-        <p className={`mt-3 text-[10px] text-center ${dark ? "text-gray-500" : "text-gray-400"}`}>
+        <p className={`mt-3 text-[10px] text-center ${dark ? "text-gray-500" : "text-gray-500"}`}>
           By submitting, you agree to be contacted about your roofing project.
         </p>
       </div>
@@ -174,7 +174,7 @@ export default function LandingPageView() {
       <div className={`rounded-2xl border p-8 text-center ${dark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"}`}>
         <CheckCircle className="mx-auto mb-4 h-12 w-12" style={{ color: brandColor }} />
         <h2 className={`text-xl font-bold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>Thank You!</h2>
-        <p className={`text-sm mb-4 ${dark ? "text-gray-400" : "text-gray-500"}`}>
+        <p className={`text-sm mb-4 ${dark ? "text-gray-500" : "text-gray-500"}`}>
           We&apos;ve received your request. {companyName} will contact you shortly with your free estimate.
         </p>
         {branding.phone && (
@@ -187,7 +187,7 @@ export default function LandingPageView() {
   )
 
   const renderTrustBadges = (dark = true) => (
-    <div className={`flex flex-wrap items-center justify-center gap-4 text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+    <div className={`flex flex-wrap items-center justify-center gap-4 text-sm ${dark ? "text-gray-500" : "text-gray-500"}`}>
       {branding.google_reviews_cache?.rating && (
         <GoogleReviewsBadge rating={branding.google_reviews_cache.rating} reviewCount={branding.google_reviews_cache.reviewCount} reviewUrl={branding.google_review_url} />
       )}
@@ -203,7 +203,7 @@ export default function LandingPageView() {
   const renderFooter = (dark = true) => (
     <footer className={`border-t py-6 text-center ${dark ? "border-gray-800" : "border-gray-200"}`}>
       <p className={`text-sm font-semibold ${dark ? "text-gray-300" : "text-gray-700"}`}>{companyName}</p>
-      <div className={`mt-2 flex items-center justify-center gap-4 text-xs ${dark ? "text-gray-500" : "text-gray-400"}`}>
+      <div className={`mt-2 flex items-center justify-center gap-4 text-xs ${dark ? "text-gray-500" : "text-gray-500"}`}>
         {branding.phone && <a href={`tel:${branding.phone}`} className="flex items-center gap-1 hover:opacity-70"><Phone className="h-3 w-3" /> {branding.phone}</a>}
         {branding.email && <a href={`mailto:${branding.email}`} className="flex items-center gap-1 hover:opacity-70"><Mail className="h-3 w-3" /> {branding.email}</a>}
       </div>
@@ -256,13 +256,13 @@ export default function LandingPageView() {
         {/* Testimonial placeholder */}
         <div className="border-t border-gray-200 bg-gray-50 py-12">
           <div className="mx-auto max-w-2xl px-6 text-center">
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Trusted by Homeowners</p>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">Trusted by Homeowners</p>
             <div className="grid gap-4 sm:grid-cols-3">
               {testimonials.map((t, i) => (
                 <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                  <div className="flex justify-center gap-0.5 mb-2">{[1,2,3,4,5].map(s => <Star key={s} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}</div>
+                  <div className="flex justify-center gap-0.5 mb-2">{[1,2,3,4,5].map(s => <Star key={s} className="h-3.5 w-3.5 fill-amber-400 text-amber-600" />)}</div>
                   <p>&ldquo;{t.quote}&rdquo;</p>
-                  {t.name && <p className="mt-2 text-xs font-medium text-gray-400">— {t.name}</p>}
+                  {t.name && <p className="mt-2 text-xs font-medium text-gray-500">— {t.name}</p>}
                 </div>
               ))}
             </div>

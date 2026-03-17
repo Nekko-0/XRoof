@@ -14,9 +14,9 @@ type ChangelogEntry = {
 
 const categoryColors: Record<string, string> = {
   feature: "bg-indigo-500/15 text-indigo-400",
-  improvement: "bg-emerald-500/15 text-emerald-400",
-  fix: "bg-amber-500/15 text-amber-400",
-  announcement: "bg-blue-500/15 text-blue-400",
+  improvement: "bg-emerald-500/15 text-emerald-600",
+  fix: "bg-amber-500/15 text-amber-600",
+  announcement: "bg-blue-500/15 text-blue-600",
 }
 
 export default function WhatsNewBell() {
@@ -66,7 +66,7 @@ export default function WhatsNewBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={toggle}
-        className="relative rounded-md p-2 text-gray-400 hover:text-white transition-colors"
+        className="relative rounded-md p-2 text-gray-500 hover:text-white transition-colors"
         aria-label="What's new"
       >
         <Bell className="h-5 w-5" />
@@ -108,7 +108,7 @@ export default function WhatsNewBell() {
                   <p className="mt-1 text-sm font-medium text-white">
                     {entry.title}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-400 line-clamp-2">
+                  <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
                     {entry.description}
                   </p>
                 </div>

@@ -34,14 +34,14 @@ type Stats = {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  medium: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  high: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  urgent: "bg-red-500/15 text-red-400 border-red-500/30",
+  low: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  medium: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  high: "bg-orange-500/15 text-orange-600 border-orange-500/30",
+  urgent: "bg-red-500/15 text-red-600 border-red-500/30",
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  open: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
   in_progress: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   resolved: "bg-muted text-muted-foreground border-border",
 }
@@ -107,7 +107,7 @@ export default function TicketsPage() {
   }
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" /></div>
-  if (error && tickets.length === 0) return <p className="p-6 text-red-400">{error}</p>
+  if (error && tickets.length === 0) return <p className="p-6 text-red-600">{error}</p>
 
   return (
     <div className="flex flex-col gap-5">
@@ -126,7 +126,7 @@ export default function TicketsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-900/30 text-emerald-400"><Inbox className="h-4 w-4" /></div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600"><Inbox className="h-4 w-4" /></div>
           <p className="mt-2 text-xl font-bold text-foreground">{stats.open}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Open</p>
         </div>
@@ -136,12 +136,12 @@ export default function TicketsPage() {
           <p className="text-[10px] font-medium text-muted-foreground">In Progress</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-900/30 text-blue-400"><CheckCircle2 className="h-4 w-4" /></div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-600"><CheckCircle2 className="h-4 w-4" /></div>
           <p className="mt-2 text-xl font-bold text-foreground">{stats.resolved}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Resolved</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-900/30 text-amber-400"><Timer className="h-4 w-4" /></div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600"><Timer className="h-4 w-4" /></div>
           <p className="mt-2 text-xl font-bold text-foreground">{stats.avg_response_time}</p>
           <p className="text-[10px] font-medium text-muted-foreground">Avg Response Time</p>
         </div>
@@ -156,7 +156,7 @@ export default function TicketsPage() {
         ))}
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
 
       {/* Ticket list */}
       <div className="flex flex-col gap-3">

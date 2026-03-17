@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex items-center justify-center rounded-xl border border-border bg-card p-8">
           <div className="text-center">
-            <AlertTriangle className="mx-auto h-8 w-8 text-amber-400" />
+            <AlertTriangle className="mx-auto h-8 w-8 text-amber-600" />
             <p className="mt-2 text-sm font-medium text-foreground">Something went wrong</p>
             <p className="mt-1 text-xs text-muted-foreground">This section failed to load.</p>
             <button

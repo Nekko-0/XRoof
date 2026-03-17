@@ -45,16 +45,16 @@ type Job = {
 }
 
 const PRIORITIES = [
-  { value: "low", label: "Low", color: "text-gray-400", bg: "bg-gray-500/10", border: "border-gray-500/20" },
-  { value: "normal", label: "Normal", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
-  { value: "high", label: "High", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  { value: "urgent", label: "Urgent", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+  { value: "low", label: "Low", color: "text-gray-500", bg: "bg-gray-500/10", border: "border-gray-500/20" },
+  { value: "normal", label: "Normal", color: "text-blue-600", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  { value: "high", label: "High", color: "text-amber-600", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  { value: "urgent", label: "Urgent", color: "text-red-600", bg: "bg-red-500/10", border: "border-red-500/20" },
 ]
 
 const STATUSES = [
-  { value: "pending", label: "Pending", icon: Clock, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { value: "in_progress", label: "In Progress", icon: Play, color: "text-blue-400", bg: "bg-blue-500/10" },
-  { value: "completed", label: "Completed", icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  { value: "pending", label: "Pending", icon: Clock, color: "text-amber-600", bg: "bg-amber-500/10" },
+  { value: "in_progress", label: "In Progress", icon: Play, color: "text-blue-600", bg: "bg-blue-500/10" },
+  { value: "completed", label: "Completed", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500/10" },
 ]
 
 type FilterStatus = "all" | "pending" | "in_progress" | "completed"
@@ -359,7 +359,7 @@ export default function WorkOrdersPage() {
                           {priority.label}
                         </span>
                         {isOverdue && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/10 px-2 py-0.5 text-[9px] font-bold text-red-400">
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/10 px-2 py-0.5 text-[9px] font-bold text-red-600">
                             <AlertTriangle className="h-2.5 w-2.5" /> Overdue
                           </span>
                         )}
@@ -379,7 +379,7 @@ export default function WorkOrdersPage() {
                           </span>
                         )}
                         {order.due_date && (
-                          <span className={`flex items-center gap-1 text-[11px] ${isOverdue ? "text-red-400 font-semibold" : "text-muted-foreground"}`}>
+                          <span className={`flex items-center gap-1 text-[11px] ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
                             <Calendar className="h-3 w-3" /> {new Date(order.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           </span>
                         )}
@@ -408,7 +408,7 @@ export default function WorkOrdersPage() {
                       {canEdit && (
                         <button
                           onClick={() => handleDelete(order.id)}
-                          className="rounded-lg p-1.5 text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="rounded-lg p-1.5 text-muted-foreground/40 hover:text-red-600 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

@@ -41,15 +41,15 @@ type TicketMessage = {
 }
 
 const priorityColors: Record<string, string> = {
-  low: "bg-gray-500/15 text-gray-400",
-  medium: "bg-amber-500/15 text-amber-400",
-  high: "bg-red-500/15 text-red-400",
+  low: "bg-gray-500/15 text-gray-500",
+  medium: "bg-amber-500/15 text-amber-600",
+  high: "bg-red-500/15 text-red-600",
 }
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
-  open: { icon: CircleDot, color: "text-blue-400", label: "Open" },
-  in_progress: { icon: Clock, color: "text-amber-400", label: "In Progress" },
-  resolved: { icon: CheckCircle2, color: "text-emerald-400", label: "Resolved" },
+  open: { icon: CircleDot, color: "text-blue-600", label: "Open" },
+  in_progress: { icon: Clock, color: "text-amber-600", label: "In Progress" },
+  resolved: { icon: CheckCircle2, color: "text-emerald-600", label: "Resolved" },
   closed: { icon: CheckCircle2, color: "text-gray-500", label: "Closed" },
 }
 
@@ -236,9 +236,9 @@ export default function HelpPage() {
       {/* Knowledge Base */}
       <div className="mb-10">
         <div className="mb-6 text-center">
-          <BookOpen className="mx-auto mb-2 h-8 w-8 text-blue-400" />
+          <BookOpen className="mx-auto mb-2 h-8 w-8 text-blue-600" />
           <h1 className="text-2xl font-bold text-white">Help Center</h1>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-gray-500">
             Search our knowledge base or submit a support ticket below.
           </p>
         </div>
@@ -260,7 +260,7 @@ export default function HelpPage() {
             <button
               onClick={() => setActiveCategory(null)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                !activeCategory ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+                !activeCategory ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-500 hover:text-white"
               }`}
             >
               All
@@ -270,7 +270,7 @@ export default function HelpPage() {
                 key={cat.name}
                 onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
                 className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  activeCategory === cat.name ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+                  activeCategory === cat.name ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-500 hover:text-white"
                 }`}
               >
                 <cat.icon className="h-3 w-3" />
@@ -285,7 +285,7 @@ export default function HelpPage() {
           {filteredCategories.map((cat) => (
             <div key={cat.name}>
               <div className="mb-2 flex items-center gap-2">
-                <cat.icon className="h-4 w-4 text-blue-400" />
+                <cat.icon className="h-4 w-4 text-blue-600" />
                 <h2 className="text-sm font-semibold text-white">{cat.name}</h2>
               </div>
               <div className="space-y-1">
@@ -304,7 +304,7 @@ export default function HelpPage() {
                       <ChevronDown className="h-3.5 w-3.5 text-gray-500 transition-transform group-open:rotate-180" />
                     </summary>
                     <div className="border-t border-gray-800 px-4 py-3">
-                      <p className="text-sm leading-relaxed text-gray-400">{article.body}</p>
+                      <p className="text-sm leading-relaxed text-gray-500">{article.body}</p>
                     </div>
                   </details>
                 ))}
@@ -330,7 +330,7 @@ export default function HelpPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-white">Your Tickets</h2>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-gray-500">
             Submit a ticket and our team will get back to you.
           </p>
         </div>
@@ -413,7 +413,7 @@ export default function HelpPage() {
       )}
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
@@ -490,7 +490,7 @@ export default function HelpPage() {
                             className="rounded-lg border border-gray-800 bg-gray-800/50 px-3 py-2"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-400">
+                              <span className="text-xs font-medium text-gray-500">
                                 {msg.sender}
                               </span>
                               <span className="text-[10px] text-gray-600">

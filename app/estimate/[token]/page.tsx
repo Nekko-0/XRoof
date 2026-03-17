@@ -248,9 +248,9 @@ export default function PublicEstimatePage() {
           <div className="mb-6">
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Property Information</h3>
             <div className="space-y-1 text-sm text-gray-900">
-              <p className="flex items-center gap-2"><User className="h-3.5 w-3.5 text-gray-400" /> {report.customer_name}</p>
-              <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-gray-400" /> {report.customer_address}</p>
-              {report.customer_phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-gray-400" /> {report.customer_phone}</p>}
+              <p className="flex items-center gap-2"><User className="h-3.5 w-3.5 text-gray-500" /> {report.customer_name}</p>
+              <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-gray-500" /> {report.customer_address}</p>
+              {report.customer_phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-gray-500" /> {report.customer_phone}</p>}
               {report.job_type && <p className="text-gray-500 text-xs mt-1">Type: {report.job_type}</p>}
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function PublicEstimatePage() {
                 {visiblePhotos.map((photo, i) => (
                   <button key={i} onClick={() => setLightboxIndex(i)} className="overflow-hidden rounded-lg text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400">
                     <img src={photo.url} alt={photo.caption || `Photo ${i + 1}`} className="w-full h-32 object-cover transition-transform hover:scale-105" />
-                    {photo.caption && <p className="mt-1 text-[10px] text-gray-400 text-center">{photo.caption}</p>}
+                    {photo.caption && <p className="mt-1 text-[10px] text-gray-500 text-center">{photo.caption}</p>}
                   </button>
                 ))}
               </div>
@@ -334,7 +334,7 @@ export default function PublicEstimatePage() {
                 <List className="h-3.5 w-3.5" /> Cost Breakdown
               </h3>
               <div className="rounded-xl border border-gray-200 overflow-hidden">
-                <div className="grid grid-cols-[1fr_50px_70px_70px] gap-2 bg-gray-50 px-3 py-2 text-[10px] font-semibold text-gray-400 uppercase">
+                <div className="grid grid-cols-[1fr_50px_70px_70px] gap-2 bg-gray-50 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase">
                   <span>Item</span>
                   <span className="text-center">Qty</span>
                   <span className="text-right">Rate</span>
@@ -536,7 +536,7 @@ export default function PublicEstimatePage() {
         {/* Footer */}
         <div className="mt-4 text-center">
           {report.company_name && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500">
               {report.company_name}
               {report.company_phone ? ` | ${report.company_phone}` : ""}
               {report.company_email ? ` | ${report.company_email}` : ""}

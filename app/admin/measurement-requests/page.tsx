@@ -19,10 +19,10 @@ type MeasurementRequest = {
 const STATUS_OPTIONS = ["requested", "in_progress", "delivered", "cancelled"] as const
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  requested: { label: "Requested", color: "text-amber-400", bg: "bg-amber-500/20" },
-  in_progress: { label: "In Progress", color: "text-blue-400", bg: "bg-blue-500/20" },
-  delivered: { label: "Delivered", color: "text-emerald-400", bg: "bg-emerald-500/20" },
-  cancelled: { label: "Cancelled", color: "text-red-400", bg: "bg-red-500/20" },
+  requested: { label: "Requested", color: "text-amber-600", bg: "bg-amber-500/20" },
+  in_progress: { label: "In Progress", color: "text-blue-600", bg: "bg-blue-500/20" },
+  delivered: { label: "Delivered", color: "text-emerald-600", bg: "bg-emerald-500/20" },
+  cancelled: { label: "Cancelled", color: "text-red-600", bg: "bg-red-500/20" },
 }
 
 export default function AdminMeasurementRequestsPage() {
@@ -79,9 +79,9 @@ export default function AdminMeasurementRequestsPage() {
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Pending", count: requests.filter((r) => r.status === "requested").length, color: "text-amber-400", bg: "bg-amber-900/30" },
-          { label: "In Progress", count: requests.filter((r) => r.status === "in_progress").length, color: "text-blue-400", bg: "bg-blue-900/30" },
-          { label: "Delivered", count: requests.filter((r) => r.status === "delivered").length, color: "text-emerald-400", bg: "bg-emerald-900/30" },
+          { label: "Pending", count: requests.filter((r) => r.status === "requested").length, color: "text-amber-600", bg: "bg-amber-500/15" },
+          { label: "In Progress", count: requests.filter((r) => r.status === "in_progress").length, color: "text-blue-600", bg: "bg-blue-500/15" },
+          { label: "Delivered", count: requests.filter((r) => r.status === "delivered").length, color: "text-emerald-600", bg: "bg-emerald-500/15" },
           { label: "Total", count: requests.length, color: "text-primary", bg: "bg-primary/10" },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -119,7 +119,7 @@ export default function AdminMeasurementRequestsPage() {
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <p className="text-sm font-bold text-foreground truncate">{r.address}</p>
                       {r.urgency === "rush" && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600">
                           <Zap className="h-3 w-3" /> Rush
                         </span>
                       )}

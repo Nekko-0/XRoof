@@ -278,7 +278,7 @@ export default function DispatchPage() {
                   appointments.map((a) => (
                     <div key={a.id} className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-blue-400">{a.time || "TBD"}</span>
+                        <span className="font-bold text-blue-600">{a.time || "TBD"}</span>
                         <span className="font-semibold text-foreground">{a.title}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">

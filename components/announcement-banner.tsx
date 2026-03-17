@@ -39,7 +39,7 @@ export function AnnouncementBanner() {
       <p className="flex-1 text-xs font-medium">{announcement.message}</p>
       <button
         onClick={() => { setDismissed(true); sessionStorage.setItem("dismissed-announcement", announcement.id) }}
-        className="flex-shrink-0 rounded p-1 hover:bg-white/10"
+        className="flex-shrink-0 rounded p-1 hover:bg-black/10"
       >
         <X className="h-3 w-3" />
       </button>

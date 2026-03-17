@@ -197,7 +197,7 @@ export default function BillingPage() {
                 </p>
               )}
             </div>
-            <span className="rounded-full bg-emerald-900/30 px-3 py-1 text-xs font-semibold text-emerald-400">
+            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600">
               Active
             </span>
           </div>
@@ -329,7 +329,7 @@ export default function BillingPage() {
           <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3">
             <CheckCircle className="h-5 w-5 text-emerald-500" />
             <div>
-              <p className="text-sm font-bold text-emerald-400">Payments Connected</p>
+              <p className="text-sm font-bold text-emerald-600">Payments Connected</p>
               <p className="text-xs text-muted-foreground">
                 You can send invoices with payment links from My Leads. 1% platform fee + standard Stripe fees (2.9% + $0.30).
               </p>
@@ -338,7 +338,7 @@ export default function BillingPage() {
         ) : connectStatus?.connected && !connectStatus.charges_enabled ? (
           <div>
             <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-              <p className="text-sm text-amber-400">
+              <p className="text-sm text-amber-600">
                 Stripe account connected but not fully set up. Complete onboarding to start accepting payments.
               </p>
             </div>

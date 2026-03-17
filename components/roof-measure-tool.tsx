@@ -1551,7 +1551,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   }}
                 />
                 {satPitchActive && (
-                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-400" style={{ zIndex: 51 }}>
+                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-600" style={{ zIndex: 51 }}>
                     Click {3 - satPitchPoints.length} point{3 - satPitchPoints.length !== 1 ? "s" : ""} on the roof edge
                   </div>
                 )}
@@ -1568,7 +1568,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     }}
                   >
                     {angleIndicator.angle.toFixed(1)}°
-                    {angleIndicator.snapped && <span className="ml-1.5 text-emerald-400/80">SNAP</span>}
+                    {angleIndicator.snapped && <span className="ml-1.5 text-emerald-600/80">SNAP</span>}
                   </div>
                 )}
 
@@ -1599,7 +1599,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                       drawingActive
-                        ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
+                        ? "bg-emerald-500/15 text-emerald-600 border border-emerald-700"
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                   >
@@ -1623,7 +1623,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     onClick={() => setMagnifierVisible(!magnifierVisible)}
                     className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
                       magnifierVisible
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
                         : "border-border bg-background text-muted-foreground hover:bg-secondary"
                     }`}
                   >
@@ -1749,7 +1749,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   }}
                 />
                 {pitchMeasureActive && (
-                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-400">
+                  <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-medium text-emerald-600">
                     Click {3 - streetViewPoints.length} point{3 - streetViewPoints.length !== 1 ? "s" : ""} on the roof edge
                   </div>
                 )}
@@ -1773,7 +1773,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                       pitchMeasureActive
-                        ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700"
+                        ? "bg-emerald-500/15 text-emerald-600 border border-emerald-700"
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                   >
@@ -1803,7 +1803,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                     Click on the roof rake (sloped edge): P1 at the bottom (eave), P2 midway, P3 at the top (ridge). The angle will be calculated automatically.
                   </p>
                 )}
-                <p className="mt-2 rounded-lg bg-amber-900/20 border border-amber-800/30 px-3 py-2 text-xs text-emerald-400">
+                <p className="mt-2 rounded-lg bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs text-emerald-600">
                   Estimated pitch (~70-80% accurate) — measure on site to confirm
                 </p>
               </div>
@@ -1958,7 +1958,7 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                               setSavedMeasurements((prev) => prev.filter((x) => x.id !== m.id))
                               if (savedId === m.id) setSavedId(null)
                             }}
-                            className="ml-2 flex-shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                            className="ml-2 flex-shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-600 transition-colors"
                             title="Delete measurement"
                           >
                             <Trash2 className="h-3.5 w-3.5" />

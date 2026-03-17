@@ -377,10 +377,10 @@ export default function CalendarPage() {
 
         {weatherAlertCount > 0 && (
           <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-bold text-amber-300">{weatherAlertCount} job{weatherAlertCount !== 1 ? "s" : ""} scheduled during bad weather this week</p>
-              <p className="text-[11px] text-amber-400/70">Click a day to review and reschedule affected jobs.</p>
+              <p className="text-[11px] text-amber-600/70">Click a day to review and reschedule affected jobs.</p>
             </div>
           </div>
         )}
@@ -445,9 +445,9 @@ export default function CalendarPage() {
                       } ${isSelected && !isToday ? "bg-primary/20" : ""}`}>
                         {dayDate.getDate()}
                       </span>
-                      {hasBadWeatherJobsMobile && <AlertTriangle className="h-3 w-3 text-amber-400" />}
+                      {hasBadWeatherJobsMobile && <AlertTriangle className="h-3 w-3 text-amber-600" />}
                       {dayWeather && (
-                        <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobsMobile ? "text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+                        <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobsMobile ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
                           <WeatherIcon description={dayWeather.description} className="h-3 w-3" />
                           {dayWeather.temp}°
                         </span>
@@ -522,9 +522,9 @@ export default function CalendarPage() {
                           {day}
                         </span>
                         <span className="flex items-center gap-0.5">
-                          {hasBadWeatherJobs && <AlertTriangle className="h-3 w-3 text-amber-400" />}
+                          {hasBadWeatherJobs && <AlertTriangle className="h-3 w-3 text-amber-600" />}
                           {dayWeather && (
-                            <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobs ? "text-amber-400 font-semibold" : "text-muted-foreground"}`}>
+                            <span className={`flex items-center gap-0.5 text-[9px] ${hasBadWeatherJobs ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
                               <WeatherIcon description={dayWeather.description} className="h-3 w-3" />
                               {dayWeather.temp}°
                             </span>
@@ -626,19 +626,19 @@ export default function CalendarPage() {
                             <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white ${statusColor(j.status)}`}>
                               {j.status}
                             </span>
-                            <button onClick={() => handleUnschedule(j.id)} className="text-[10px] text-muted-foreground hover:text-red-400">
+                            <button onClick={() => handleUnschedule(j.id)} className="text-[10px] text-muted-foreground hover:text-red-600">
                               <X className="h-3 w-3" />
                             </button>
                           </div>
                         </div>
                         {jobHasBadWeather && (
                           <div className="mt-1.5 flex items-center justify-between">
-                            <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-400">
+                            <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600">
                               <AlertTriangle className="h-3 w-3" /> Bad weather
                             </span>
                             <button
                               onClick={() => { setRescheduleJob(j); setRescheduleDate("") }}
-                              className="flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400 hover:bg-amber-500/25 transition-colors"
+                              className="flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600 hover:bg-amber-500/25 transition-colors"
                             >
                               <RefreshCw className="h-2.5 w-2.5" /> Reschedule
                             </button>
@@ -674,7 +674,7 @@ export default function CalendarPage() {
             {/* Reminders */}
             <div className="mb-4">
               <h5 className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <Bell className="h-3 w-3 text-red-400" /> Reminders ({selectedEvents.dayFollowups.length})
+                <Bell className="h-3 w-3 text-red-600" /> Reminders ({selectedEvents.dayFollowups.length})
               </h5>
               {selectedEvents.dayFollowups.length > 0 ? (
                 <div className="flex flex-col gap-1.5">
@@ -686,7 +686,7 @@ export default function CalendarPage() {
                       </div>
                       <button
                         onClick={() => handleCompleteFollowup(f.id)}
-                        className="ml-2 flex-shrink-0 rounded-md bg-red-500/10 px-2 py-1 text-[9px] font-bold text-red-400 hover:bg-red-500/20 transition-colors"
+                        className="ml-2 flex-shrink-0 rounded-md bg-red-500/10 px-2 py-1 text-[9px] font-bold text-red-600 hover:bg-red-500/20 transition-colors"
                       >
                         <CheckCircle className="h-3 w-3" />
                       </button>
@@ -708,9 +708,9 @@ export default function CalendarPage() {
                   {selectedEvents.dayAutomations.map((a) => (
                     <div key={a.id} className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
                       <div className="flex items-center gap-1.5 text-[10px]">
-                        {a.action_type === "email" ? <Mail className="h-3 w-3 text-blue-400" /> :
-                         a.action_type === "sms" ? <Phone className="h-3 w-3 text-emerald-400" /> :
-                         <Bell className="h-3 w-3 text-amber-400" />}
+                        {a.action_type === "email" ? <Mail className="h-3 w-3 text-blue-600" /> :
+                         a.action_type === "sms" ? <Phone className="h-3 w-3 text-emerald-600" /> :
+                         <Bell className="h-3 w-3 text-amber-600" />}
                         <span className="font-bold text-foreground capitalize">{a.action_type}</span>
                       </div>
                       {a.subject && <p className="text-[10px] font-semibold text-foreground mt-0.5">{a.subject}</p>}
@@ -724,7 +724,7 @@ export default function CalendarPage() {
             {/* Appointments */}
             <div className="mb-2">
               <h5 className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <CalendarIcon className="h-3 w-3 text-blue-400" /> Appointments ({selectedEvents.dayAppointments.length})
+                <CalendarIcon className="h-3 w-3 text-blue-600" /> Appointments ({selectedEvents.dayAppointments.length})
               </h5>
               {selectedEvents.dayAppointments.length > 0 && (
                 <div className="flex flex-col gap-1.5 mb-2">
@@ -732,12 +732,12 @@ export default function CalendarPage() {
                     <div key={a.id} className="flex items-center justify-between rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          {a.time && <span className="text-[10px] font-bold text-blue-400">{a.time}</span>}
+                          {a.time && <span className="text-[10px] font-bold text-blue-600">{a.time}</span>}
                           <span className="text-xs font-bold text-foreground truncate">{a.title}</span>
                         </div>
                         <span className="text-[10px] text-muted-foreground capitalize">{a.type.replace("_", " ")}</span>
                       </div>
-                      <button onClick={() => handleDeleteAppointment(a.id)} className="ml-2 text-muted-foreground hover:text-red-400">
+                      <button onClick={() => handleDeleteAppointment(a.id)} className="ml-2 text-muted-foreground hover:text-red-600">
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
@@ -796,7 +796,7 @@ export default function CalendarPage() {
               ) : (
                 <button
                   onClick={() => setShowApptForm(true)}
-                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-blue-500/30 py-2 text-[11px] font-semibold text-blue-400 hover:bg-blue-500/5 transition-colors"
+                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-blue-500/30 py-2 text-[11px] font-semibold text-blue-600 hover:bg-blue-500/5 transition-colors"
                 >
                   <Plus className="h-3 w-3" /> Add Appointment
                 </button>
@@ -812,7 +812,7 @@ export default function CalendarPage() {
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 text-amber-400" /> Reschedule Job
+                <RefreshCw className="h-4 w-4 text-amber-600" /> Reschedule Job
               </h3>
               <button onClick={() => setRescheduleJob(null)} className="rounded-lg p-1 hover:bg-secondary">
                 <X className="h-4 w-4 text-muted-foreground" />
@@ -822,7 +822,7 @@ export default function CalendarPage() {
               <p className="text-xs font-bold text-foreground">{rescheduleJob.customer_name}</p>
               <p className="text-[10px] text-muted-foreground">{rescheduleJob.address}</p>
               {rescheduleJob.scheduled_date && (
-                <p className="text-[10px] text-amber-400 mt-0.5">
+                <p className="text-[10px] text-amber-600 mt-0.5">
                   Currently: {new Date(rescheduleJob.scheduled_date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                 </p>
               )}

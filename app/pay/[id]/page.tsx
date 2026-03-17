@@ -108,7 +108,7 @@ export default function PayInvoicePage() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-700">Invoice not found</p>
-          <p className="mt-1 text-sm text-gray-400">This invoice may have been removed or the link is incorrect.</p>
+          <p className="mt-1 text-sm text-gray-500">This invoice may have been removed or the link is incorrect.</p>
         </div>
       </div>
     )
@@ -187,7 +187,7 @@ export default function PayInvoicePage() {
                 )}
                 <div>
                   <p className="text-lg font-bold text-white">{invoice.company_name || "Contractor"}</p>
-                  <p className="text-xs text-gray-400">Professional Roofing Services</p>
+                  <p className="text-xs text-gray-500">Professional Roofing Services</p>
                 </div>
               </div>
               {isPaid ? (
@@ -195,7 +195,7 @@ export default function PayInvoicePage() {
                   PAID
                 </span>
               ) : (
-                <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-bold text-amber-400 ring-1 ring-amber-500/30">
+                <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-bold text-amber-600 ring-1 ring-amber-500/30">
                   UNPAID
                 </span>
               )}
@@ -229,7 +229,7 @@ export default function PayInvoicePage() {
             {/* Bill To */}
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Bill To</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-2">Bill To</p>
                 {!hidden.has("customer_name") && (
                   <p className="text-base font-bold text-gray-900">{invoice.customer_name}</p>
                 )}
@@ -253,7 +253,7 @@ export default function PayInvoicePage() {
                 )}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">From</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-2">From</p>
                 <p className="text-base font-bold text-gray-900">{invoice.company_name || "Contractor"}</p>
                 <p className="mt-1 text-sm text-gray-500">Professional Roofing</p>
               </div>
@@ -267,7 +267,7 @@ export default function PayInvoicePage() {
               if (allPhotos.length === 0) return null
               return (
                 <div className="mt-6">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Job Photos</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-2">Job Photos</p>
                   <div className="flex gap-2 overflow-x-auto">
                     {allPhotos.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer">
@@ -283,7 +283,7 @@ export default function PayInvoicePage() {
             {/* Scope of Work */}
             {(invoice.scope || invoice.description) && (
               <div className="mt-6">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Scope of Work</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-2">Scope of Work</p>
                 <p className="text-sm leading-relaxed text-gray-600 rounded-xl bg-gray-50 px-4 py-3">{invoice.scope || invoice.description}</p>
               </div>
             )}
@@ -291,7 +291,7 @@ export default function PayInvoicePage() {
             {/* Notes */}
             {invoice.notes && (
               <div className="mt-6">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Notes</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-2">Notes</p>
                 <p className="text-sm leading-relaxed text-gray-600 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">{invoice.notes}</p>
               </div>
             )}
@@ -305,7 +305,7 @@ export default function PayInvoicePage() {
               <div className="flex items-center justify-between px-4 py-4">
                 <div>
                   <p className="text-sm font-medium text-gray-800">{invoice.job_type || "Roofing Service"}</p>
-                  {!hidden.has("address") && invoice.address && <p className="text-xs text-gray-400 mt-0.5">{invoice.address}</p>}
+                  {!hidden.has("address") && invoice.address && <p className="text-xs text-gray-500 mt-0.5">{invoice.address}</p>}
                 </div>
                 <span className="text-sm font-bold text-gray-900">${baseAmount}</span>
               </div>
@@ -410,10 +410,10 @@ export default function PayInvoicePage() {
 
                   {cardUnavailable && (
                     <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 print:hidden">
-                      <CreditCard className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      <CreditCard className="h-5 w-5 text-gray-500 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-semibold text-gray-600">Card payment unavailable</p>
-                        <p className="text-xs text-gray-400">Please use one of the payment methods below, or contact your contractor.</p>
+                        <p className="text-xs text-gray-500">Please use one of the payment methods below, or contact your contractor.</p>
                       </div>
                     </div>
                   )}
@@ -424,7 +424,7 @@ export default function PayInvoicePage() {
                       {(hasCard || cardUnavailable) && altMethods.length > 0 && (
                         <div className="flex items-center gap-3 mb-3">
                           <div className="h-px flex-1 bg-gray-200" />
-                          <span className="text-xs font-medium text-gray-400">or pay with</span>
+                          <span className="text-xs font-medium text-gray-500">or pay with</span>
                           <div className="h-px flex-1 bg-gray-200" />
                         </div>
                       )}
@@ -452,7 +452,7 @@ export default function PayInvoicePage() {
                     <div className="mt-4">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="h-px flex-1 bg-gray-200" />
-                        <span className="text-xs font-medium text-gray-400">or contact contractor directly</span>
+                        <span className="text-xs font-medium text-gray-500">or contact contractor directly</span>
                         <div className="h-px flex-1 bg-gray-200" />
                       </div>
                       <div className="flex gap-2">
@@ -485,7 +485,7 @@ export default function PayInvoicePage() {
 
             {/* Trust indicator */}
             {!isPaid && hasCard && (
-              <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-gray-400 print:hidden">
+              <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-gray-500 print:hidden">
                 <Lock className="h-3 w-3" />
                 Secure payment powered by Stripe
               </div>
@@ -495,7 +495,7 @@ export default function PayInvoicePage() {
             <div className="mt-4 flex justify-center print:hidden">
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:text-gray-600 hover:bg-gray-100"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-600 hover:bg-gray-100"
               >
                 <Printer className="h-3.5 w-3.5" />
                 Print / Download PDF
@@ -505,7 +505,7 @@ export default function PayInvoicePage() {
 
           {/* Footer */}
           <div className="border-t border-gray-100 bg-gray-50/50 px-6 py-4 text-center sm:px-8">
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-gray-500">
               Powered by <span className="font-semibold">XRoof</span> — Professional Roofing Software
             </p>
           </div>

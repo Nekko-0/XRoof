@@ -47,10 +47,10 @@ const TRIGGERS = [
 ]
 
 const STEP_TYPES = [
-  { value: "email", label: "Email", icon: Mail, color: "text-blue-400", bg: "bg-blue-500/10" },
-  { value: "sms", label: "SMS", icon: Phone, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  { value: "reminder", label: "Reminder", icon: Bell, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { value: "notification", label: "Notification", icon: BellRing, color: "text-purple-400", bg: "bg-purple-500/10" },
+  { value: "email", label: "Email", icon: Mail, color: "text-blue-600", bg: "bg-blue-500/10" },
+  { value: "sms", label: "SMS", icon: Phone, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  { value: "reminder", label: "Reminder", icon: Bell, color: "text-amber-600", bg: "bg-amber-500/10" },
+  { value: "notification", label: "Notification", icon: BellRing, color: "text-purple-600", bg: "bg-purple-500/10" },
 ]
 
 const TRIGGER_DEFAULT_STEPS: Record<string, Step[]> = {
@@ -502,7 +502,7 @@ export default function AutomationsPage() {
                       )}
                       <button
                         onClick={() => removeStep(i)}
-                        className="rounded-lg p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                        className="rounded-lg p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -529,8 +529,8 @@ export default function AutomationsPage() {
                     {/* Condition builder */}
                     {step.condition ? (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2">
-                        <Filter className="h-3 w-3 text-amber-400" />
-                        <span className="text-[10px] font-semibold text-amber-400">Only if</span>
+                        <Filter className="h-3 w-3 text-amber-600" />
+                        <span className="text-[10px] font-semibold text-amber-600">Only if</span>
                         <select
                           value={step.condition.field}
                           onChange={(e) => {
@@ -569,7 +569,7 @@ export default function AutomationsPage() {
                             updated[i] = { ...step, condition: null }
                             setNewSteps(updated)
                           }}
-                          className="ml-auto rounded p-0.5 text-muted-foreground hover:text-red-400"
+                          className="ml-auto rounded p-0.5 text-muted-foreground hover:text-red-600"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -581,14 +581,14 @@ export default function AutomationsPage() {
                           updated[i] = { ...step, condition: { field: "job_type", operator: "equals", value: "" } }
                           setNewSteps(updated)
                         }}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-amber-400 transition-colors"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-amber-600 transition-colors"
                       >
                         <Filter className="h-3 w-3" /> Add condition
                       </button>
                     )}
                     {smsPreview?.key === `create-${i}` && (
                       <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5">
-                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">SMS Preview</p>
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">SMS Preview</p>
                         <p className="text-xs text-foreground">{smsPreview.message}</p>
                         <button
                           onClick={() => setSmsPreview(null)}
@@ -670,7 +670,7 @@ export default function AutomationsPage() {
                       title={t.active ? "Active — click to pause" : "Paused — click to activate"}
                     >
                       {t.active ? (
-                        <ToggleRight className="h-6 w-6 text-emerald-400" />
+                        <ToggleRight className="h-6 w-6 text-emerald-600" />
                       ) : (
                         <ToggleLeft className="h-6 w-6 text-muted-foreground" />
                       )}
@@ -689,17 +689,17 @@ export default function AutomationsPage() {
                             <span>·</span>
                             <span className="flex items-center gap-1">
                               {s.sent > 0 && (
-                                <span className="flex items-center gap-0.5 text-emerald-400">
+                                <span className="flex items-center gap-0.5 text-emerald-600">
                                   <CheckCircle className="h-3 w-3" /> {s.sent}
                                 </span>
                               )}
                               {s.pending > 0 && (
-                                <span className="flex items-center gap-0.5 text-blue-400">
+                                <span className="flex items-center gap-0.5 text-blue-600">
                                   <Loader2 className="h-3 w-3" /> {s.pending}
                                 </span>
                               )}
                               {s.failed > 0 && (
-                                <span className="flex items-center gap-0.5 text-red-400">
+                                <span className="flex items-center gap-0.5 text-red-600">
                                   <AlertCircle className="h-3 w-3" /> {s.failed}
                                 </span>
                               )}
@@ -711,7 +711,7 @@ export default function AutomationsPage() {
 
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(t.id) }}
-                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -758,7 +758,7 @@ export default function AutomationsPage() {
                                 {step.message && <p className="mt-0.5 text-[11px] text-muted-foreground">{step.message}</p>}
                                 {smsPreview?.key === `template-${t.id}-${i}` && (
                                   <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5">
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">SMS Preview</p>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">SMS Preview</p>
                                     <p className="text-xs text-foreground">{smsPreview.message}</p>
                                     <button
                                       onClick={() => setSmsPreview(null)}

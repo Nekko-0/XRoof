@@ -9,10 +9,10 @@ const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
 const TEAM_MEMBER_PRICE = 39
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  trialing: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  past_due: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  canceled: "bg-red-500/15 text-red-400 border-red-500/30",
+  active: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  trialing: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  past_due: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  canceled: "bg-red-500/15 text-red-600 border-red-500/30",
 }
 
 type ContractorProfile = {
@@ -215,7 +215,7 @@ export default function AdminContractorsPage() {
                     </span>
                   )}
                   {c.mrr > 0 && (
-                    <span className="font-medium text-emerald-400">${c.mrr}/mo</span>
+                    <span className="font-medium text-emerald-600">${c.mrr}/mo</span>
                   )}
                   {c.stripe_customer_id && (
                     <a href={`https://dashboard.stripe.com/customers/${c.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" title="View in Stripe">
@@ -267,7 +267,7 @@ export default function AdminContractorsPage() {
                           </div>
                           <div className="text-right">
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              contract.status === "signed" ? "bg-emerald-900/30 text-emerald-400" : "bg-amber-900/30 text-amber-400"
+                              contract.status === "signed" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"
                             }`}>
                               {contract.status || "draft"}
                             </span>

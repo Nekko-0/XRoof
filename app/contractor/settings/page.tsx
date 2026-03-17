@@ -369,7 +369,7 @@ export default function SettingsPage() {
                   <img src={profile.logo_url} alt="Logo" className="h-12 w-auto rounded border border-border object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
                   <button
                     onClick={() => setProfile({ ...profile, logo_url: "" })}
-                    className="text-[11px] text-muted-foreground hover:text-red-400 transition-colors"
+                    className="text-[11px] text-muted-foreground hover:text-red-600 transition-colors"
                   >
                     Remove
                   </button>
@@ -644,7 +644,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               {profile.google_calendar_connected && (
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600">
                   <CheckCircle className="h-3 w-3" /> Connected
                 </span>
               )}
@@ -685,7 +685,7 @@ export default function SettingsPage() {
                       setProfile({ ...profile, google_calendar_connected: false })
                       toast.success("Google Calendar disconnected")
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-500/10 transition-colors"
                   >
                     Disconnect
                   </button>
@@ -707,7 +707,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               {stripeStatus?.connected && (
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600">
                   <CheckCircle className="h-3 w-3" /> Connected
                 </span>
               )}
@@ -715,10 +715,10 @@ export default function SettingsPage() {
             {stripeStatus?.connected ? (
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className={`rounded-full px-2 py-0.5 font-medium ${stripeStatus.charges_enabled ? "bg-emerald-500/15 text-emerald-400" : "bg-yellow-500/15 text-yellow-400"}`}>
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${stripeStatus.charges_enabled ? "bg-emerald-500/15 text-emerald-600" : "bg-yellow-500/15 text-yellow-600"}`}>
                     Charges {stripeStatus.charges_enabled ? "Enabled" : "Pending"}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 font-medium ${stripeStatus.payouts_enabled ? "bg-emerald-500/15 text-emerald-400" : "bg-yellow-500/15 text-yellow-400"}`}>
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${stripeStatus.payouts_enabled ? "bg-emerald-500/15 text-emerald-600" : "bg-yellow-500/15 text-yellow-600"}`}>
                     Payouts {stripeStatus.payouts_enabled ? "Enabled" : "Pending"}
                   </span>
                 </div>
@@ -767,7 +767,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               {profile.quickbooks_connected && (
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600">
                   <CheckCircle className="h-3 w-3" /> Connected
                 </span>
               )}
@@ -817,7 +817,7 @@ export default function SettingsPage() {
                         toast.error("Failed to disconnect")
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-500/10 transition-colors"
                   >
                     Disconnect
                   </button>

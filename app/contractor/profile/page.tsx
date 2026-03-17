@@ -123,8 +123,8 @@ export default function ContractorProfilePage() {
   const initials = userName.slice(0, 2).toUpperCase()
 
   const profileStats = [
-    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-emerald-900/30 text-emerald-400" },
-    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-900/30 text-blue-400" },
+    { label: "Active Leads", value: activeJobs, icon: Briefcase, color: "bg-emerald-500/15 text-emerald-600" },
+    { label: "Completed", value: completedJobs, icon: CheckCircle, color: "bg-blue-500/15 text-blue-600" },
   ]
 
   return (
@@ -304,7 +304,7 @@ export default function ContractorProfilePage() {
                               delete updated[key]
                               setProfile({ ...profile, material_prices: updated })
                             }}
-                            className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                            className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border border-red-500/30 text-red-600 hover:bg-red-500/10 transition-colors"
                             title="Remove custom material"
                           >
                             <Trash2 className="h-3 w-3" />

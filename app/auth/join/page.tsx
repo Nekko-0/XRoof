@@ -147,7 +147,7 @@ function JoinForm() {
 
         {status === "invalid" && (
           <div className="rounded-2xl border border-border bg-card p-8 text-center">
-            <AlertCircle className="mx-auto h-10 w-10 text-red-400 mb-3" />
+            <AlertCircle className="mx-auto h-10 w-10 text-red-600 mb-3" />
             <h2 className="text-lg font-bold text-foreground">Invalid Invite Link</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               This invite link is invalid or has already been used. Please ask your team admin to send a new invite.
@@ -208,7 +208,7 @@ function JoinForm() {
 
         {status === "done" && (
           <div className="rounded-2xl border border-border bg-card p-8 text-center">
-            <CheckCircle className="mx-auto h-10 w-10 text-emerald-400 mb-3" />
+            <CheckCircle className="mx-auto h-10 w-10 text-emerald-600 mb-3" />
             <h2 className="text-lg font-bold text-foreground">Welcome aboard!</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Redirecting you to the dashboard...

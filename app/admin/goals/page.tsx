@@ -86,8 +86,8 @@ export default function AdminGoalsPage() {
 
   const periodColors: Record<string, string> = {
     monthly: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-    quarterly: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-    annual: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    quarterly: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+    annual: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
   }
 
   if (loading) {
@@ -122,7 +122,7 @@ export default function AdminGoalsPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
@@ -209,7 +209,7 @@ export default function AdminGoalsPage() {
       {/* Goals List */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <Target className="h-4 w-4 text-amber-400" />
+          <Target className="h-4 w-4 text-amber-600" />
           Active Goals ({goals.length})
         </h3>
         {goals.length === 0 ? (
@@ -256,7 +256,7 @@ export default function AdminGoalsPage() {
                     </div>
                     <button
                       onClick={() => handleDelete(goal.id)}
-                      className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-600 transition-colors"
                       title="Delete goal"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -287,7 +287,7 @@ export default function AdminGoalsPage() {
 
                   {goal.current_mrr !== undefined && (
                     <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                      <TrendingUp className="h-3 w-3 text-emerald-600" />
                       Current MRR: ${goal.current_mrr.toLocaleString()}
                     </div>
                   )}

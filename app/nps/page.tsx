@@ -57,12 +57,12 @@ function NPSContent() {
       <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
-            <svg className="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white">Thank you for your feedback!</h1>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-gray-500">
             Your response helps us improve XRoof for everyone.
           </p>
         </div>
@@ -114,7 +114,7 @@ function NPSContent() {
           />
 
           {error && (
-            <p className="mt-2 text-sm text-red-400">{error}</p>
+            <p className="mt-2 text-sm text-red-600">{error}</p>
           )}
 
           <button
@@ -135,7 +135,7 @@ export default function NPSPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gray-950">
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-gray-500">Loading...</p>
         </div>
       }
     >

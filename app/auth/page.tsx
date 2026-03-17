@@ -163,7 +163,7 @@ function AuthForm() {
         {/* Referral banner */}
         {refCode && isSignUp && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
-            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">You&apos;ve been referred! Sign up and get $50 credit when you subscribe.</p>
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-600">You&apos;ve been referred! Sign up and get $50 credit when you subscribe.</p>
           </div>
         )}
 

@@ -105,7 +105,7 @@ export default function CompetitorsPage() {
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
 
       {/* Form */}
       {showForm && (
@@ -207,7 +207,7 @@ export default function CompetitorsPage() {
                   <button onClick={() => handleEdit(c)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => handleDelete(c.id)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/20 hover:text-red-400 transition-colors">
+                  <button onClick={() => handleDelete(c.id)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/20 hover:text-red-600 transition-colors">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -216,20 +216,20 @@ export default function CompetitorsPage() {
               {c.pricing && (
                 <div className="mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
                   <p className="text-[10px] text-muted-foreground">Pricing</p>
-                  <p className="text-xs font-medium text-emerald-400">{c.pricing}</p>
+                  <p className="text-xs font-medium text-emerald-600">{c.pricing}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 {c.strengths && (
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-emerald-400 mb-1">Strengths</p>
+                    <p className="text-[10px] font-bold uppercase text-emerald-600 mb-1">Strengths</p>
                     <p className="text-xs text-muted-foreground whitespace-pre-wrap">{c.strengths}</p>
                   </div>
                 )}
                 {c.weaknesses && (
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-red-400 mb-1">Weaknesses</p>
+                    <p className="text-[10px] font-bold uppercase text-red-600 mb-1">Weaknesses</p>
                     <p className="text-xs text-muted-foreground whitespace-pre-wrap">{c.weaknesses}</p>
                   </div>
                 )}

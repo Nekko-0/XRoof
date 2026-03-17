@@ -23,11 +23,11 @@ type TeamMember = {
 }
 
 const ROLES = [
-  { value: "admin", label: "Admin", description: "Full access to everything", icon: Crown, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { value: "office_manager", label: "Office Manager", description: "All features except billing & team", icon: Clipboard, color: "text-purple-400", bg: "bg-purple-500/10" },
-  { value: "sales", label: "Salesperson", description: "Own leads, estimates, contracts", icon: Briefcase, color: "text-blue-400", bg: "bg-blue-500/10" },
-  { value: "field_tech", label: "Field Tech", description: "Field mode, work orders, measurements", icon: HardHat, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  { value: "viewer", label: "Viewer", description: "Read-only access", icon: Eye, color: "text-gray-400", bg: "bg-gray-500/10" },
+  { value: "admin", label: "Admin", description: "Full access to everything", icon: Crown, color: "text-amber-600", bg: "bg-amber-500/10" },
+  { value: "office_manager", label: "Office Manager", description: "All features except billing & team", icon: Clipboard, color: "text-purple-600", bg: "bg-purple-500/10" },
+  { value: "sales", label: "Salesperson", description: "Own leads, estimates, contracts", icon: Briefcase, color: "text-blue-600", bg: "bg-blue-500/10" },
+  { value: "field_tech", label: "Field Tech", description: "Field mode, work orders, measurements", icon: HardHat, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  { value: "viewer", label: "Viewer", description: "Read-only access", icon: Eye, color: "text-gray-500", bg: "bg-gray-500/10" },
 ]
 
 export default function TeamPage() {
@@ -250,9 +250,9 @@ export default function TeamPage() {
                     {perm.perms.map((allowed, j) => (
                       <td key={j} className={`py-2.5 text-center ${j === perm.perms.length - 1 ? "rounded-r-lg" : ""}`}>
                         {allowed ? (
-                          <Check className="mx-auto h-4 w-4 text-emerald-400" />
+                          <Check className="mx-auto h-4 w-4 text-emerald-600" />
                         ) : (
-                          <X className="mx-auto h-4 w-4 text-red-400" />
+                          <X className="mx-auto h-4 w-4 text-red-600" />
                         )}
                       </td>
                     ))}
@@ -308,7 +308,7 @@ export default function TeamPage() {
 
           {inviteRole === "admin" && (
             <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-              <p className="text-xs font-medium text-amber-400">
+              <p className="text-xs font-medium text-amber-600">
                 Admin has full control of your account — same access as you. Only 1 Admin seat allowed. Use for a trusted business partner only.
               </p>
             </div>
@@ -316,7 +316,7 @@ export default function TeamPage() {
 
           {!hasSubscription && (
             <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-              <p className="text-xs font-medium text-amber-400">
+              <p className="text-xs font-medium text-amber-600">
                 Active subscription required to invite team members.{" "}
                 <a href="/contractor/billing" className="underline hover:text-amber-300">Go to Billing</a>
               </p>
@@ -324,7 +324,7 @@ export default function TeamPage() {
           )}
 
           {inviteError && (
-            <p className="mt-2 text-xs text-red-400">{inviteError}</p>
+            <p className="mt-2 text-xs text-red-600">{inviteError}</p>
           )}
 
           {showConfirm && (
@@ -365,7 +365,7 @@ export default function TeamPage() {
         {/* Owner row */}
         {ownerName && (
           <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-sm mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-sm font-bold text-amber-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-sm font-bold text-amber-600">
               {ownerName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -374,7 +374,7 @@ export default function TeamPage() {
                 <Mail className="h-3 w-3" /> {ownerEmail}
               </p>
             </div>
-            <span className="rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 border border-amber-500/20">
+            <span className="rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 border border-amber-500/20">
               <Crown className="h-3 w-3 inline mr-1" />
               Owner
             </span>
@@ -408,11 +408,11 @@ export default function TeamPage() {
                       <span>{m.invited_email}</span>
                       <span>·</span>
                       {m.status === "invited" ? (
-                        <span className="flex items-center gap-1 text-amber-400">
+                        <span className="flex items-center gap-1 text-amber-600">
                           <Clock className="h-3 w-3" /> Pending
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-emerald-400">
+                        <span className="flex items-center gap-1 text-emerald-600">
                           <CheckCircle className="h-3 w-3" /> Active
                         </span>
                       )}
@@ -452,7 +452,7 @@ export default function TeamPage() {
                   {isOwner && (
                     <button
                       onClick={() => handleRemove(m.id)}
-                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
                       title="Remove member"
                     >
                       <Trash2 className="h-4 w-4" />

@@ -57,10 +57,10 @@ const demoTabs = [
 ]
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  new: { label: "New Lead", color: "bg-blue-500/15 text-blue-400" },
-  estimate_sent: { label: "Estimate Sent", color: "bg-amber-500/15 text-amber-400" },
-  contract_signed: { label: "Contract Signed", color: "bg-emerald-500/15 text-emerald-400" },
-  in_progress: { label: "In Progress", color: "bg-purple-500/15 text-purple-400" },
+  new: { label: "New Lead", color: "bg-blue-500/15 text-blue-600" },
+  estimate_sent: { label: "Estimate Sent", color: "bg-amber-500/15 text-amber-600" },
+  contract_signed: { label: "Contract Signed", color: "bg-emerald-500/15 text-emerald-600" },
+  in_progress: { label: "In Progress", color: "bg-purple-500/15 text-purple-600" },
   completed: { label: "Completed", color: "bg-green-500/15 text-green-400" },
 }
 
@@ -98,7 +98,7 @@ function DemoDashboard() {
               <s.icon className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-bold text-foreground">{s.value}</p>
-            <p className={`mt-1 flex items-center gap-1 text-xs ${s.up ? "text-emerald-400" : "text-red-400"}`}>
+            <p className={`mt-1 flex items-center gap-1 text-xs ${s.up ? "text-emerald-600" : "text-red-600"}`}>
               {s.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {s.change} vs last month
             </p>
@@ -440,7 +440,7 @@ export default function DemoPage() {
               {activeTab === "jobs" ? "My Jobs" : activeTab}
             </h1>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
                 DEMO MODE
               </span>
             </div>

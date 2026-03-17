@@ -559,7 +559,7 @@ export default function ContractorDashboard() {
         </Link>
         <Link href="/contractor/measure" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm hover:bg-secondary/30 transition-colors">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-            <Ruler className="h-5 w-5 text-blue-400" />
+            <Ruler className="h-5 w-5 text-blue-600" />
           </div>
           <div>
             <p className="text-xs font-bold text-foreground">Measure</p>
@@ -568,7 +568,7 @@ export default function ContractorDashboard() {
         </Link>
         <Link href="/contractor/report" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm hover:bg-secondary/30 transition-colors">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-            <Send className="h-5 w-5 text-emerald-400" />
+            <Send className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
             <p className="text-xs font-bold text-foreground">Estimate</p>
@@ -577,7 +577,7 @@ export default function ContractorDashboard() {
         </Link>
         <Link href="/contractor/calendar" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm hover:bg-secondary/30 transition-colors">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-            <Calendar className="h-5 w-5 text-blue-400" />
+            <Calendar className="h-5 w-5 text-blue-600" />
           </div>
           <div>
             <p className="text-xs font-bold text-foreground">Calendar</p>
@@ -649,7 +649,7 @@ export default function ContractorDashboard() {
                 { label: "Accepted → Paid", value: funnelData.conversion_rates.accept_to_paid },
               ].map((metric) => (
                 <div key={metric.label} className="rounded-xl border border-border/50 bg-background/50 p-3 text-center">
-                  <p className={`text-xl font-bold ${metric.value >= 50 ? "text-emerald-500" : metric.value >= 25 ? "text-amber-500" : "text-red-400"}`}>
+                  <p className={`text-xl font-bold ${metric.value >= 50 ? "text-emerald-500" : metric.value >= 25 ? "text-amber-500" : "text-red-600"}`}>
                     {metric.value}%
                   </p>
                   <p className="text-[10px] text-muted-foreground">{metric.label}</p>
@@ -698,45 +698,45 @@ export default function ContractorDashboard() {
       {/* Needs Attention */}
       {attentionCount > 0 && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+          <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600">
             <AlertTriangle className="h-3.5 w-3.5" /> Needs Attention ({attentionCount})
           </h3>
           <div className="flex flex-col gap-2">
             {visitRequests.map((vr) => (
               <Link key={vr.id} href="/contractor/messages"
                 className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">
-                <Calendar className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">{vr.body}</p>
                   <p className="text-[10px] text-muted-foreground">{new Date(vr.created_at).toLocaleDateString()}</p>
                 </div>
-                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-400">New</span>
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-600">New</span>
               </Link>
             ))}
             {overdueFollowups.map((f) => (
               <Link key={f.id} href="/contractor/calendar"
                 className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">
-                <Bell className="h-4 w-4 text-red-400 flex-shrink-0" />
+                <Bell className="h-4 w-4 text-red-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">
                     Overdue: {(f.jobs as any)?.customer_name || "Follow-up"}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">{f.note}</p>
                 </div>
-                <span className="text-[10px] font-semibold text-red-400">Due {f.due_date?.slice(5)}</span>
+                <span className="text-[10px] font-semibold text-red-600">Due {f.due_date?.slice(5)}</span>
               </Link>
             ))}
             {staleJobs.map((j) => (
               <Link key={j.id} href="/contractor/pipeline"
                 className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-card px-4 py-3 hover:bg-secondary/30 transition-colors">
-                <Clock className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">
                     Stale: {j.customer_name}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">{j.address}</p>
                 </div>
-                <span className="text-[10px] font-semibold text-amber-400">{j.status}</span>
+                <span className="text-[10px] font-semibold text-amber-600">{j.status}</span>
               </Link>
             ))}
           </div>
@@ -746,15 +746,15 @@ export default function ContractorDashboard() {
       {/* Today's Appointments */}
       {todayAppointments.length > 0 && (
         <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+          <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
             <Calendar className="h-3.5 w-3.5" /> Today&apos;s Schedule ({todayAppointments.length})
           </h3>
           <div className="flex flex-col gap-2">
             {todayAppointments.map((a) => (
               <div key={a.id} className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-card px-4 py-3">
-                <span className="text-xs font-bold text-blue-400 w-12">{a.time || "TBD"}</span>
+                <span className="text-xs font-bold text-blue-600 w-12">{a.time || "TBD"}</span>
                 <p className="text-xs font-bold text-foreground flex-1 truncate">{a.title}</p>
-                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-400 capitalize">{a.type.replace("_", " ")}</span>
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-600 capitalize">{a.type.replace("_", " ")}</span>
               </div>
             ))}
           </div>
@@ -877,8 +877,8 @@ export default function ContractorDashboard() {
                     return (
                       <div key={s.source} className="flex items-center gap-3">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          s.source === "widget" ? "bg-blue-500/15 text-blue-400" :
-                          s.source === "manual" ? "bg-emerald-500/15 text-emerald-400" :
+                          s.source === "widget" ? "bg-blue-500/15 text-blue-600" :
+                          s.source === "manual" ? "bg-emerald-500/15 text-emerald-600" :
                           s.source === "referral" ? "bg-primary/15 text-primary" :
                           "bg-secondary text-muted-foreground"
                         }`}>{s.source}</span>

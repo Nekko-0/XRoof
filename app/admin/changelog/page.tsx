@@ -26,9 +26,9 @@ const CATEGORIES = [
 
 const categoryColors: Record<string, string> = {
   feature: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  improvement: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  fix: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  announcement: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  improvement: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  fix: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  announcement: "bg-blue-500/15 text-blue-600 border-blue-500/30",
 }
 
 export default function AdminChangelogPage() {
@@ -147,7 +147,7 @@ export default function AdminChangelogPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
@@ -209,8 +209,8 @@ export default function AdminChangelogPage() {
                 >
                   {formPublished ? (
                     <>
-                      <ToggleRight className="h-4 w-4 text-emerald-400" />
-                      <span className="text-emerald-400">Yes</span>
+                      <ToggleRight className="h-4 w-4 text-emerald-600" />
+                      <span className="text-emerald-600">Yes</span>
                     </>
                   ) : (
                     <>
@@ -255,7 +255,7 @@ export default function AdminChangelogPage() {
       {/* Entries List */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <FileText className="h-4 w-4 text-amber-400" />
+          <FileText className="h-4 w-4 text-amber-600" />
           Entries ({entries.length})
         </h3>
         {entries.length === 0 ? (
@@ -281,7 +281,7 @@ export default function AdminChangelogPage() {
                         {entry.category}
                       </span>
                       {entry.published ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
                           <Eye className="h-2.5 w-2.5" /> Published
                         </span>
                       ) : (
@@ -311,7 +311,7 @@ export default function AdminChangelogPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(entry.id)}
-                      className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-600 transition-colors"
                       title="Delete entry"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

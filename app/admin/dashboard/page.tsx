@@ -73,13 +73,13 @@ type Analytics = {
 }
 
 const SC: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  trialing: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  past_due: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  canceled: "bg-red-500/15 text-red-400 border-red-500/30",
+  active: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  trialing: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  past_due: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  canceled: "bg-red-500/15 text-red-600 border-red-500/30",
 }
 
-const HC: Record<string, string> = { healthy: "text-emerald-400", at_risk: "text-amber-400", needs_attention: "text-red-400" }
+const HC: Record<string, string> = { healthy: "text-emerald-600", at_risk: "text-amber-600", needs_attention: "text-red-600" }
 
 function Badge({ status }: { status: string }) {
   return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${SC[status] || "bg-muted text-muted-foreground border-border"}`}>{status.replace("_", " ")}</span>
@@ -88,7 +88,7 @@ function Badge({ status }: { status: string }) {
 function Trend({ value }: { value: number }) {
   if (value === 0) return <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground"><Minus className="h-2.5 w-2.5" /> 0%</span>
   const up = value > 0
-  return <span className={`flex items-center gap-0.5 text-[10px] font-medium ${up ? "text-emerald-400" : "text-red-400"}`}>{up ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}{Math.abs(value)}%</span>
+  return <span className={`flex items-center gap-0.5 text-[10px] font-medium ${up ? "text-emerald-600" : "text-red-600"}`}>{up ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}{Math.abs(value)}%</span>
 }
 
 function Metric({ label, value, sub, icon: Icon, color, trend }: { label: string; value: string; sub?: string; icon: any; color: string; trend?: number }) {
@@ -193,9 +193,9 @@ export default function AdminDashboard() {
     const s = churnScores.find((c: any) => c.user_id === userId)
     if (!s) return null
     const score = s.score ?? s.risk_score ?? 0
-    if (score <= 30) return { label: "Low Risk", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
-    if (score <= 60) return { label: "Medium Risk", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" }
-    return { label: "High Risk", color: "bg-red-500/15 text-red-400 border-red-500/30" }
+    if (score <= 30) return { label: "Low Risk", color: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" }
+    if (score <= 60) return { label: "Medium Risk", color: "bg-amber-500/15 text-amber-600 border-amber-500/30" }
+    return { label: "High Risk", color: "bg-red-500/15 text-red-600 border-red-500/30" }
   }
 
   const toggleSubSelection = (userId: string) => {
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
   }, [d, subSort, subFilter, churnScores])
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" /></div>
-  if (error || !d) return <p className="p-6 text-red-400">{error || "Failed to load"}</p>
+  if (error || !d) return <p className="p-6 text-red-600">{error || "Failed to load"}</p>
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
 
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Gauge className="h-4 w-4 text-indigo-400" /> Platform Health Score</h3>
           </div>
           <div className="flex items-center gap-6">
-            <div className={`text-5xl font-bold ${healthScore.score > 70 ? "text-emerald-400" : healthScore.score > 40 ? "text-amber-400" : "text-red-400"}`}>{healthScore.score}</div>
+            <div className={`text-5xl font-bold ${healthScore.score > 70 ? "text-emerald-600" : healthScore.score > 40 ? "text-amber-600" : "text-red-600"}`}>{healthScore.score}</div>
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 { label: "Growth", key: "growth" },
@@ -321,9 +321,9 @@ export default function AdminDashboard() {
 
       {/* ── Row 1: Key metrics ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Metric label="MRR" value={`$${d.mrr.toLocaleString()}`} icon={DollarSign} color="bg-emerald-900/30 text-emerald-400" trend={d.trends.mrr} />
+        <Metric label="MRR" value={`$${d.mrr.toLocaleString()}`} icon={DollarSign} color="bg-emerald-500/15 text-emerald-600" trend={d.trends.mrr} />
         <Metric label="Active Subs" value={d.activeSubscribers.toString()} icon={UserCheck} color="bg-indigo-900/30 text-indigo-400" />
-        <Metric label="Free Trials" value={d.trialingCount.toString()} sub={d.trials.filter(t => t.expiring_soon).length > 0 ? `${d.trials.filter(t => t.expiring_soon).length} expiring` : undefined} icon={Clock} color="bg-blue-900/30 text-blue-400" />
+        <Metric label="Free Trials" value={d.trialingCount.toString()} sub={d.trials.filter(t => t.expiring_soon).length > 0 ? `${d.trials.filter(t => t.expiring_soon).length} expiring` : undefined} icon={Clock} color="bg-blue-500/15 text-blue-600" />
         <Metric label="Lifetime Revenue" value={`$${Math.round(d.totalLifetimeRevenue).toLocaleString()}`} icon={TrendingUp} color="bg-purple-900/30 text-purple-400" trend={d.trends.revenue} />
         <Metric label="Projected Annual" value={`$${d.projectedAnnualRevenue.toLocaleString()}`} sub="MRR × 12 + trial conv." icon={BarChart3} color="bg-sky-900/30 text-sky-400" />
         <Metric label="Avg LTV" value={`$${d.averageLtv.toLocaleString()}`} sub="Lifetime value per contractor" icon={Heart} color="bg-pink-900/30 text-pink-400" />
@@ -331,7 +331,7 @@ export default function AdminDashboard() {
 
       {/* ── Row 2: NRR + Payment Volume + Time Saved ── */}
       <div className="grid grid-cols-3 gap-3">
-        <Metric label="Net Revenue Retention" value={`${d.nrr}%`} sub={d.nrr >= 100 ? "Growing from existing" : "Below 100% — contraction"} icon={d.nrr >= 100 ? TrendingUp : TrendingDown} color={d.nrr >= 100 ? "bg-emerald-900/30 text-emerald-400" : "bg-red-900/30 text-red-400"} />
+        <Metric label="Net Revenue Retention" value={`${d.nrr}%`} sub={d.nrr >= 100 ? "Growing from existing" : "Below 100% — contraction"} icon={d.nrr >= 100 ? TrendingUp : TrendingDown} color={d.nrr >= 100 ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/15 text-red-600"} />
         <Metric label="Payment Volume" value={`$${d.paymentVolume.toLocaleString()}`} sub="Collected through invoices" icon={DollarSign} color="bg-violet-900/30 text-violet-400" />
         <Metric label="Time Saved" value={`${d.timeSavedHours}h`} sub="Reports + automations + contracts" icon={Timer} color="bg-teal-900/30 text-teal-400" />
       </div>
@@ -417,7 +417,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-4 w-4 text-blue-400" />
+            <MessageSquare className="h-4 w-4 text-blue-600" />
             <span className="text-xs font-semibold text-muted-foreground">Portal Messages</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{d.portalMessagesCount.toLocaleString()}</p>
@@ -433,7 +433,7 @@ export default function AdminDashboard() {
         </div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <Camera className="h-4 w-4 text-amber-400" />
+            <Camera className="h-4 w-4 text-amber-600" />
             <span className="text-xs font-semibold text-muted-foreground">Photos Uploaded</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{d.photosCount.toLocaleString()}</p>
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Subscribers</h3>
             <div className="flex gap-1">
               <button onClick={() => setSubFilter("all")} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${subFilter === "all" ? "bg-indigo-500/20 text-indigo-400" : "text-muted-foreground hover:bg-secondary"}`}>All</button>
-              <button onClick={() => setSubFilter("at_risk")} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${subFilter === "at_risk" ? "bg-red-500/20 text-red-400" : "text-muted-foreground hover:bg-secondary"}`}>At Risk</button>
+              <button onClick={() => setSubFilter("at_risk")} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${subFilter === "at_risk" ? "bg-red-500/20 text-red-600" : "text-muted-foreground hover:bg-secondary"}`}>At Risk</button>
             </div>
           </div>
           <div className="flex gap-1">
@@ -489,7 +489,7 @@ export default function AdminDashboard() {
                       <td className="py-2.5 pr-3"><span className={`text-[10px] font-bold ${HC[eng?.healthLevel || ""] || "text-muted-foreground"}`}>{eng?.healthScore || 0}/100</span></td>
                       <td className="py-2.5 pr-3 text-muted-foreground">{new Date(sub.current_period_end).toLocaleDateString()}</td>
                       <td className="py-2.5 pr-3">{sub.team_member_count}</td>
-                      <td className="py-2.5 pr-3 font-medium text-emerald-400">${sub.mrr_contribution}</td>
+                      <td className="py-2.5 pr-3 font-medium text-emerald-600">${sub.mrr_contribution}</td>
                       <td className="py-2.5 pr-3 text-muted-foreground">${sub.ltv}</td>
                       <td className="py-2.5">
                         <div className="flex gap-1">
@@ -513,8 +513,8 @@ export default function AdminDashboard() {
           <span className="text-xs font-medium text-foreground">{selectedSubs.size} selected</span>
           <div className="h-4 w-px bg-border" />
           <button onClick={() => setBulkEmailOpen(true)} className="flex items-center gap-1 rounded-lg bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-400 hover:bg-indigo-500/30"><Mail className="h-3 w-3" /> Send Email</button>
-          <button onClick={exportSelectedCsv} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/30"><Download className="h-3 w-3" /> Export CSV</button>
-          <button onClick={() => { /* trigger NPS for selected */ }} className="flex items-center gap-1 rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/30"><Star className="h-3 w-3" /> Trigger NPS</button>
+          <button onClick={exportSelectedCsv} className="flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-500/30"><Download className="h-3 w-3" /> Export CSV</button>
+          <button onClick={() => { /* trigger NPS for selected */ }} className="flex items-center gap-1 rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-500/30"><Star className="h-3 w-3" /> Trigger NPS</button>
           <button onClick={() => setSelectedSubs(new Set())} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary"><X className="h-3 w-3" /></button>
         </div>
       )}
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
       {/* ── Revenue Attribution ── */}
       {attributionData.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><PieChart className="h-4 w-4 text-emerald-400" /> Revenue Attribution</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><PieChart className="h-4 w-4 text-emerald-600" /> Revenue Attribution</h3>
           <div className="flex flex-col lg:flex-row items-center gap-6">
             <div className="w-56 h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -599,23 +599,23 @@ export default function AdminDashboard() {
       {/* ── Row 7: Trials + Past Due ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Clock className="h-4 w-4 text-blue-400" /> Free Trials ({d.trials.length})</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Clock className="h-4 w-4 text-blue-600" /> Free Trials ({d.trials.length})</h3>
           {d.trials.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No active trials</p> : (
             <div className="flex flex-col gap-2">{d.trials.map(t => (
               <div key={t.user_id} className={`flex items-center justify-between rounded-xl p-3 ${t.expiring_soon ? "bg-amber-500/10 border border-amber-500/30" : "bg-secondary/30"}`}>
                 <div><p className="text-xs font-medium text-foreground">{t.company_name || t.username}</p><p className="text-[10px] text-muted-foreground">{t.email}</p></div>
-                <div className="text-right"><p className={`text-xs font-bold ${t.expiring_soon ? "text-amber-400" : "text-blue-400"}`}>{t.days_remaining}d left</p>{t.expiring_soon && <p className="text-[9px] text-amber-400">Expiring!</p>}</div>
+                <div className="text-right"><p className={`text-xs font-bold ${t.expiring_soon ? "text-amber-600" : "text-blue-600"}`}>{t.days_remaining}d left</p>{t.expiring_soon && <p className="text-[9px] text-amber-600">Expiring!</p>}</div>
               </div>
             ))}</div>
           )}
         </div>
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><AlertTriangle className="h-4 w-4 text-amber-400" /> Payment Failures ({d.pastDue.length})</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><AlertTriangle className="h-4 w-4 text-amber-600" /> Payment Failures ({d.pastDue.length})</h3>
           {d.pastDue.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No failed payments</p> : (
             <div className="flex flex-col gap-2">{d.pastDue.map(p => (
               <div key={p.user_id} className="flex items-center justify-between rounded-xl bg-red-500/10 border border-red-500/20 p-3">
                 <div><p className="text-xs font-medium text-foreground">{p.company_name || p.username}</p><p className="text-[10px] text-muted-foreground">{p.email} &middot; {p.days_past_due}d overdue</p></div>
-                {p.stripe_customer_id && <a href={`https://dashboard.stripe.com/customers/${p.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-amber-500/20 px-2 py-1 text-[10px] font-medium text-amber-400 hover:bg-amber-500/30">Fix in Stripe</a>}
+                {p.stripe_customer_id && <a href={`https://dashboard.stripe.com/customers/${p.stripe_customer_id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-amber-500/20 px-2 py-1 text-[10px] font-medium text-amber-600 hover:bg-amber-500/30">Fix in Stripe</a>}
               </div>
             ))}</div>
           )}
@@ -625,8 +625,8 @@ export default function AdminDashboard() {
       {/* ── Row 8: Churn ── */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><UserX className="h-4 w-4 text-red-400" /> Churn</h3>
-          <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">{d.churnRate}% this month</span>
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><UserX className="h-4 w-4 text-red-600" /> Churn</h3>
+          <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-600">{d.churnRate}% this month</span>
         </div>
         {d.churned.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No cancellations</p> : (
           <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2 pr-4 font-medium">Contractor</th><th className="pb-2 pr-4 font-medium">Plan</th><th className="pb-2 pr-4 font-medium">Canceled</th><th className="pb-2 font-medium">Duration</th></tr></thead>
@@ -663,12 +663,12 @@ export default function AdminDashboard() {
       {/* ── Row 10: Top Contractors + Feature Adoption ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Trophy className="h-4 w-4 text-amber-400" /> Top Contractors</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Trophy className="h-4 w-4 text-amber-600" /> Top Contractors</h3>
           {d.topContractors.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">No data yet</p> : (
             <div className="flex flex-col gap-2">
               {d.topContractors.map((c, i) => (
                 <div key={c.user_id} className="flex items-center gap-3 rounded-xl bg-secondary/30 p-3">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-amber-500/20 text-amber-400" : i === 1 ? "bg-gray-400/20 text-gray-400" : i === 2 ? "bg-orange-600/20 text-orange-400" : "bg-secondary text-muted-foreground"}`}>{i + 1}</span>
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-amber-500/20 text-amber-600" : i === 1 ? "bg-gray-400/20 text-gray-500" : i === 2 ? "bg-orange-600/20 text-orange-400" : "bg-secondary text-muted-foreground"}`}>{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{c.company_name || c.username}</p>
                     <p className="text-[9px] text-muted-foreground">{c.jobs_completed} jobs &middot; {c.invoices_paid} paid &middot; {c.reports_made} reports</p>
@@ -706,7 +706,7 @@ export default function AdminDashboard() {
                     <td className="py-2 pr-4">{c.signups}</td>
                     {[...Array(6)].map((_, i) => {
                       const val = c.retention[i]
-                      const color = val === undefined ? "" : val >= 80 ? "bg-emerald-500/20 text-emerald-400" : val >= 50 ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"
+                      const color = val === undefined ? "" : val >= 80 ? "bg-emerald-500/20 text-emerald-600" : val >= 50 ? "bg-amber-500/20 text-amber-600" : "bg-red-500/20 text-red-600"
                       return <td key={i} className="py-2 pr-3 text-center"><span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${color}`}>{val !== undefined ? `${val}%` : "—"}</span></td>
                     })}
                   </tr>
@@ -753,7 +753,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-foreground">{e.company_name || e.username}</p>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-bold ${HC[e.healthLevel] || "text-muted-foreground"}`}>{e.healthScore}/100</span>
-                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold capitalize ${e.score === "active" ? "bg-emerald-500/15 text-emerald-400" : e.score === "idle" ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"}`}>{e.score}</span>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold capitalize ${e.score === "active" ? "bg-emerald-500/15 text-emerald-600" : e.score === "idle" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}`}>{e.score}</span>
                 </div>
               </div>
             ))}
@@ -763,7 +763,7 @@ export default function AdminDashboard() {
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</h3>
           <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
             {d.recentActivity.map((a, i) => {
-              const colors: Record<string, string> = { signup: "text-indigo-400", purchase: "text-purple-400", team: "text-blue-400", churn: "text-red-400" }
+              const colors: Record<string, string> = { signup: "text-indigo-400", purchase: "text-purple-400", team: "text-blue-600", churn: "text-red-600" }
               return (
                 <div key={i} className="flex items-start gap-3 rounded-lg px-3 py-2 hover:bg-secondary/30">
                   <span className={`mt-0.5 text-[10px] font-bold uppercase ${colors[a.type] || "text-muted-foreground"}`}>{a.type}</span>
@@ -778,7 +778,7 @@ export default function AdminDashboard() {
       {/* ── Row 14: System Health ── */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <Activity className="h-4 w-4 text-emerald-400" /> System Health — Cron Jobs
+          <Activity className="h-4 w-4 text-emerald-600" /> System Health — Cron Jobs
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {d.systemHealth.map(cron => (
@@ -819,11 +819,11 @@ export default function AdminDashboard() {
       {d.npsScore !== null && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Star className="h-4 w-4 text-amber-400" /> Net Promoter Score</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Star className="h-4 w-4 text-amber-600" /> Net Promoter Score</h3>
             <Link href="/admin/nps" className="text-[10px] text-indigo-400 hover:underline">View Details</Link>
           </div>
           <div className="flex items-center gap-6">
-            <div className={`text-4xl font-bold ${d.npsScore >= 50 ? "text-emerald-400" : d.npsScore >= 0 ? "text-amber-400" : "text-red-400"}`}>{d.npsScore}</div>
+            <div className={`text-4xl font-bold ${d.npsScore >= 50 ? "text-emerald-600" : d.npsScore >= 0 ? "text-amber-600" : "text-red-600"}`}>{d.npsScore}</div>
             <div className="text-xs text-muted-foreground">
               {d.npsScore >= 70 ? "Excellent — world class" : d.npsScore >= 50 ? "Great — strong loyalty" : d.npsScore >= 0 ? "Good — room to improve" : "Needs work — reach out to detractors"}
             </div>
@@ -835,13 +835,13 @@ export default function AdminDashboard() {
       {d.dunningStats.total > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Shield className="h-4 w-4 text-emerald-400" /> Payment Recovery (Dunning)</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Shield className="h-4 w-4 text-emerald-600" /> Payment Recovery (Dunning)</h3>
             <Link href="/admin/dunning" className="text-[10px] text-indigo-400 hover:underline">Manage</Link>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl bg-secondary/30 p-3 text-center"><p className="text-lg font-bold text-foreground">{d.dunningStats.total}</p><p className="text-[9px] text-muted-foreground">Emails Sent</p></div>
-            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-400">{d.dunningStats.recovered}</p><p className="text-[9px] text-muted-foreground">Recovered</p></div>
-            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-400">${d.dunningStats.recoveredAmount}</p><p className="text-[9px] text-muted-foreground">Revenue Saved</p></div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-600">{d.dunningStats.recovered}</p><p className="text-[9px] text-muted-foreground">Recovered</p></div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-center"><p className="text-lg font-bold text-emerald-600">${d.dunningStats.recoveredAmount}</p><p className="text-[9px] text-muted-foreground">Revenue Saved</p></div>
           </div>
         </div>
       )}
@@ -849,7 +849,7 @@ export default function AdminDashboard() {
       {/* ── #2 Cancellation Reasons ── */}
       {Object.keys(d.cancellationReasons).length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><ClipboardCheck className="h-4 w-4 text-red-400" /> Why They Cancel</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><ClipboardCheck className="h-4 w-4 text-red-600" /> Why They Cancel</h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {Object.entries(d.cancellationReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
               <div key={reason} className="rounded-xl bg-secondary/30 p-3">
@@ -899,15 +899,15 @@ export default function AdminDashboard() {
       {/* ── Stripe Revenue Deep Dive ── */}
       {stripeRevenue && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><DollarSign className="h-4 w-4 text-emerald-400" /> Stripe Revenue</h3>
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><DollarSign className="h-4 w-4 text-emerald-600" /> Stripe Revenue</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
             {[
-              { label: "MRR", value: `$${stripeRevenue.mrr.toLocaleString()}`, color: "text-emerald-400" },
-              { label: "Active", value: stripeRevenue.totalActive, color: "text-blue-400" },
+              { label: "MRR", value: `$${stripeRevenue.mrr.toLocaleString()}`, color: "text-emerald-600" },
+              { label: "Active", value: stripeRevenue.totalActive, color: "text-blue-600" },
               { label: "Trialing", value: stripeRevenue.totalTrialing, color: "text-cyan-400" },
-              { label: "Churn Rate", value: `${stripeRevenue.churnRate}%`, color: stripeRevenue.churnRate > 5 ? "text-red-400" : "text-emerald-400" },
+              { label: "Churn Rate", value: `${stripeRevenue.churnRate}%`, color: stripeRevenue.churnRate > 5 ? "text-red-600" : "text-emerald-600" },
               { label: "Trial Conv", value: `${stripeRevenue.trialConversion}%`, color: "text-indigo-400" },
-              { label: "LTV", value: `$${stripeRevenue.ltv.toLocaleString()}`, color: "text-amber-400" },
+              { label: "LTV", value: `$${stripeRevenue.ltv.toLocaleString()}`, color: "text-amber-600" },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-secondary/30 p-3 text-center">
                 <p className="text-[10px] text-muted-foreground">{m.label}</p>
@@ -946,9 +946,9 @@ export default function AdminDashboard() {
                 <p className="text-xs font-bold uppercase text-foreground mb-2">{plan} — ${p.arpu}/mo</p>
                 <div className="grid grid-cols-2 gap-2 text-[10px]">
                   <div><p className="text-muted-foreground">Total</p><p className="font-bold text-foreground">{p.total}</p></div>
-                  <div><p className="text-muted-foreground">Active</p><p className="font-bold text-emerald-400">{p.active}</p></div>
-                  <div><p className="text-muted-foreground">Trialing</p><p className="font-bold text-blue-400">{p.trialing}</p></div>
-                  <div><p className="text-muted-foreground">Canceled</p><p className="font-bold text-red-400">{p.canceled}</p></div>
+                  <div><p className="text-muted-foreground">Active</p><p className="font-bold text-emerald-600">{p.active}</p></div>
+                  <div><p className="text-muted-foreground">Trialing</p><p className="font-bold text-blue-600">{p.trialing}</p></div>
+                  <div><p className="text-muted-foreground">Canceled</p><p className="font-bold text-red-600">{p.canceled}</p></div>
                 </div>
                 <div className="mt-2"><p className="text-[10px] text-muted-foreground">Conversion Rate</p><p className="text-sm font-bold text-indigo-400">{p.conversionRate}%</p></div>
               </div>
@@ -983,7 +983,7 @@ export default function AdminDashboard() {
       {/* ── #18 Trial Conversion Day-by-Day ── */}
       {d.trialActivity.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><BarChart3 className="h-4 w-4 text-blue-400" /> Trial Journey (Day-by-Day)</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><BarChart3 className="h-4 w-4 text-blue-600" /> Trial Journey (Day-by-Day)</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={d.trialActivity}>
@@ -1043,11 +1043,11 @@ export default function AdminDashboard() {
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {u.steps.map(s => (
-                      <span key={s.label} className={`rounded px-1.5 py-0.5 text-[8px] font-medium ${s.done ? "bg-emerald-500/15 text-emerald-400" : "bg-secondary/50 text-muted-foreground"}`}>{s.done ? "\u2713" : "\u2717"} {s.label}</span>
+                      <span key={s.label} className={`rounded px-1.5 py-0.5 text-[8px] font-medium ${s.done ? "bg-emerald-500/15 text-emerald-600" : "bg-secondary/50 text-muted-foreground"}`}>{s.done ? "\u2713" : "\u2717"} {s.label}</span>
                     ))}
                   </div>
                 </div>
-                <span className={`text-sm font-bold ${u.pct >= 80 ? "text-emerald-400" : u.pct >= 50 ? "text-amber-400" : "text-red-400"}`}>{u.pct}%</span>
+                <span className={`text-sm font-bold ${u.pct >= 80 ? "text-emerald-600" : u.pct >= 50 ? "text-amber-600" : "text-red-600"}`}>{u.pct}%</span>
               </div>
             ))}
           </div>
@@ -1058,7 +1058,7 @@ export default function AdminDashboard() {
       {d.recentAlerts && d.recentAlerts.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Bell className="h-4 w-4 text-amber-400" /> Recent Alerts</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><Bell className="h-4 w-4 text-amber-600" /> Recent Alerts</h3>
             <Link href="/admin/alerts" className="text-[10px] text-indigo-400 hover:underline">Manage Rules</Link>
           </div>
           <div className="flex flex-col gap-2">
@@ -1077,12 +1077,12 @@ export default function AdminDashboard() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Owner Tools</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {[
-            { href: "/admin/dunning", icon: Shield, label: "Dunning", desc: "Payment recovery", color: "text-emerald-400" },
+            { href: "/admin/dunning", icon: Shield, label: "Dunning", desc: "Payment recovery", color: "text-emerald-600" },
             { href: "/admin/goals", icon: Target, label: "Goals", desc: "Revenue targets", color: "text-indigo-400" },
-            { href: "/admin/alerts", icon: Bell, label: "Alerts", desc: "Custom rules", color: "text-amber-400" },
+            { href: "/admin/alerts", icon: Bell, label: "Alerts", desc: "Custom rules", color: "text-amber-600" },
             { href: "/admin/changelog", icon: BookOpen, label: "Changelog", desc: "What's new feed", color: "text-purple-400" },
-            { href: "/admin/tickets", icon: LifeBuoy, label: "Tickets", desc: "Support inbox", color: "text-blue-400" },
-            { href: "/admin/competitors", icon: Swords, label: "Competitors", desc: "Battle cards", color: "text-red-400" },
+            { href: "/admin/tickets", icon: LifeBuoy, label: "Tickets", desc: "Support inbox", color: "text-blue-600" },
+            { href: "/admin/competitors", icon: Swords, label: "Competitors", desc: "Battle cards", color: "text-red-600" },
             { href: "/admin/costs", icon: Receipt, label: "Unit Economics", desc: "Margins & costs", color: "text-teal-400" },
             { href: "/admin/investor", icon: BarChart3, label: "Investor Report", desc: "Growth metrics", color: "text-sky-400" },
             { href: "/admin/contractors", icon: Users, label: "Contractors", desc: "All accounts", color: "text-violet-400" },

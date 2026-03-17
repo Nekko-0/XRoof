@@ -273,7 +273,7 @@ export default function LandingPagesPage() {
               {form.services.map((s, i) => (
                 <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
                   {s}
-                  <button onClick={() => setForm({ ...form, services: form.services.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                  <button onClick={() => setForm({ ...form, services: form.services.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -305,7 +305,7 @@ export default function LandingPagesPage() {
               {form.trust_badges.map((b, i) => (
                 <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
                   {b}
-                  <button onClick={() => setForm({ ...form, trust_badges: form.trust_badges.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                  <button onClick={() => setForm({ ...form, trust_badges: form.trust_badges.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -341,7 +341,7 @@ export default function LandingPagesPage() {
                       <p className="text-xs text-foreground">&ldquo;{t.quote}&rdquo;</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">— {t.name}</p>
                     </div>
-                    <button onClick={() => setForm({ ...form, testimonials: form.testimonials.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400">
+                    <button onClick={() => setForm({ ...form, testimonials: form.testimonials.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -394,7 +394,7 @@ export default function LandingPagesPage() {
             </button>
           </div>
           {formError && (
-            <p className="mt-2 text-xs text-red-400">{formError}</p>
+            <p className="mt-2 text-xs text-red-600">{formError}</p>
           )}
         </div>
       )}
@@ -452,7 +452,7 @@ export default function LandingPagesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-foreground truncate">{page.title}</h3>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${page.active ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${page.active ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
                         {page.active ? "Active" : "Inactive"}
                       </span>
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -485,7 +485,7 @@ export default function LandingPagesPage() {
                     onClick={() => copyLink(page.slug)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
                   >
-                    {copied === page.slug ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copied === page.slug ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                     {copied === page.slug ? "Copied!" : "Copy Link"}
                   </button>
                   <button
@@ -512,7 +512,7 @@ export default function LandingPagesPage() {
                     onClick={() => handleToggleActive(page)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
                   >
-                    {page.active ? <ToggleRight className="h-3 w-3 text-emerald-400" /> : <ToggleLeft className="h-3 w-3" />}
+                    {page.active ? <ToggleRight className="h-3 w-3 text-emerald-600" /> : <ToggleLeft className="h-3 w-3" />}
                     {page.active ? "Deactivate" : "Activate"}
                   </button>
                   <button

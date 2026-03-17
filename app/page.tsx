@@ -182,7 +182,7 @@ const faqs = [
 function ComparisonCell({ value }: { value: boolean | string }) {
   if (value === true) return <Check className="mx-auto h-4 w-4 text-cyan-400" />
   if (value === false) return <span className="text-muted-foreground">—</span>
-  return <span className="text-xs text-amber-400">{value}</span>
+  return <span className="text-xs text-amber-500">{value}</span>
 }
 
 export default function Home() {

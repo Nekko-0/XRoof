@@ -118,15 +118,15 @@ export default function AdminContractViewPage() {
             Roofing Contract Agreement
           </p>
           <p className="text-xl font-bold text-foreground print:text-black">XRoof</p>
-          <p className="mt-1 text-[10px] text-muted-foreground print:text-gray-400">
+          <p className="mt-1 text-[10px] text-muted-foreground print:text-gray-500">
             Contract #{contract.id.slice(0, 8).toUpperCase()}
           </p>
           <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
             contract.status === "signed"
-              ? "bg-emerald-900/30 text-emerald-400"
+              ? "bg-emerald-500/15 text-emerald-600"
               : contract.status === "pending_customer"
-              ? "bg-amber-900/30 text-amber-400"
-              : "bg-blue-900/30 text-blue-400"
+              ? "bg-amber-500/15 text-amber-600"
+              : "bg-blue-500/15 text-blue-600"
           }`}>
             {contract.status === "pending_customer" ? "Awaiting Customer Signature" : contract.status}
           </span>
@@ -315,9 +315,9 @@ export default function AdminContractViewPage() {
           <h3 className="mb-3 text-sm font-bold text-foreground">Document Activity</h3>
           <div className="space-y-2">
             {docEvents.map((ev) => {
-              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-400" />
-                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-400" />
-                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-400" />
+              const icon = ev.event_type === "sent" ? <Send className="h-3.5 w-3.5 text-blue-600" />
+                : ev.event_type === "opened" ? <EyeIcon className="h-3.5 w-3.5 text-amber-600" />
+                : ev.event_type === "signed" ? <PenTool className="h-3.5 w-3.5 text-emerald-600" />
                 : <Clock className="h-3.5 w-3.5 text-muted-foreground" />
               const label = ev.event_type === "sent" ? "Contract sent"
                 : ev.event_type === "opened" ? "Email opened"
@@ -361,7 +361,7 @@ export default function AdminContractViewPage() {
           .print\\:text-black { color: black !important; }
           .print\\:border-gray-300 { border-color: #d1d5db !important; }
           .print\\:text-gray-500 { color: #6b7280 !important; }
-          .print\\:text-gray-400 { color: #9ca3af !important; }
+          .print\\:text-gray-500 { color: #9ca3af !important; }
           .print\\:bg-gray-50 { background: #f9fafb !important; }
           [data-slot="accordion-content"] { display: block !important; height: auto !important; }
           [data-slot="accordion-trigger"] svg { display: none !important; }
