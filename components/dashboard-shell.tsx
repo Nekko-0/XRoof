@@ -17,6 +17,14 @@ import { getRoleLabel } from "@/lib/permissions"
 import { InstallPrompt } from "@/components/install-prompt"
 import { AnnouncementBanner } from "@/components/announcement-banner"
 import WhatsNewBell from "@/components/whats-new-bell"
+import { ProductTour } from "@/components/product-tour"
+
+const TOUR_IDS: Record<string, string> = {
+  Dashboard: "dashboard",
+  "My Jobs": "jobs",
+  Measure: "measure",
+  Pipeline: "pipeline",
+}
 
 interface NavItem {
   label: string
@@ -132,6 +140,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   return (
     <div className="flex min-h-screen bg-background">
       <CommandPalette />
+      {isContractor && <ProductTour />}
       {/* Mobile overlay — admin only */}
       {mobileOpen && !isContractor && (
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
@@ -168,7 +177,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
             {isContractor ? `${roleLabel} Portal` : "XRoof Owner Portal"}
           </p>
           {isContractor && (
-            <div ref={searchRef} className="relative mb-2">
+            <div ref={searchRef} className="relative mb-2" data-tour="search">
               <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
                 <Search className="h-3.5 w-3.5 text-muted-foreground" />
                 <input
@@ -210,6 +219,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                   <Link
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
+                    data-tour={TOUR_IDS[item.label]}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive

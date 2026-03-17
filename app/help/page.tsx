@@ -11,6 +11,16 @@ import {
   Clock,
   CheckCircle2,
   CircleDot,
+  Search,
+  BookOpen,
+  Rocket,
+  FileText,
+  CreditCard,
+  Users,
+  Smartphone,
+  Zap,
+  Shield,
+  BarChart3,
 } from "lucide-react"
 
 type Ticket = {
@@ -43,10 +53,95 @@ const statusConfig: Record<string, { icon: typeof Clock; color: string; label: s
   closed: { icon: CheckCircle2, color: "text-gray-500", label: "Closed" },
 }
 
+const KB_CATEGORIES = [
+  {
+    name: "Getting Started",
+    icon: Rocket,
+    articles: [
+      { title: "Create your contractor profile", body: "Go to Settings and fill in your company name, logo, service area zip codes, and contact info. This branding appears on all estimates, contracts, and your customer portal." },
+      { title: "Add your first lead", body: "Navigate to My Jobs and click 'Add Job.' Enter the customer name, address, phone, email, job type, and budget. The lead will appear in your pipeline automatically." },
+      { title: "Measure a roof from satellite", body: "Go to the Measure tool, search an address, and draw the roof outline on the satellite image. Set the pitch, classify edges (ridge, hip, valley, eave, rake), and XRoof calculates area, waste factor, and materials." },
+      { title: "Send your first estimate", body: "Open a job, click 'Create Estimate,' choose materials, add pricing tiers, and hit Send. The customer gets a branded link to view, approve, and e-sign." },
+    ],
+  },
+  {
+    name: "Estimates & Contracts",
+    icon: FileText,
+    articles: [
+      { title: "Build a branded proposal", body: "Use the Report Builder to create PDF proposals with your logo, pricing tiers, material swatches, photo galleries, and scope of work. Customers can view online or download as PDF." },
+      { title: "Send a contract for e-signature", body: "After creating an estimate, click 'Send Contract.' The customer receives a link to review terms and sign electronically. Signatures are ESIGN-compliant and legally binding." },
+      { title: "Use job templates", body: "Go to Settings > Templates to create reusable job templates. When adding a new job, select a template to pre-fill job type, description, and budget." },
+    ],
+  },
+  {
+    name: "Payments & Invoicing",
+    icon: CreditCard,
+    articles: [
+      { title: "Connect Stripe", body: "Go to Settings and click 'Connect Stripe.' This lets you collect deposits, progress payments, and final invoices directly from customer portal links. Funds go to your bank account." },
+      { title: "Create milestone invoices", body: "On any job, go to the Invoices tab and create invoices for each milestone (deposit, 50% completion, final). Customers pay through a secure Stripe link." },
+      { title: "Track outstanding payments", body: "Your dashboard shows total outstanding invoices. Overdue invoices trigger automatic payment reminders if you have automations enabled." },
+    ],
+  },
+  {
+    name: "Team Management",
+    icon: Users,
+    articles: [
+      { title: "Invite team members", body: "Go to the Team page and click 'Invite.' Enter their email and select a role (admin, office manager, sales, field tech, or viewer). They'll get an email to set up their account." },
+      { title: "Role-based permissions", body: "Each role has different access: owners see everything, admins manage settings, office managers handle scheduling, sales reps see pipeline, field techs see assigned jobs, viewers are read-only." },
+      { title: "Dispatch & work orders", body: "Use the Dispatch board to assign crew members to jobs by day. Work Orders let you create detailed task lists for each job that field techs can check off." },
+    ],
+  },
+  {
+    name: "Automations",
+    icon: Zap,
+    articles: [
+      { title: "Set up automated follow-ups", body: "Go to Automations and create rules like 'When estimate is sent, send follow-up email after 2 days.' Supports email and SMS sequences with customizable delays." },
+      { title: "Appointment reminders", body: "Automatic reminders are sent to customers before scheduled appointments. Configure timing in Settings > Notifications." },
+      { title: "Satisfaction surveys", body: "After a job is marked complete, XRoof automatically sends a satisfaction survey. High ratings prompt a Google Review request." },
+    ],
+  },
+  {
+    name: "Mobile & Field Mode",
+    icon: Smartphone,
+    articles: [
+      { title: "Install the PWA", body: "On your phone, open xroof.io in Safari (iPhone) or Chrome (Android), tap Share > Add to Home Screen. XRoof installs as a native-feeling app with offline support." },
+      { title: "Use Field Mode", body: "Field Mode shows today's schedule with large touch targets. Tap a job to see details, call the customer, add notes, or mark it complete — all optimized for on-site use." },
+      { title: "Offline support", body: "XRoof caches key pages so you can view jobs and schedules even without cell service. Data syncs when you're back online." },
+    ],
+  },
+  {
+    name: "Analytics & Reports",
+    icon: BarChart3,
+    articles: [
+      { title: "Understand your dashboard", body: "The dashboard shows revenue (MTD), active jobs, close rate, pipeline value, deal velocity, and lead sources. Weather correlation helps you spot storm-driven demand." },
+      { title: "Lead source ROI", body: "Track which lead sources (Google Ads, referrals, canvassing) generate the most revenue. See conversion rates and average deal size by source." },
+      { title: "Export your data", body: "Use the Export feature to download jobs, customers, and invoices as CSV files for your accountant or external reporting." },
+    ],
+  },
+]
+
 export default function HelpPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+
+  // Knowledge base
+  const [kbSearch, setKbSearch] = useState("")
+  const [expandedArticle, setExpandedArticle] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  const filteredCategories = kbSearch.trim()
+    ? KB_CATEGORIES.map((cat) => ({
+        ...cat,
+        articles: cat.articles.filter(
+          (a) =>
+            a.title.toLowerCase().includes(kbSearch.toLowerCase()) ||
+            a.body.toLowerCase().includes(kbSearch.toLowerCase())
+        ),
+      })).filter((cat) => cat.articles.length > 0)
+    : activeCategory
+      ? KB_CATEGORIES.filter((cat) => cat.name === activeCategory)
+      : KB_CATEGORIES
 
   // New ticket form
   const [showForm, setShowForm] = useState(false)
@@ -138,9 +233,103 @@ export default function HelpPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      {/* Knowledge Base */}
+      <div className="mb-10">
+        <div className="mb-6 text-center">
+          <BookOpen className="mx-auto mb-2 h-8 w-8 text-blue-400" />
+          <h1 className="text-2xl font-bold text-white">Help Center</h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Search our knowledge base or submit a support ticket below.
+          </p>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <input
+            value={kbSearch}
+            onChange={(e) => { setKbSearch(e.target.value); setActiveCategory(null) }}
+            placeholder="Search help articles..."
+            className="w-full rounded-xl border border-gray-700 bg-gray-800 py-3 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+
+        {/* Category pills */}
+        {!kbSearch.trim() && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveCategory(null)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                !activeCategory ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+              }`}
+            >
+              All
+            </button>
+            {KB_CATEGORIES.map((cat) => (
+              <button
+                key={cat.name}
+                onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
+                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  activeCategory === cat.name ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
+                }`}
+              >
+                <cat.icon className="h-3 w-3" />
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Articles */}
+        <div className="space-y-6">
+          {filteredCategories.map((cat) => (
+            <div key={cat.name}>
+              <div className="mb-2 flex items-center gap-2">
+                <cat.icon className="h-4 w-4 text-blue-400" />
+                <h2 className="text-sm font-semibold text-white">{cat.name}</h2>
+              </div>
+              <div className="space-y-1">
+                {cat.articles.map((article) => (
+                  <details
+                    key={article.title}
+                    className="group rounded-lg border border-gray-800 bg-gray-900 transition-colors hover:border-gray-700"
+                    open={expandedArticle === article.title}
+                    onToggle={(e) => {
+                      const isOpen = (e.target as HTMLDetailsElement).open
+                      setExpandedArticle(isOpen ? article.title : null)
+                    }}
+                  >
+                    <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-gray-200">
+                      {article.title}
+                      <ChevronDown className="h-3.5 w-3.5 text-gray-500 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="border-t border-gray-800 px-4 py-3">
+                      <p className="text-sm leading-relaxed text-gray-400">{article.body}</p>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          ))}
+          {filteredCategories.length === 0 && (
+            <div className="rounded-xl border border-gray-800 bg-gray-900 py-8 text-center">
+              <p className="text-sm text-gray-500">No articles found for &quot;{kbSearch}&quot;</p>
+              <p className="mt-1 text-xs text-gray-600">Try a different search or submit a ticket below.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="mb-8 flex items-center gap-4">
+        <div className="h-px flex-1 bg-gray-800" />
+        <span className="text-xs font-medium text-gray-500">SUPPORT TICKETS</span>
+        <div className="h-px flex-1 bg-gray-800" />
+      </div>
+
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Help &amp; Support</h1>
+          <h2 className="text-lg font-bold text-white">Your Tickets</h2>
           <p className="mt-1 text-sm text-gray-400">
             Submit a ticket and our team will get back to you.
           </p>

@@ -27,16 +27,19 @@ export function Footer() {
             <ul className="mt-3 space-y-2">
               <li><Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link></li>
               <li><Link href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link></li>
+              <li><Link href="/#compare" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Compare</Link></li>
+              <li><Link href="/demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Live Demo</Link></li>
               <li><Link href="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link></li>
             </ul>
           </div>
 
-          {/* Platform */}
+          {/* Resources */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Platform</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resources</p>
             <ul className="mt-3 space-y-2">
+              <li><Link href="/#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link></li>
+              <li><Link href="/help" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Help Center</Link></li>
               <li><Link href="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contractor Login</Link></li>
-              <li><Link href="/contractor/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link></li>
               <li><Link href="/contractor/field" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Field Mode</Link></li>
             </ul>
           </div>

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { authFetch } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, ScrollText, RotateCcw, Plus, EyeOff, Eye, Trash2, Star, Camera, Receipt, Download, Copy, Send, ExternalLink, Mail, X, ChevronDown, ChevronUp, ImagePlus, Search, Filter, TrendingUp } from "lucide-react"
+import { MapPin, DollarSign, FileText, Phone, MessageSquare, Home as HomeIcon, CheckCircle, ScrollText, RotateCcw, Plus, EyeOff, Eye, Trash2, Star, Camera, Receipt, Download, Copy, Send, ExternalLink, Mail, X, ChevronDown, ChevronUp, ImagePlus, Search, Filter, TrendingUp, Upload } from "lucide-react"
 import { PhotoGallery } from "@/components/photo-gallery"
 import { InsuranceClaimPanel } from "@/components/insurance-claim-panel"
 import { ActivityTimeline } from "@/components/activity-timeline"
@@ -79,6 +79,32 @@ export default function MyJobsPage() {
     description: "",
     budget: "",
   })
+
+  const [importing, setImporting] = useState(false)
+  const csvInputRef = { current: null as HTMLInputElement | null }
+
+  async function handleCSVImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await authFetch("/api/import/leads", { method: "POST", body: formData })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Imported ${data.imported} lead${data.imported !== 1 ? "s" : ""}`)
+        window.location.reload()
+      } else {
+        toast.error(data.error || "Import failed")
+      }
+    } catch {
+      toast.error("Failed to import CSV")
+    } finally {
+      setImporting(false)
+      if (e.target) e.target.value = ""
+    }
+  }
 
   // Load hidden jobs from localStorage
   useEffect(() => {
@@ -629,13 +655,29 @@ export default function MyJobsPage() {
           </button>
         ))}
       </div>
+        <input
+          type="file"
+          accept=".csv"
+          ref={(el) => { csvInputRef.current = el }}
+          onChange={handleCSVImport}
+          className="hidden"
+        />
+        <button
+          onClick={() => csvInputRef.current?.click()}
+          disabled={importing}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50"
+          title="Import leads from CSV file"
+        >
+          <Upload className="h-3.5 w-3.5" />
+          {importing ? "Importing..." : "Import"}
+        </button>
         <button
           onClick={handleExportCSV}
           className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           title="Export completed jobs as CSV (Quickbooks compatible)"
         >
           <Download className="h-3.5 w-3.5" />
-          CSV
+          Export
         </button>
       </div>
 

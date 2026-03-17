@@ -13,7 +13,27 @@ export function Header() {
             XRoof
           </span>
         </Link>
+        <nav className="hidden items-center gap-6 sm:flex">
+          <Link href="/#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            Features
+          </Link>
+          <Link href="/#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            Pricing
+          </Link>
+          <Link href="/#compare" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            Compare
+          </Link>
+          <Link href="/#faq" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            FAQ
+          </Link>
+        </nav>
         <nav className="flex items-center gap-2">
+          <Link
+            href="/demo"
+            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+          >
+            Demo
+          </Link>
           <Link
             href="/auth"
             className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -24,7 +44,7 @@ export function Header() {
             href="/auth"
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Sign Up
+            Start Free Trial
           </Link>
         </nav>
       </div>

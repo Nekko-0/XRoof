@@ -193,7 +193,27 @@ export default function DispatchPage() {
   }
 
   if (loading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading dispatch board...</div>
+    return (
+      <div className="flex flex-col gap-4 p-4 md:p-6">
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-48 animate-pulse rounded-lg bg-accent" />
+          <div className="flex gap-2">
+            <div className="h-8 w-8 animate-pulse rounded-lg bg-accent" />
+            <div className="h-8 w-8 animate-pulse rounded-lg bg-accent" />
+          </div>
+        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 h-5 w-32 animate-pulse rounded bg-accent" />
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="h-20 w-32 animate-pulse rounded-lg bg-accent" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
