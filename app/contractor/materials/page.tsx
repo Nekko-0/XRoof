@@ -367,7 +367,21 @@ export default function MaterialsPage() {
                       {product.image_url ? (
                         <img src={product.image_url} alt={product.color_name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0 border border-border" />
                       ) : (
-                        <div className="h-12 w-12 rounded-lg flex-shrink-0 border border-border" style={{ backgroundColor: getSwatchColor(product.color_name) }} />
+                        <div
+                          className="h-12 w-12 rounded-lg flex-shrink-0 border border-border"
+                          style={{
+                            backgroundColor: getSwatchColor(product.color_name),
+                            backgroundImage: [
+                              "radial-gradient(ellipse 1px 1px at 25% 30%, rgba(255,255,255,0.12) 0%, transparent 100%)",
+                              "radial-gradient(ellipse 1px 1px at 75% 60%, rgba(0,0,0,0.15) 0%, transparent 100%)",
+                              "radial-gradient(circle 0.5px at 50% 20%, rgba(255,255,255,0.08) 0%, transparent 100%)",
+                              "radial-gradient(circle 0.5px at 30% 70%, rgba(0,0,0,0.1) 0%, transparent 100%)",
+                              "repeating-linear-gradient(90deg, transparent 0px, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
+                              "repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)",
+                              "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.08) 100%)",
+                            ].join(", "),
+                          }}
+                        />
                       )}
                       <div className="flex-1 min-w-0 mr-2">
                         <div className="flex items-center gap-2 mb-0.5">
