@@ -29,6 +29,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 })
   }
 
+  // Auto-create a job if report has no job_id (so portal features work)
+  if (!report.job_id) {
+    const { data: newJob } = await supabase
+      .from("jobs")
+      .insert({
+        contractor_id: report.contractor_id || auth.userId,
+        customer_name: report.customer_name || "Unknown",
+        address: report.customer_address || "",
+        customer_email,
+        customer_phone: report.customer_phone || "",
+        job_type: report.job_type || "Roof Replacement",
+        description: report.scope_of_work || "",
+        status: "New",
+        budget: report.price_quote || null,
+      })
+      .select("id")
+      .single()
+
+    if (newJob) {
+      report.job_id = newJob.id
+      await supabase.from("reports").update({ job_id: newJob.id }).eq("id", report_id)
+    }
+  }
+
   // Generate viewing token with 30-day expiry
   const token = randomUUID()
   const expiresAt = new Date()
