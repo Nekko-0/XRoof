@@ -1349,7 +1349,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
             {report.estimate_line_items && (
               <div className="space-y-2">
                 {/* Auto-calculate from squares */}
-                {report.roof_squares && (
+                {report.roof_squares && (<>
                   <button
                     onClick={() => {
                       const sqft = (report.roof_squares || 0) * 100
@@ -1374,7 +1374,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                   <p className="text-[10px] text-muted-foreground/70 mt-1">
                     Generates estimated line items based on roof squares. Adjust quantities and prices to match your actual costs.
                   </p>
-                )}
+                </>)}
 
                 <div className="rounded-xl border border-border overflow-hidden">
                   {/* Header */}
