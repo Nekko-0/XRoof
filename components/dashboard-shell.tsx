@@ -391,13 +391,15 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           {isContractor && (
             <button
               onClick={toggleCollapsed}
-              className="hidden lg:flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="hidden lg:flex w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground mb-1"
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : (
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
                 <>
                   <ChevronLeft className="h-4 w-4" />
-                  <span className="text-xs">Collapse</span>
+                  Collapse
                 </>
               )}
             </button>

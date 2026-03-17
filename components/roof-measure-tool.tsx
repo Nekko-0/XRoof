@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Search, Save, FolderOpen, HelpCircle, Sparkles } from "lucide-react"
+import { MapPin, Trash2, Plus, Ruler, RotateCcw, ChevronDown, Eye, Search, Save, FolderOpen, HelpCircle, Sparkles, Maximize } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 
 // Pitch factor lookup table
@@ -1502,6 +1502,30 @@ export function RoofMeasureTool({ onExportToReport }: RoofMeasureToolProps) {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 />
+
+                {/* Max Zoom button */}
+                <button
+                  onClick={() => {
+                    const map = mapInstanceRef.current
+                    if (!map || !window.google) return
+                    const maxZoomService = new window.google.maps.MaxZoomService()
+                    const center = map.getCenter()
+                    if (!center) { map.setZoom(22); return }
+                    maxZoomService.getMaxZoomAtLatLng(center, (result: { status: string; zoom?: number }) => {
+                      if (result.status === "OK" && result.zoom) {
+                        map.setZoom(result.zoom)
+                      } else {
+                        map.setZoom(22)
+                      }
+                    })
+                  }}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-black/90"
+                  style={{ zIndex: 40 }}
+                  title="Zoom to maximum satellite resolution"
+                >
+                  <Maximize className="h-3.5 w-3.5" />
+                  HD
+                </button>
 
                 {/* Touch crosshair overlay */}
                 {isTouchDevice && drawingActive && !satPitchActive && (
