@@ -4,7 +4,7 @@ import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
+const PLAN_PRICES: Record<string, number> = { monthly: 99, annual: 79 }
 const TEAM_MEMBER_PRICE = 39
 
 export async function GET(req: Request) {

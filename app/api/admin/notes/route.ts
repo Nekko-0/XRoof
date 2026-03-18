@@ -35,6 +35,9 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   }, { onConflict: "contractor_id" })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] admin-notes POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

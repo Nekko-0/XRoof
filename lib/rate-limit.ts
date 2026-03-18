@@ -54,9 +54,42 @@ export function rateLimit(
     return { allowed: true, remaining: bucket.tokens, retryAfterMs: 0 }
   }
 
+  // Track repeated rate limit hits for suspicious activity alerting
+  trackRateLimitHit(key)
+
   // Calculate retry-after
   const timeUntilRefill = windowMs - elapsed
   return { allowed: false, remaining: 0, retryAfterMs: Math.max(timeUntilRefill, 1000) }
+}
+
+// Suspicious activity tracking — alert when same key hits rate limit 3+ times in 5 minutes
+const hitCounts = new Map<string, { count: number; firstHit: number }>()
+
+function trackRateLimitHit(key: string) {
+  const now = Date.now()
+  const WINDOW = 5 * 60_000 // 5 minutes
+  const THRESHOLD = 3
+
+  let entry = hitCounts.get(key)
+  if (!entry || now - entry.firstHit > WINDOW) {
+    entry = { count: 1, firstHit: now }
+    hitCounts.set(key, entry)
+    return
+  }
+
+  entry.count++
+  if (entry.count === THRESHOLD) {
+    console.warn(
+      `[XRoof SECURITY] Suspicious activity: rate limit hit ${THRESHOLD}+ times in 5min | key=${key} | time=${new Date().toISOString()}`
+    )
+  }
+
+  // Clean up old entries periodically
+  if (hitCounts.size > 1000) {
+    for (const [k, v] of hitCounts) {
+      if (now - v.firstHit > WINDOW) hitCounts.delete(k)
+    }
+  }
 }
 
 /**

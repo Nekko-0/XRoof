@@ -16,7 +16,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       .eq("contractor_id", auth.userId)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] expense GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(data)
   } catch (err) {
@@ -42,7 +45,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] expense PATCH error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data)
   } catch (err) {
     console.error("[XRoof] expense PATCH error:", err)
@@ -64,7 +70,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       .eq("id", id)
       .eq("contractor_id", auth.userId)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] expense DELETE error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json({ deleted: true })
   } catch (err) {
     console.error("[XRoof] expense DELETE error:", err)

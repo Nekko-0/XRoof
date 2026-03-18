@@ -41,14 +41,14 @@ export async function GET(req: Request) {
     }
 
     const PLAN_PRICES: Record<string, number> = {
-      monthly: 199,
-      annual: 169,
+      monthly: 99,
+      annual: 79,
     }
 
     // Build a map of user_id -> MRR
     const mrrByUser = new Map<string, number>()
     for (const sub of subscriptions || []) {
-      const price = PLAN_PRICES[sub.plan] || 199
+      const price = PLAN_PRICES[sub.plan] || 99
       mrrByUser.set(sub.user_id, price)
     }
 

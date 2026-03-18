@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`google-reviews:${ip}`, 10, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
 

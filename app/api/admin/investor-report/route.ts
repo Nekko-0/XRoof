@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase, isAdmin } from "@/lib/api-auth"
 
-const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
+const PLAN_PRICES: Record<string, number> = { monthly: 99, annual: 79 }
 const TEAM_MEMBER_PRICE = 39
 
 export async function GET(req: Request) {

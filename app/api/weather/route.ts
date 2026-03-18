@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 // Simple in-memory cache (per serverless instance)
 let cache: { key: string; data: any; expiry: number } | null = null
 
 export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`weather:${ip}`, 10, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const { searchParams } = new URL(req.url)
   const zip = searchParams.get("zip")
   if (!zip) return NextResponse.json({ error: "Missing zip" }, { status: 400 })

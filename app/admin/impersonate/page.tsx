@@ -194,7 +194,7 @@ export default function ImpersonatePage() {
         <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Their MRR</p>
           <p className="text-lg font-bold text-foreground">
-            ${sub?.status === "active" ? (sub.plan === "annual" ? 169 : 199) + (data.teamMembers.filter(t => t.status === "active").length * 39) : 0}
+            ${sub?.status === "active" ? (sub.plan === "annual" ? 79 : 99) + (data.teamMembers.filter(t => t.status === "active").length * 39) : 0}
           </p>
         </div>
 

@@ -184,7 +184,7 @@ export default function BillingPage() {
                 Plan: <span className="font-semibold capitalize text-foreground">{sub!.plan}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                {sub!.plan === "annual" ? "$169/month (billed annually)" : sub!.plan === "solo" ? "$99/month" : "$199/month"}
+                {sub!.plan === "annual" ? "$79/month (billed annually)" : "$99/month"}
               </p>
               {sub!.current_period_end && (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -240,7 +240,7 @@ export default function BillingPage() {
               <h3 className="text-lg font-bold text-foreground">Pro Monthly</h3>
               <p className="mt-0.5 text-xs text-muted-foreground">For roofing contractors & companies</p>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold tracking-tight text-foreground">$199</span>
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$99</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">7-day free trial. Cancel anytime.</p>
@@ -277,18 +277,18 @@ export default function BillingPage() {
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground shadow-md">
                 <Star className="h-3 w-3" />
-                SAVE $360/yr
+                SAVE 20%
               </span>
             </div>
 
             <div className="mb-5">
               <h3 className="text-lg font-bold text-foreground">Pro Annual</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">Same features, 15% cheaper</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Same features, 20% cheaper</p>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold tracking-tight text-foreground">$169</span>
+                <span className="text-4xl font-extrabold tracking-tight text-foreground">$79</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">7-day free trial. Billed annually ($2,028/yr).</p>
+              <p className="mt-1 text-xs text-muted-foreground">7-day free trial. Billed annually ($948/yr).</p>
             </div>
 
             <ul className="mb-6 flex-1 space-y-2.5">

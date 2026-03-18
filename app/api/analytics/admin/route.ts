@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceSupabase, isAdmin } from "@/lib/api-auth"
 
-const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
+const PLAN_PRICES: Record<string, number> = { monthly: 99, annual: 79 }
 const TEAM_MEMBER_PRICE = 39
 
 export async function GET(req: Request) {
@@ -457,7 +457,7 @@ export async function GET(req: Request) {
         const a = subs.filter(s => s.plan === "monthly" && s.status === "active").length
         return t > 0 ? Math.round((a / t) * 100) : 0
       })(),
-      arpu: 199,
+      arpu: 99,
     },
     annual: {
       total: subs.filter(s => s.plan === "annual").length,
@@ -469,14 +469,14 @@ export async function GET(req: Request) {
         const a = subs.filter(s => s.plan === "annual" && s.status === "active").length
         return t > 0 ? Math.round((a / t) * 100) : 0
       })(),
-      arpu: 169,
+      arpu: 79,
     },
   }
 
   // ── #13 Revenue breakdown by source ──
   const teamRevenue = activeSubs.reduce((sum, s) => sum + (teamCountMap.get(s.user_id) || 0) * TEAM_MEMBER_PRICE, 0)
-  const monthlySubRev = activeSubs.filter(s => s.plan === "monthly").length * 199
-  const annualSubRev = activeSubs.filter(s => s.plan === "annual").length * 169
+  const monthlySubRev = activeSubs.filter(s => s.plan === "monthly").length * 99
+  const annualSubRev = activeSubs.filter(s => s.plan === "annual").length * 79
   const reportRevenue = allPurchases.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
   const revenueBreakdown = {
     monthlySubscriptions: monthlySubRev,
@@ -543,7 +543,7 @@ export async function GET(req: Request) {
   // Dunning stats
   const dunningAll = dunningSeqs || []
   const dunningRecovered = dunningAll.filter(d => d.recovered).length
-  const dunningRecoveredAmount = dunningRecovered * 199
+  const dunningRecoveredAmount = dunningRecovered * 99
 
   // Cancellation reason distribution
   const reasonCounts: Record<string, number> = {}

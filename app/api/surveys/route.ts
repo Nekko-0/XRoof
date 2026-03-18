@@ -18,7 +18,10 @@ export async function GET(req: Request) {
         .eq("job_id", jobId)
         .single()
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) {
+        console.error("[XRoof] surveys GET (by job) error:", error)
+        return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+      }
       return NextResponse.json(data)
     }
 
@@ -28,7 +31,10 @@ export async function GET(req: Request) {
       .eq("contractor_id", auth.userId)
       .order("created_at", { ascending: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] surveys GET (list) error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data || [])
   } catch (err) {
     console.error("[XRoof] surveys GET error:", err)
@@ -69,7 +75,10 @@ export async function POST(req: Request) {
       })
       .eq("id", survey.id)
 
-    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (updateError) {
+      console.error("[XRoof] surveys POST update error:", updateError)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     // If high rating, fetch contractor's google_review_url
     let google_review_url: string | undefined

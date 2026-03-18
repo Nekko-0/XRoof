@@ -14,7 +14,10 @@ export async function GET(req: Request) {
     .eq("account_id", userId)
     .order("created_at", { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] team GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data || [])
 }
 
@@ -127,7 +130,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to add team seat to billing. Please try again." }, { status: 500 })
   }
 
-  // Insert team member
+  // Insert team member (invite expires in 7 days)
+  const inviteExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from("team_members")
     .insert({
@@ -136,11 +140,15 @@ export async function POST(req: Request) {
       invited_name: invited_name || "",
       role,
       status: "invited",
+      invite_expires_at: inviteExpiresAt,
     })
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] team POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
 
   // Auto-send invite email
   if (data?.id) {
@@ -222,7 +230,10 @@ export async function PATCH(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] team PATCH error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -309,6 +320,9 @@ export async function DELETE(req: Request) {
     .eq("id", id)
     .eq("account_id", userId)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] team DELETE error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

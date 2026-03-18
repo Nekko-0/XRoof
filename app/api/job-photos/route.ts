@@ -22,8 +22,12 @@ export async function GET(req: Request) {
     .select("*")
     .eq("job_id", jobId)
     .order("created_at", { ascending: true })
+    .limit(500)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] job-photos GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -44,7 +48,10 @@ export async function POST(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] job-photos POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -68,6 +75,9 @@ export async function DELETE(req: Request) {
   }
 
   const { error } = await supabase.from("job_photos").delete().eq("id", id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] job-photos DELETE error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

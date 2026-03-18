@@ -76,7 +76,7 @@ const DRIP_EMAILS = [
     body: `<p>Hey {name},</p>
 <p>Your 7-day free trial ends today. If you've been using XRoof, you've already seen how much time it saves.</p>
 <p>Subscribe now to keep everything running — your leads, estimates, automations, and customer data stay exactly where they are.</p>
-<p><a href="https://xroof.io/contractor/billing" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Subscribe Now — $169/mo (Annual)</a></p>
+<p><a href="https://xroof.io/contractor/billing" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Subscribe Now — $79/mo (Annual)</a></p>
 <p>If you have any questions or need help, just reply to this email or open a support ticket at <a href="https://xroof.io/help">xroof.io/help</a>.</p>
 <p>— The XRoof Team</p>`,
   },

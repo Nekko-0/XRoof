@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { sendSMS } from "@/lib/twilio"
 import { BookingCreateSchema, validateBody } from "@/lib/validations"
+import { checkOrigin } from "@/lib/csrf"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,6 +14,9 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
   const body = await req.json()
   const bv = validateBody(BookingCreateSchema, body)
   if (bv.error) return NextResponse.json({ error: bv.error }, { status: 400 })
@@ -52,7 +56,8 @@ export async function POST(req: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[XRoof] bookings POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   }
 
   // Update job scheduled_date if job_id provided

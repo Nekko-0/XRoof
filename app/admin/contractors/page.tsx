@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
 import { MapPin, Mail, Phone, Briefcase, Search, ScrollText, ChevronDown, ChevronUp, ExternalLink, Users } from "lucide-react"
 
-const PLAN_PRICES: Record<string, number> = { monthly: 199, annual: 169 }
+const PLAN_PRICES: Record<string, number> = { monthly: 99, annual: 79 }
 const TEAM_MEMBER_PRICE = 39
 
 const STATUS_COLORS: Record<string, string> = {

@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
   const { data: invite, error } = await supabase
     .from("team_members")
-    .select("id, account_id, invited_email, invited_name, role, status")
+    .select("id, account_id, invited_email, invited_name, role, status, invite_expires_at")
     .eq("invite_token", token)
     .single()
 
@@ -28,6 +28,11 @@ export async function GET(req: Request) {
 
   if (invite.status === "active") {
     return NextResponse.json({ error: "This invite has already been accepted" }, { status: 410 })
+  }
+
+  // Check if invite has expired
+  if (invite.invite_expires_at && new Date(invite.invite_expires_at) < new Date()) {
+    return NextResponse.json({ error: "This invite has expired. Please ask for a new invitation." }, { status: 410 })
   }
 
   // Get company name

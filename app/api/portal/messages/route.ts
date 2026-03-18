@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { rateLimit, getClientIP } from "@/lib/rate-limit"
 import { emitToUser } from "@/lib/event-emitter"
+import { checkOrigin } from "@/lib/csrf"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,13 +30,17 @@ export async function GET(req: Request) {
     .order("created_at", { ascending: true })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[XRoof] portal-messages GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   }
 
   return NextResponse.json({ messages: messages || [] })
 }
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
   const postIp = getClientIP(req)
   const postRl = rateLimit(`portal-messages-post:${postIp}`, 5, 60_000)
   if (!postRl.allowed) {
@@ -79,7 +84,8 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("[XRoof] portal-messages POST error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
     }
 
     // Notify owner + admin + office manager for every homeowner portal message

@@ -21,7 +21,10 @@ export async function GET(req: Request) {
   if (activeOnly) query = query.is("ended_at", null)
 
   const { data, error } = await query.limit(100)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] time-entries GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data || [])
 }
 
@@ -72,7 +75,10 @@ export async function POST(req: Request) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] time-entries clock_in error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data)
   }
 
@@ -108,7 +114,10 @@ export async function POST(req: Request) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] time-entries clock_out error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data)
   }
 

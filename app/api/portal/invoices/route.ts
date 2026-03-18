@@ -29,7 +29,8 @@ export async function GET(req: Request) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[XRoof] portal-invoices GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   }
 
   return NextResponse.json({ invoices: invoices || [] })

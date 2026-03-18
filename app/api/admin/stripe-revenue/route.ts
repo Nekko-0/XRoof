@@ -14,7 +14,10 @@ export async function GET(req: Request) {
       .select("id, user_id, plan, status, current_period_start, current_period_end, created_at, canceled_at")
       .order("created_at", { ascending: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] stripe-revenue GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     const all = subs || []
     const now = new Date()
@@ -27,8 +30,8 @@ export async function GET(req: Request) {
     const trialing = all.filter((s) => s.status === "trialing")
 
     // MRR calculation
-    const MONTHLY_PRICE = 199
-    const ANNUAL_MONTHLY = 169
+    const MONTHLY_PRICE = 99
+    const ANNUAL_MONTHLY = 79
     const mrr = (monthlyActive.length * MONTHLY_PRICE) + (annualActive.length * ANNUAL_MONTHLY)
 
     // Churn (canceled in last 30 days)

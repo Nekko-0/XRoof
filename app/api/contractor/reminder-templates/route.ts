@@ -13,7 +13,10 @@ export async function GET(req: Request) {
       .eq("contractor_id", auth.userId)
       .order("step")
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] reminder-templates GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data || [])
   } catch (err) {
     console.error("[XRoof] reminder templates GET error:", err)
@@ -49,7 +52,10 @@ export async function POST(req: Request) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] reminder-templates POST error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data)
   } catch (err) {
     console.error("[XRoof] reminder templates POST error:", err)

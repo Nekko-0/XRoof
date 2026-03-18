@@ -22,7 +22,7 @@ export const CustomerUpdateSchema = z.object({
   phone: z.string().max(30).optional(),
   address: z.string().max(300).optional(),
   notes: longText,
-}).passthrough()
+})
 
 // SMS
 export const SMSSendSchema = z.object({
@@ -52,7 +52,8 @@ export const WorkOrderUpdateSchema = z.object({
   description: z.string().max(2000).optional().nullable(),
   priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
   due_date: z.string().max(30).optional().nullable(),
-}).passthrough()
+  completed_at: z.string().max(50).optional().nullable(),
+})
 
 // Lead capture (public endpoint)
 export const LeadCaptureSchema = z.object({
@@ -149,8 +150,18 @@ export const InvoiceUpdateSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(["draft", "sent", "paid", "overdue", "cancelled"]).optional(),
   amount: z.number().positive().max(10000000).optional(),
-  notes: z.string().max(5000).optional(),
-}).passthrough()
+  notes: z.string().max(5000).optional().nullable(),
+  milestones: z.array(z.object({
+    label: z.string().max(100),
+    percent: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    paid: z.boolean(),
+    due: z.boolean(),
+  })).optional(),
+  paid_at: z.string().max(50).optional().nullable(),
+  stripe_payment_intent_id: z.string().max(200).optional().nullable(),
+  quickbooks_invoice_id: z.string().max(200).optional().nullable(),
+})
 
 // Helper to validate and return typed data or error response
 export function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): { data: T; error: null } | { data: null; error: string } {

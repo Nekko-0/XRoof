@@ -13,8 +13,12 @@ export async function GET(req: Request) {
       .select("id, name, job_type, description, default_budget, material_notes, checklist, created_at")
       .eq("contractor_id", user.userId)
       .order("name")
+      .limit(500)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] job-templates GET query error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     return NextResponse.json({ templates: data || [] })
   } catch (err) {
@@ -51,7 +55,10 @@ export async function POST(req: Request) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] job-templates POST error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     return NextResponse.json({ template: data })
   } catch (err) {
@@ -94,7 +101,10 @@ export async function PUT(req: Request) {
       })
       .eq("id", id)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] job-templates PUT error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     return NextResponse.json({ updated: true })
   } catch (err) {
@@ -121,7 +131,10 @@ export async function DELETE(req: Request) {
       .eq("id", id)
       .eq("contractor_id", user.userId)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] job-templates DELETE error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     return NextResponse.json({ deleted: true })
   } catch (err) {

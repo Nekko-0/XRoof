@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ReportBuilder } from "@/components/report-builder"
-import { FileText, ArrowLeft } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { Suspense } from "react"
 
 function ReportBuilderInner() {
@@ -26,13 +26,6 @@ function ReportBuilderInner() {
             </p>
           </div>
         </div>
-        <Link
-          href="/contractor/report"
-          className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-        >
-          <FileText className="h-4 w-4" />
-          Request Pro Report — $30
-        </Link>
       </div>
 
       <ReportBuilder

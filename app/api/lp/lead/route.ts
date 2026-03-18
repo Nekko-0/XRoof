@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { sendSMS } from "@/lib/twilio"
 import { LeadCaptureSchema, validateBody } from "@/lib/validations"
 import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { checkOrigin } from "@/lib/csrf"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +12,9 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
   // Rate limit: 20 leads per minute per IP
   const ip = getClientIP(req)
   const rl = rateLimit(`lead:${ip}`, 20, 60_000)
@@ -45,7 +49,8 @@ export async function POST(req: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[XRoof] lp-lead POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   }
 
   // Auto-create customer record (skip if one with same phone already exists)

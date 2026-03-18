@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { requireAuth, isAdmin, getServiceSupabase } from "@/lib/api-auth"
 
 const PLAN_PRICES: Record<string, number> = {
-  monthly: 199,
-  annual: 169,
+  monthly: 99,
+  annual: 79,
 }
 const TEAM_MEMBER_PRICE = 39
 
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
     const getMrr = (subList: typeof subs) => {
       let mrr = 0
       for (const s of subList) {
-        mrr += PLAN_PRICES[s.plan] || 199
+        mrr += PLAN_PRICES[s.plan] || 99
       }
       return mrr
     }

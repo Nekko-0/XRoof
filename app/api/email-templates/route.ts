@@ -12,8 +12,12 @@ export async function GET(req: Request) {
     .select("id, contractor_id, template_type, subject, body_html, created_at")
     .eq("contractor_id", userId)
     .order("template_type", { ascending: true })
+    .limit(500)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] email-templates GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ templates: data ?? [] })
 }
 
@@ -34,7 +38,10 @@ export async function POST(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] email-templates POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -60,7 +67,10 @@ export async function PUT(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] email-templates PUT error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -80,6 +90,9 @@ export async function DELETE(req: Request) {
   }
 
   const { error } = await supabase.from("email_templates").delete().eq("id", id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] email-templates DELETE error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

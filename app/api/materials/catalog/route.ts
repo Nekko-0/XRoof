@@ -18,7 +18,10 @@ export async function GET(req: Request) {
 
     console.log("[XRoof] material_catalog query:", { itemCount: items?.length ?? 0, error: error?.message ?? null })
 
-    if (error) return NextResponse.json({ error: error.message, debug: "query_failed" }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] material catalog GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     let filtered = items || []
 

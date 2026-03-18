@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +11,12 @@ const supabase = createClient(
 type BookingHours = { start: string; end: string; days: number[] }
 
 export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`bookings-availability:${ip}`, 20, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const { searchParams } = new URL(req.url)
   const contractorId = searchParams.get("contractor_id")
   const dateStr = searchParams.get("date") // YYYY-MM-DD

@@ -60,6 +60,9 @@ export async function DELETE(req: Request) {
     })
     .eq("id", userId)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] quickbooks-auth DELETE error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

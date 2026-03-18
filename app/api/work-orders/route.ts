@@ -5,6 +5,7 @@ import { WorkOrderCreateSchema, WorkOrderUpdateSchema, validateBody } from "@/li
 export async function GET(req: Request) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
+  const { userId } = auth
 
   const { searchParams } = new URL(req.url)
   const contractorId = searchParams.get("contractor_id")
@@ -15,6 +16,18 @@ export async function GET(req: Request) {
   }
 
   const supabase = getServiceSupabase()
+
+  // Ownership check
+  if (contractorId && contractorId !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  if (jobId) {
+    const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", jobId).single()
+    if (!job || job.contractor_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
   let query = supabase
     .from("work_orders")
     .select("*, jobs(customer_name, address)")
@@ -27,18 +40,24 @@ export async function GET(req: Request) {
   }
 
   const { data, error } = await query.limit(200)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   return NextResponse.json(data || [])
 }
 
 export async function POST(req: Request) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
+  const { userId } = auth
 
   const body = await req.json()
   const v = validateBody(WorkOrderCreateSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
   const { job_id, contractor_id, assigned_to, assigned_name, title, description, priority, due_date } = v.data!
+
+  // Verify contractor_id matches auth user
+  if (contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
   const supabase = getServiceSupabase()
   const { data, error } = await supabase
@@ -56,7 +75,7 @@ export async function POST(req: Request) {
     .select("*, jobs(customer_name, address)")
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
 
   // Notify assigned crew member
   if (data && assigned_to) {
@@ -78,11 +97,20 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
+  const { userId } = auth
 
   const body = await req.json()
   const v = validateBody(WorkOrderUpdateSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
   const { id, ...updates } = v.data!
+
+  const supabase = getServiceSupabase()
+
+  // Verify ownership
+  const { data: wo } = await supabase.from("work_orders").select("contractor_id").eq("id", id).single()
+  if (!wo || wo.contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
   // Auto-set completed_at when status changes to completed
   if (updates.status === "completed" && !updates.completed_at) {
@@ -92,7 +120,6 @@ export async function PATCH(req: Request) {
     updates.completed_at = null
   }
 
-  const supabase = getServiceSupabase()
   const { data, error } = await supabase
     .from("work_orders")
     .update(updates)
@@ -100,7 +127,7 @@ export async function PATCH(req: Request) {
     .select("*, jobs(customer_name, address)")
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
 
   // Notify new assignee when work order is reassigned
   if (data && updates.assigned_to) {
@@ -122,13 +149,21 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
+  const { userId } = auth
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
   const supabase = getServiceSupabase()
+
+  // Verify ownership
+  const { data: wo } = await supabase.from("work_orders").select("contractor_id").eq("id", id).single()
+  if (!wo || wo.contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const { error } = await supabase.from("work_orders").delete().eq("id", id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   return NextResponse.json({ success: true })
 }

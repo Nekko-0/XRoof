@@ -13,7 +13,10 @@ export async function GET(req: Request) {
       .eq("id", auth.userId)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] material-preferences GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json(data?.material_preferences || {})
   } catch (err) {
     console.error("[XRoof] material preferences GET error:", err)
@@ -39,7 +42,10 @@ export async function PUT(req: Request) {
       .update({ material_preferences: { hidden_brands } })
       .eq("id", auth.userId)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] material-preferences PUT error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
     return NextResponse.json({ updated: true })
   } catch (err) {
     console.error("[XRoof] material preferences PUT error:", err)

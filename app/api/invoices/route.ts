@@ -32,7 +32,10 @@ export async function GET(req: Request) {
       .eq("id", id)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+    if (error) {
+      console.error("[XRoof] invoices GET lookup error:", error)
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
 
     // Get company name for the invoice display
     const { data: profile } = await supabase
@@ -93,13 +96,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing contractor_id or id" }, { status: 400 })
   }
 
+  // Ownership check: only allow fetching own invoices
+  if (contractorId !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const { data, error } = await supabase
     .from("invoices")
     .select("*")
     .eq("contractor_id", contractorId)
     .order("created_at", { ascending: false })
+    .limit(500)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
   return NextResponse.json(data || [])
 }
 
@@ -143,7 +152,10 @@ export async function POST(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] invoices POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
 
   // Record "sent" event for tracking
   if (data) {
@@ -238,6 +250,9 @@ export async function PATCH(req: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[XRoof] invoices PATCH error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
   return NextResponse.json(data)
 }

@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const { userId } = auth
 
   const stripe = getStripe()
-  const { plan, address, notes, roof_type } = await req.json()
+  const { plan } = await req.json()
   if (!plan) {
     return NextResponse.json({ error: "Missing plan" }, { status: 400 })
   }
@@ -39,33 +39,6 @@ export async function POST(req: Request) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-
-  // One-time report payments
-  const reportPrices: Record<string, number> = {
-    report_full: 3000,
-  }
-
-  if (reportPrices[plan]) {
-    const tierLabel = plan.replace("report_", "")
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: "payment",
-      line_items: [{
-        price_data: {
-          currency: "usd",
-          product_data: { name: `Roof Report — ${tierLabel.charAt(0).toUpperCase() + tierLabel.slice(1)}` },
-          unit_amount: reportPrices[plan],
-        },
-        quantity: 1,
-      }],
-      success_url: `${appUrl}/contractor/report?success=true&tier=${tierLabel}&address=${encodeURIComponent(address || "")}&notes=${encodeURIComponent(notes || "")}&roof_type=${encodeURIComponent(roof_type || "Residential")}`,
-      cancel_url: `${appUrl}/contractor/report?canceled=true`,
-      metadata: { supabase_user_id: userId, plan, report_type: tierLabel, address: address || "" },
-    })
-
-    return NextResponse.json({ url: session.url })
-  }
 
   // Subscription plans
   const priceId = plan === "annual"

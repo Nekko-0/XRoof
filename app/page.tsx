@@ -19,8 +19,8 @@ const jsonLd = {
   url: "https://xroof.io",
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "169",
-    highPrice: "199",
+    lowPrice: "79",
+    highPrice: "99",
     priceCurrency: "USD",
     offerCount: "2",
   },
@@ -141,7 +141,7 @@ const comparisonFeatures = [
   { feature: "Landing page builder", xroof: true, roofr: false, jobnimbus: false, acculynx: false },
   { feature: "Material calculator + swatches", xroof: true, roofr: "Basic", jobnimbus: false, acculynx: false },
   { feature: "Mobile field mode (PWA)", xroof: true, roofr: false, jobnimbus: "App", acculynx: "App" },
-  { feature: "Starting price", xroof: "$169/mo", roofr: "$149/mo", jobnimbus: "$200/mo", acculynx: "$250/mo+" },
+  { feature: "Starting price", xroof: "$79/mo", roofr: "$149/mo", jobnimbus: "$200/mo", acculynx: "$250/mo+" },
 ]
 
 const faqs = [
@@ -362,7 +362,7 @@ export default function Home() {
               <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
                 <p className="text-sm font-semibold text-muted-foreground">Monthly</p>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">$199</span>
+                  <span className="text-4xl font-bold text-foreground">$99</span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">7-day free trial. Cancel anytime.</p>
@@ -385,14 +385,14 @@ export default function Home() {
               {/* Annual */}
               <div className="relative rounded-2xl border-2 border-primary bg-card p-8 shadow-lg shadow-primary/10">
                 <div className="absolute -top-3 right-6 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
-                  SAVE $360/yr
+                  SAVE 20%
                 </div>
                 <p className="text-sm font-semibold text-primary">Annual — Best Value</p>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">$169</span>
+                  <span className="text-4xl font-bold text-foreground">$79</span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">7-day free trial. Billed annually ($2,028/yr).</p>
+                <p className="mt-2 text-xs text-muted-foreground">7-day free trial. Billed annually ($948/yr).</p>
                 <Link
                   href="/auth"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-colors hover:bg-primary/90"

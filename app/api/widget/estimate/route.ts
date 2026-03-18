@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { sendSMS } from "@/lib/twilio"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { checkOrigin } from "@/lib/csrf"
 
 const PITCH_DATA = [
   { pitch: "1/12", degrees: 4.76 },
@@ -33,6 +35,15 @@ function azimuthToDirection(az: number): string {
 }
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
+  const ip = getClientIP(req)
+  const rl = rateLimit(`widget-estimate:${ip}`, 20, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const { contractor_id, address, customer_name, customer_email, customer_phone } = await req.json()
 
   if (!contractor_id || !address) {

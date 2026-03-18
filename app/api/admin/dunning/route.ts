@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     const recovered = sequences.filter((s) => s.recovered === true)
     const totalSent = sequences.length
     const recoveredCount = recovered.length
-    const recoveredAmount = recoveredCount * 199
+    const recoveredAmount = recoveredCount * 99
 
     return NextResponse.json({
       settings: settingsRes.data || null,

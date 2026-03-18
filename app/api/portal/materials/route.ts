@@ -46,7 +46,10 @@ export async function GET(req: Request) {
       .order("brand")
       .order("product_line")
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error("[XRoof] portal-materials GET error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     let filtered = items || []
     if (hiddenBrands.length > 0) {
@@ -115,7 +118,10 @@ export async function POST(req: Request) {
         selected_by: "homeowner",
       })
 
-    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
+    if (insertError) {
+      console.error("[XRoof] portal-materials POST error:", insertError)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
 
     // Get catalog item details for notification
     const { data: catalogItem } = await supabase

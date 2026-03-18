@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
 
 // 1x1 transparent GIF
 const PIXEL = Buffer.from(
@@ -8,6 +9,12 @@ const PIXEL = Buffer.from(
 )
 
 export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`track-open:${ip}`, 60, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
   const url = new URL(req.url)
   const eventId = url.searchParams.get("eid")
 

@@ -299,7 +299,7 @@ export default function ContractorDashboard() {
   const gettingStartedSteps = gettingStarted ? [
     { key: "profile" as const, done: gettingStarted.profile, title: "Complete your profile", desc: "Add your company name and business details", href: "/contractor/profile" },
     { key: "lead" as const, done: gettingStarted.lead, title: "Add your first lead", desc: "Create a job to start tracking your pipeline", href: "/contractor/leads" },
-    { key: "estimate" as const, done: gettingStarted.estimate, title: "Create your first estimate", desc: "Build and send a professional proposal", href: "/contractor/report" },
+    { key: "estimate" as const, done: gettingStarted.estimate, title: "Create your first estimate", desc: "Build and send a professional proposal", href: "/contractor/report-builder" },
     { key: "automations" as const, done: gettingStarted.automations, title: "Set up automations", desc: "Automate follow-ups and reminders", href: "/contractor/automations" },
     { key: "stripe" as const, done: gettingStarted.stripe, title: "Connect Stripe", desc: "Accept online payments from customers", href: "/contractor/billing" },
   ] : []
@@ -566,7 +566,7 @@ export default function ContractorDashboard() {
             <p className="text-[10px] text-muted-foreground">Roof tool</p>
           </div>
         </Link>
-        <Link href="/contractor/report" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm hover:bg-secondary/30 transition-colors">
+        <Link href="/contractor/report-builder" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm hover:bg-secondary/30 transition-colors">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
             <Send className="h-5 w-5 text-emerald-600" />
           </div>
