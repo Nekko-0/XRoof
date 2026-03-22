@@ -165,7 +165,11 @@ export default function BillingPage() {
         <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
           One platform. Reports, measurements, contracts, invoices, pipeline, team management, and more — all included.
         </p>
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-5 py-2 text-sm font-semibold text-primary">
+          <Zap className="h-4 w-4" />
+          Try free for 7 days — no charge until your trial ends
+        </div>
+        <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <Shield className="h-3.5 w-3.5 text-primary" />
           <span>Launch pricing — lock in your rate before prices go up</span>
         </div>
@@ -266,7 +270,7 @@ export default function BillingPage() {
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "monthly" ? "Redirecting..." : "Get Started"}
+                {checkingOut === "monthly" ? "Redirecting..." : "Start 7-Day Free Trial"}
               </span>
             </button>
           </div>
@@ -311,7 +315,7 @@ export default function BillingPage() {
             >
               <span className="flex items-center justify-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                {checkingOut === "annual" ? "Redirecting..." : "Get Started — Best Value"}
+                {checkingOut === "annual" ? "Redirecting..." : "Start 7-Day Free Trial — Best Value"}
               </span>
             </button>
           </div>
