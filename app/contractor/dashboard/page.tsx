@@ -14,7 +14,7 @@ import {
 import { OnboardingWizard } from "@/components/onboarding-wizard"
 import {
   CheckCircle, Ruler, TrendingUp, Plus, Calendar,
-  AlertTriangle, Bell, Clock, ArrowRight, BarChart3, Target,
+  AlertTriangle, Bell, Clock, ArrowRight, BarChart3, Target, MessageSquare,
   Send, LayoutDashboard, Circle, X, Zap, FileText, Star, Download,
 } from "lucide-react"
 import { HelpTooltip } from "@/components/help-tooltip"
@@ -98,6 +98,9 @@ export default function ContractorDashboard() {
 
   // Weather events for storm correlation
   const [weatherEvents, setWeatherEvents] = useState<{ date: string; type: string; description: string }[]>([])
+
+  // Recent portal messages
+  const [recentMessages, setRecentMessages] = useState<{ customer_name: string; message: string; created_at: string; sender: string; job_id: string }[]>([])
 
   // Funnel analytics
   const [funnelData, setFunnelData] = useState<{
@@ -267,6 +270,24 @@ export default function ContractorDashboard() {
       authFetch("/api/analytics/lead-roi")
         .then((r) => r.json())
         .then((data) => { if (data.sources) setLeadRoi(data.sources) })
+        .catch(() => {})
+
+      // Fetch recent portal messages (non-blocking)
+      authFetch("/api/contractor/portal-messages")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.threads) {
+            setRecentMessages(
+              data.threads.slice(0, 5).map((t: any) => ({
+                customer_name: t.customer_name,
+                message: t.last_message,
+                created_at: t.last_time,
+                sender: t.last_sender,
+                job_id: t.job_id,
+              }))
+            )
+          }
+        })
         .catch(() => {})
     }
     load()
@@ -949,6 +970,49 @@ export default function ContractorDashboard() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Recent Messages */}
+      {recentMessages.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <MessageSquare className="h-3.5 w-3.5" /> Recent Messages
+            </h3>
+            <Link href="/contractor/messages" className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
+              View All <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recentMessages.map((m, i) => (
+              <Link
+                key={i}
+                href="/contractor/messages"
+                className="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-secondary/30 transition-colors"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary flex-shrink-0 mt-0.5">
+                  {m.customer_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-foreground">{m.customer_name}</p>
+                    <span className="text-[10px] text-muted-foreground">
+                      {(() => {
+                        const diff = Date.now() - new Date(m.created_at).getTime()
+                        const mins = Math.floor(diff / 60000)
+                        if (mins < 60) return `${mins}m ago`
+                        const hrs = Math.floor(mins / 60)
+                        if (hrs < 24) return `${hrs}h ago`
+                        return `${Math.floor(hrs / 24)}d ago`
+                      })()}
+                    </span>
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">{m.message}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
