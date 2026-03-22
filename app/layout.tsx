@@ -17,8 +17,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'XRoof - Find Trusted Roofing Contractors',
-  description: 'Post your roofing job and get connected with qualified contractors in your area. Fast, easy, and reliable.',
+  title: 'XRoof - Roofing Contractor CRM & Business Platform',
+  description: 'All-in-one SaaS platform for roofing contractors. Manage leads, create estimates, send contracts, collect payments, and grow your business — all in one place.',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',

@@ -3,5 +3,6 @@ Allow: /
 Disallow: /admin/
 Disallow: /contractor/
 Disallow: /api/
+Disallow: /auth
 
-Sitemap: https://xroof.com/sitemap.xml
+Sitemap: https://xroof.io/sitemap.xml
