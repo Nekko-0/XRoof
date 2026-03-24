@@ -70,6 +70,10 @@ export const LeadCaptureSchema = z.object({
   utm_source: z.string().max(100).optional(),
   utm_medium: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
+  project_description: z.string().max(500).optional(),
+  utm_term: z.string().max(100).optional(),
+  utm_content: z.string().max(100).optional(),
+  headline_variant: z.enum(["A", "B"]).optional(),
 })
 
 // Contract signing (public endpoint)
@@ -111,6 +115,14 @@ export const LandingPageCreateSchema = z.object({
   stats: z.array(z.object({ value: z.string().max(20), label: z.string().max(50) })).max(4).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
+  google_ads_id: z.string().max(50).optional(),
+  google_ads_label: z.string().max(50).optional(),
+  facebook_pixel_id: z.string().regex(/^\d*$/).max(20).optional(),
+  google_analytics_id: z.string().max(20).optional(),
+  thank_you_heading: z.string().max(200).optional(),
+  thank_you_message: z.string().max(1000).optional(),
+  redirect_url: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().max(2000).optional()),
+  alt_headline: z.string().max(200).optional(),
 })
 
 export const LandingPageUpdateSchema = z.object({
@@ -130,6 +142,14 @@ export const LandingPageUpdateSchema = z.object({
   stats: z.array(z.object({ value: z.string().max(20), label: z.string().max(50) })).max(4).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
+  google_ads_id: z.string().max(50).optional(),
+  google_ads_label: z.string().max(50).optional(),
+  facebook_pixel_id: z.string().regex(/^\d*$/).max(20).optional(),
+  google_analytics_id: z.string().max(20).optional(),
+  thank_you_heading: z.string().max(200).optional(),
+  thank_you_message: z.string().max(1000).optional(),
+  redirect_url: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().max(2000).optional()),
+  alt_headline: z.string().max(200).optional(),
 })
 
 // Invoices

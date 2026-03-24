@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   const v = validateBody(LeadCaptureSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
-  const { page_id, contractor_id, name, phone, email, address, city, zip, project_type, utm_source, utm_medium, utm_campaign } = v.data!
+  const { page_id, contractor_id, name, phone, email, address, city, zip, project_type, utm_source, utm_medium, utm_campaign, project_description, utm_term, utm_content, headline_variant } = v.data!
 
   // Create lead as a new job
   const { data: job, error } = await supabase
@@ -44,6 +44,10 @@ export async function POST(req: Request) {
       utm_campaign: utm_campaign || null,
       landing_page_id: page_id || null,
       job_type: project_type || "Roofing",
+      project_description: project_description || null,
+      utm_term: utm_term || null,
+      utm_content: utm_content || null,
+      headline_variant: headline_variant || null,
     })
     .select("id")
     .single()

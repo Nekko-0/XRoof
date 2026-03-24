@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   const v = validateBody(LandingPageCreateSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
-  const { title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign } = v.data!
+  const { title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign, google_ads_id, google_ads_label, facebook_pixel_id, google_analytics_id, thank_you_heading, thank_you_message, redirect_url, alt_headline } = v.data!
 
   // Generate slug from title
   const baseSlug = (title || "page")
@@ -58,6 +58,14 @@ export async function POST(req: Request) {
       color_scheme: color_scheme || "brand",
       utm_source: utm_source || null,
       utm_campaign: utm_campaign || null,
+      google_ads_id: google_ads_id || null,
+      google_ads_label: google_ads_label || null,
+      facebook_pixel_id: facebook_pixel_id || null,
+      google_analytics_id: google_analytics_id || null,
+      thank_you_heading: thank_you_heading || null,
+      thank_you_message: thank_you_message || null,
+      redirect_url: redirect_url || null,
+      alt_headline: alt_headline || null,
     })
     .select()
     .single()

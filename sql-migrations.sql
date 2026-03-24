@@ -390,3 +390,27 @@ ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS color_scheme text DEFAULT 'br
 -- Licensed & Insured certification on profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS licensed_insured_certified boolean DEFAULT false;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS licensed_insured_certified_at timestamptz;
+
+-- ============================================
+-- Landing Page Builder Improvements
+-- ============================================
+
+-- Tracking code fields
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS google_ads_id text;
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS google_ads_label text;
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS facebook_pixel_id text;
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS google_analytics_id text;
+
+-- Thank you page settings
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS thank_you_heading text DEFAULT 'Estimate Request Received!';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS thank_you_message text DEFAULT 'We''ll review your project details and get back to you within 24 hours with a free, no-obligation estimate.';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS redirect_url text;
+
+-- A/B headline testing
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS alt_headline text;
+
+-- Lead tracking enhancements
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS project_description text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_term text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_content text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headline_variant text;

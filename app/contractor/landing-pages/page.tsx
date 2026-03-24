@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Globe, Copy, ExternalLink, Trash2, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download, ShieldCheck, BarChart3, Palette } from "lucide-react"
+import { Plus, Globe, Copy, ExternalLink, Trash2, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download, ShieldCheck, BarChart3, Palette, ChevronRight } from "lucide-react"
 import { authFetch } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
@@ -24,6 +24,14 @@ type LandingPage = {
   testimonials: { quote: string; name: string; city?: string; rating?: number }[] | null
   stats: { value: string; label: string }[] | null
   color_scheme: string | null
+  google_ads_id: string | null
+  google_ads_label: string | null
+  facebook_pixel_id: string | null
+  google_analytics_id: string | null
+  thank_you_heading: string | null
+  thank_you_message: string | null
+  redirect_url: string | null
+  alt_headline: string | null
   created_at: string
 }
 
@@ -61,6 +69,14 @@ export default function LandingPagesPage() {
     testimonials: [] as { quote: string; name: string; city?: string; rating?: number }[],
     stats: [] as { value: string; label: string }[],
     color_scheme: "brand" as string,
+    google_analytics_id: "",
+    facebook_pixel_id: "",
+    google_ads_id: "",
+    google_ads_label: "",
+    thank_you_heading: "Estimate Request Received!",
+    thank_you_message: "We'll review your project details and get back to you within 24 hours with a free, no-obligation estimate.",
+    redirect_url: "",
+    alt_headline: "",
   })
 
   // Temp inputs for adding items
@@ -72,6 +88,7 @@ export default function LandingPagesPage() {
   const [newStatValue, setNewStatValue] = useState("")
   const [newStatLabel, setNewStatLabel] = useState("")
   const [customColor, setCustomColor] = useState("#14b8a6")
+  const [showTracking, setShowTracking] = useState(false)
 
   const fetchPages = async () => {
     const res = await authFetch("/api/landing-pages")
@@ -118,6 +135,14 @@ export default function LandingPagesPage() {
       testimonials: [],
       stats: [],
       color_scheme: "brand",
+      google_analytics_id: "",
+      facebook_pixel_id: "",
+      google_ads_id: "",
+      google_ads_label: "",
+      thank_you_heading: "Estimate Request Received!",
+      thank_you_message: "We'll review your project details and get back to you within 24 hours with a free, no-obligation estimate.",
+      redirect_url: "",
+      alt_headline: "",
     })
     setCustomColor("#14b8a6")
   }
@@ -207,6 +232,14 @@ export default function LandingPagesPage() {
       testimonials: page.testimonials?.length ? [...page.testimonials] : [],
       stats: page.stats?.length ? [...page.stats] : [],
       color_scheme: isCustomColor ? "custom" : "brand",
+      google_analytics_id: page.google_analytics_id || "",
+      facebook_pixel_id: page.facebook_pixel_id || "",
+      google_ads_id: page.google_ads_id || "",
+      google_ads_label: page.google_ads_label || "",
+      thank_you_heading: page.thank_you_heading || "Estimate Request Received!",
+      thank_you_message: page.thank_you_message || "We'll review your project details and get back to you within 24 hours with a free, no-obligation estimate.",
+      redirect_url: page.redirect_url || "",
+      alt_headline: page.alt_headline || "",
     })
     if (isCustomColor && page.color_scheme) {
       setCustomColor(page.color_scheme)
@@ -673,6 +706,111 @@ export default function LandingPagesPage() {
                 />
               </div>
             )}
+          </div>
+
+          {/* Tracking & Analytics (collapsible) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowTracking(!showTracking)}
+              className="flex items-center gap-2 mb-2 w-full text-left"
+            >
+              <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showTracking ? "rotate-90" : ""}`} />
+              <span className="text-xs font-medium text-muted-foreground">Tracking &amp; Analytics</span>
+            </button>
+            {showTracking && (
+              <div className="grid gap-3 sm:grid-cols-2 pl-5">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Google Analytics ID (optional)</label>
+                  <input
+                    value={form.google_analytics_id}
+                    onChange={(e) => setForm({ ...form, google_analytics_id: e.target.value })}
+                    placeholder="e.g., G-XXXXXXXXXX"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Enter your GA4 Measurement ID to track page visitors.</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Facebook Pixel ID (optional)</label>
+                  <input
+                    value={form.facebook_pixel_id}
+                    onChange={(e) => setForm({ ...form, facebook_pixel_id: e.target.value })}
+                    placeholder="e.g., 123456789012345"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Enter your Facebook Pixel ID. Find it in Facebook Ads Manager &rarr; Events Manager.</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Google Ads Conversion ID (optional)</label>
+                  <input
+                    value={form.google_ads_id}
+                    onChange={(e) => setForm({ ...form, google_ads_id: e.target.value })}
+                    placeholder="e.g., AW-123456789"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Enter your Google Ads Conversion ID for conversion tracking.</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Google Ads Conversion Label (optional)</label>
+                  <input
+                    value={form.google_ads_label}
+                    onChange={(e) => setForm({ ...form, google_ads_label: e.target.value })}
+                    placeholder="e.g., AbCdEf"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Enter the conversion label from your Google Ads tag.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* After Form Submission */}
+          <div>
+            <label className="mb-2 block text-xs font-medium text-muted-foreground">After Form Submission</label>
+            <div className="grid gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Thank You Heading</label>
+                <input
+                  value={form.thank_you_heading}
+                  onChange={(e) => setForm({ ...form, thank_you_heading: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Thank You Message</label>
+                <textarea
+                  value={form.thank_you_message}
+                  onChange={(e) => setForm({ ...form, thank_you_message: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Redirect URL (optional)</label>
+                <input
+                  value={form.redirect_url}
+                  onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
+                  placeholder="https://yourwebsite.com/thank-you"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground mt-0.5">If set, visitors redirect here after submission. Useful for Google Ads conversion tracking.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* A/B Testing */}
+          <div>
+            <label className="mb-2 block text-xs font-medium text-muted-foreground">A/B Testing</label>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">A/B Test Headline (optional)</label>
+              <input
+                value={form.alt_headline}
+                onChange={(e) => setForm({ ...form, alt_headline: e.target.value })}
+                placeholder="Enter an alternative headline to test"
+                className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">If set, 50% of visitors will see this headline instead. Check analytics to see which converts better.</p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">
