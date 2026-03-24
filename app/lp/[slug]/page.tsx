@@ -28,7 +28,7 @@ type LandingPage = {
   template: string
   services: string[] | null
   trust_badges: string[] | null
-  testimonials: { quote: string; name: string; city?: string }[] | null
+  testimonials: { quote: string; name: string; city?: string; rating?: number }[] | null
   city: string | null
   stats: { value: string; label: string }[] | null
   color_scheme: string | null
@@ -517,7 +517,7 @@ export default function LandingPageView() {
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star
                         key={s}
-                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                        className={`h-4 w-4 ${s <= (t.rating || 5) ? "fill-amber-400 text-amber-400" : "fill-gray-700 text-gray-700"}`}
                       />
                     ))}
                   </div>

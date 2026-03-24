@@ -21,7 +21,7 @@ type LandingPage = {
   city: string | null
   services: string[] | null
   trust_badges: string[] | null
-  testimonials: { quote: string; name: string; city?: string }[] | null
+  testimonials: { quote: string; name: string; city?: string; rating?: number }[] | null
   stats: { value: string; label: string }[] | null
   color_scheme: string | null
   created_at: string
@@ -58,7 +58,7 @@ export default function LandingPagesPage() {
     city: "",
     services: [...DEFAULT_SERVICES],
     trust_badges: [...DEFAULT_BADGES],
-    testimonials: [] as { quote: string; name: string; city?: string }[],
+    testimonials: [] as { quote: string; name: string; city?: string; rating?: number }[],
     stats: [] as { value: string; label: string }[],
     color_scheme: "brand" as string,
   })
@@ -68,6 +68,7 @@ export default function LandingPagesPage() {
   const [newTestimonialQuote, setNewTestimonialQuote] = useState("")
   const [newTestimonialName, setNewTestimonialName] = useState("")
   const [newTestimonialCity, setNewTestimonialCity] = useState("")
+  const [newTestimonialRating, setNewTestimonialRating] = useState(5)
   const [newStatValue, setNewStatValue] = useState("")
   const [newStatLabel, setNewStatLabel] = useState("")
   const [customColor, setCustomColor] = useState("#14b8a6")
@@ -536,6 +537,11 @@ export default function LandingPagesPage() {
                 {form.testimonials.map((t, i) => (
                   <div key={i} className="flex items-start gap-2 rounded-lg bg-secondary p-2.5">
                     <div className="flex-1 min-w-0">
+                      <div className="flex gap-0.5 mb-0.5">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <span key={s} className={`text-[10px] ${s < (t.rating || 5) ? "text-amber-400" : "text-muted-foreground/30"}`}>&#9733;</span>
+                        ))}
+                      </div>
                       <p className="text-xs text-foreground">&ldquo;{t.quote}&rdquo;</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         &mdash; {t.name}{t.city ? `, ${t.city}` : ""}
@@ -549,45 +555,64 @@ export default function LandingPagesPage() {
               </div>
             )}
             {form.testimonials.length < 5 && (
-              <div className="flex gap-2">
-                <input
-                  value={newTestimonialQuote}
-                  onChange={(e) => setNewTestimonialQuote(e.target.value)}
-                  placeholder="Quote..."
-                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-                <input
-                  value={newTestimonialName}
-                  onChange={(e) => setNewTestimonialName(e.target.value)}
-                  placeholder="Name"
-                  className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-                <input
-                  value={newTestimonialCity}
-                  onChange={(e) => setNewTestimonialCity(e.target.value)}
-                  placeholder="City"
-                  className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-                <button
-                  onClick={() => {
-                    if (newTestimonialQuote.trim()) {
-                      const testimonial: { quote: string; name: string; city?: string } = {
-                        quote: newTestimonialQuote.trim(),
-                        name: newTestimonialName.trim() || "Homeowner",
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    value={newTestimonialQuote}
+                    onChange={(e) => setNewTestimonialQuote(e.target.value)}
+                    placeholder="Quote..."
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <input
+                    value={newTestimonialName}
+                    onChange={(e) => setNewTestimonialName(e.target.value)}
+                    placeholder="Name"
+                    className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <input
+                    value={newTestimonialCity}
+                    onChange={(e) => setNewTestimonialCity(e.target.value)}
+                    placeholder="City"
+                    className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-muted-foreground">Rating:</span>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setNewTestimonialRating(s + 1)}
+                        className={`text-base transition-colors ${s < newTestimonialRating ? "text-amber-400" : "text-muted-foreground/30"} hover:text-amber-400`}
+                      >
+                        &#9733;
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (newTestimonialQuote.trim()) {
+                        const testimonial: { quote: string; name: string; city?: string; rating?: number } = {
+                          quote: newTestimonialQuote.trim(),
+                          name: newTestimonialName.trim() || "Homeowner",
+                          rating: newTestimonialRating,
+                        }
+                        if (newTestimonialCity.trim()) {
+                          testimonial.city = newTestimonialCity.trim()
+                        }
+                        setForm({ ...form, testimonials: [...form.testimonials, testimonial] })
+                        setNewTestimonialQuote("")
+                        setNewTestimonialName("")
+                        setNewTestimonialCity("")
+                        setNewTestimonialRating(5)
                       }
-                      if (newTestimonialCity.trim()) {
-                        testimonial.city = newTestimonialCity.trim()
-                      }
-                      setForm({ ...form, testimonials: [...form.testimonials, testimonial] })
-                      setNewTestimonialQuote("")
-                      setNewTestimonialName("")
-                      setNewTestimonialCity("")
-                    }
-                  }}
-                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
-                >
-                  Add
-                </button>
+                    }}
+                    className="ml-auto rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -634,15 +659,17 @@ export default function LandingPagesPage() {
             </div>
             {form.color_scheme === "custom" && (
               <div className="mt-2 flex items-center gap-2">
-                <div
-                  className="h-8 w-8 rounded-lg border border-border"
-                  style={{ backgroundColor: customColor }}
+                <input
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  className="h-8 w-8 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
                 />
                 <input
                   value={customColor}
                   onChange={(e) => setCustomColor(e.target.value)}
                   placeholder="#14b8a6"
-                  className="w-32 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
               </div>
             )}
