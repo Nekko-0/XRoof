@@ -372,3 +372,21 @@ CREATE POLICY "Authenticated users can update their report images"
 CREATE POLICY "Authenticated users can delete their report images"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'report-images' AND auth.role() = 'authenticated');
+
+-- ============================================
+-- Landing Page Redesign: Missing Columns
+-- ============================================
+-- CRITICAL: These columns were in the builder UI and Zod
+-- validation but never existed in the database. Data was
+-- silently lost on every save. Run this migration to fix.
+
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS services jsonb DEFAULT '["Roof Replacement","Storm Damage","Roof Repair","Free Inspection"]';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS trust_badges jsonb DEFAULT '["Free Estimates","5-Star Rated","24hr Response"]';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS testimonials jsonb DEFAULT '[]';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS city text;
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS stats jsonb DEFAULT '[]';
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS color_scheme text DEFAULT 'brand';
+
+-- Licensed & Insured certification on profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS licensed_insured_certified boolean DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS licensed_insured_certified_at timestamptz;

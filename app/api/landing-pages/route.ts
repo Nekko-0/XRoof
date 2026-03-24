@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   const v = validateBody(LandingPageCreateSchema, body)
   if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
-  const { title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, utm_source, utm_campaign } = v.data!
+  const { title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign } = v.data!
 
   // Generate slug from title
   const baseSlug = (title || "page")
@@ -51,8 +51,11 @@ export async function POST(req: Request) {
       hero_image_url: hero_image_url || null,
       template: template || "standard",
       services: services || ["Roof Replacement", "Storm Damage", "Roof Repair", "Free Inspection"],
-      trust_badges: trust_badges || ["Licensed & Insured", "5-Star Reviews", "Free Estimates"],
+      trust_badges: trust_badges || ["Free Estimates", "5-Star Rated", "24hr Response"],
       testimonials: testimonials || [],
+      city: city || null,
+      stats: stats || [],
+      color_scheme: color_scheme || "brand",
       utm_source: utm_source || null,
       utm_campaign: utm_campaign || null,
     })

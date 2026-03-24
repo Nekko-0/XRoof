@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
   const { data: page, error } = await supabase
     .from("landing_pages")
-    .select("id, contractor_id, title, subtitle, cta_text, hero_image_url, template, utm_source, utm_campaign")
+    .select("id, contractor_id, title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign")
     .eq("slug", slug)
     .eq("active", true)
     .single()
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
   // Fetch contractor branding
   const { data: branding } = await supabase
     .from("profiles")
-    .select("company_name, logo_url, widget_color, phone, email, service_zips, widget_price_per_sqft, google_review_url, google_reviews_cache")
+    .select("company_name, logo_url, widget_color, phone, email, service_zips, widget_price_per_sqft, google_review_url, google_reviews_cache, licensed_insured_certified")
     .eq("id", page.contractor_id)
     .single()
 

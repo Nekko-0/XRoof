@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
             Terms of Service
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Last updated: March 11, 2026
+            Last updated: March 24, 2026
           </p>
 
           <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
@@ -70,7 +70,28 @@ export default function TermsOfServicePage() {
                 <li>Reverse engineer, decompile, or disassemble the Service</li>
                 <li>Use the Service to collect personal information without the consent of the data subjects</li>
                 <li>Resell, sublicense, or redistribute access to the Service without written permission</li>
+                <li>Display false claims of licensing, insurance, bonding, certifications, or qualifications on your XRoof landing pages or profile. Misrepresenting your credentials constitutes a material breach of these Terms and will result in immediate account termination without refund.</li>
+                <li>Display fake reviews, testimonials, or endorsements; use photos, logos, or content you do not have the right to use; impersonate another business or individual; make false claims about competitors; display pricing or offers that are intentionally misleading; collect personal information from minors; or use landing pages for any purpose other than legitimate lead generation for your roofing business.</li>
               </ul>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">5.5 Landing Pages and Lead Generation</h2>
+              <p className="mb-2">
+                XRoof provides a landing page builder that allows contractors to create lead capture pages. Contractors are solely responsible for all content displayed on their landing pages, including but not limited to business claims, licensing status, insurance status, reviews, testimonials, pricing, service descriptions, and trust badges.
+              </p>
+              <p className="mb-2">
+                XRoof does not verify the accuracy of any information contractors place on their landing pages. Contractors represent and warrant that all information displayed on their landing pages is truthful, accurate, and not misleading.
+              </p>
+              <p className="mb-2">
+                Contractors are solely responsible for ensuring their landing pages comply with all applicable laws, including the Federal Trade Commission Act, state consumer protection laws, and any industry-specific regulations.
+              </p>
+              <p className="mb-2">
+                Contractors who display false or misleading information on their landing pages, including false claims of licensing, insurance, or certifications, will have their landing pages deactivated and may have their accounts terminated without refund.
+              </p>
+              <p>
+                XRoof reserves the right to review, deactivate, or remove any landing page that it believes, in its sole discretion, contains false, misleading, or harmful content.
+              </p>
             </section>
 
             <section>
@@ -95,8 +116,17 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">8. SMS and Email Communications</h2>
-              <p>
+              <p className="mb-2">
                 XRoof enables you to send emails and SMS messages to your customers. You are solely responsible for ensuring compliance with the Telephone Consumer Protection Act (TCPA), CAN-SPAM Act, and any other applicable communication laws. You must obtain proper consent before sending automated messages and provide opt-out mechanisms as required by law.
+              </p>
+              <p className="mb-2">
+                For leads generated through XRoof landing pages, contractors must ensure that the landing page includes a clear, conspicuous consent disclosure that names the contractor&apos;s business and specifies the types of communications (phone, email, SMS) the homeowner consents to receive. This consent must comply with the FCC&apos;s one-to-one consent rule and all applicable TCPA regulations.
+              </p>
+              <p className="mb-2">
+                XRoof provides default consent language on landing pages as a convenience. Contractors are responsible for verifying that the consent language on their landing pages meets all legal requirements for their jurisdiction and business model.
+              </p>
+              <p>
+                Contractors agree to indemnify XRoof for any TCPA claims, fines, or damages arising from communications sent to leads collected through their XRoof landing pages.
               </p>
             </section>
 
@@ -126,8 +156,11 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">12. Indemnification</h2>
-              <p>
+              <p className="mb-2">
                 You agree to indemnify and hold harmless XRoof and its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys&apos; fees) arising from your use of the Service, your violation of these Terms, or your violation of any third-party rights.
+              </p>
+              <p>
+                Without limiting the generality of the foregoing, contractors specifically agree to indemnify and hold harmless XRoof from any claims, damages, losses, or expenses arising from: (a) false, misleading, or inaccurate information displayed on contractor landing pages, including but not limited to false claims of licensing, insurance, certifications, reviews, or qualifications; (b) communications sent to homeowners or leads collected through XRoof landing pages that violate TCPA, CAN-SPAM, or any other applicable communication law; (c) any harm, property damage, personal injury, or financial loss suffered by a homeowner as a result of work performed by the contractor or the contractor&apos;s failure to perform work; (d) any violation of state contractor licensing, insurance, or consumer protection laws.
               </p>
             </section>
 
@@ -156,7 +189,22 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-foreground">16. Contact</h2>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">16. Intellectual Property and DMCA</h2>
+              <p className="mb-2">
+                You represent that you own or have the right to use all content uploaded to XRoof, including photos, logos, and text. You agree not to upload copyrighted material without authorization.
+              </p>
+              <p className="mb-2">
+                If you believe content on XRoof infringes your copyright, you may submit a DMCA takedown notice to{" "}
+                <a href="mailto:support@xroof.io" className="text-primary hover:underline">support@xroof.io</a>{" "}
+                with the following information: identification of the copyrighted work, identification of the infringing material and its location on our platform, your contact information, a statement of good faith belief that the use is not authorized, a statement under penalty of perjury that the information is accurate, and your physical or electronic signature.
+              </p>
+              <p>
+                We will respond to valid DMCA notices within 10 business days. XRoof reserves the right to remove infringing content and terminate accounts of repeat infringers.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">17. Contact</h2>
               <p>
                 For questions about these Terms, contact us at{" "}
                 <a href="mailto:support@xroof.io" className="text-primary hover:underline">

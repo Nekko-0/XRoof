@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Globe, Copy, ExternalLink, Trash2, Eye, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download } from "lucide-react"
+import { Plus, Globe, Copy, ExternalLink, Trash2, Pencil, X, Check, ToggleLeft, ToggleRight, QrCode, Download, ShieldCheck, BarChart3, Palette } from "lucide-react"
 import { authFetch } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
+import { useToast } from "@/lib/toast-context"
+import { APPROVED_TRUST_BADGES } from "@/lib/validations"
 
 type LandingPage = {
   id: string
@@ -16,23 +18,21 @@ type LandingPage = {
   active: boolean
   views: number
   conversions: number
+  city: string | null
   services: string[] | null
   trust_badges: string[] | null
-  testimonials: { quote: string; name: string }[] | null
+  testimonials: { quote: string; name: string; city?: string }[] | null
+  stats: { value: string; label: string }[] | null
+  color_scheme: string | null
   created_at: string
 }
 
-const TEMPLATES = [
-  { id: "standard", name: "Standard", description: "Dark theme with centered form" },
-  { id: "modern", name: "Modern", description: "Full-width hero with floating form" },
-  { id: "minimal", name: "Minimal", description: "Clean white design with trust badges" },
-]
-
 const DEFAULT_SERVICES = ["Roof Replacement", "Storm Damage", "Roof Repair", "Free Inspection"]
-const DEFAULT_BADGES = ["Licensed & Insured", "5-Star Reviews", "Free Estimates"]
+const DEFAULT_BADGES: string[] = ["Free Estimates", "5-Star Rated", "24hr Response"]
 
 export default function LandingPagesPage() {
   const { accountId } = useRole()
+  const toast = useToast()
   const [pages, setPages] = useState<LandingPage[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -43,23 +43,34 @@ export default function LandingPagesPage() {
   const [qrSlug, setQrSlug] = useState<string | null>(null)
   const qrCanvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Licensed & Insured state
+  const [licensedInsuredCertified, setLicensedInsuredCertified] = useState(false)
+  const [showLicensedBadge, setShowLicensedBadge] = useState(false)
+  const [certChecked, setCertChecked] = useState(false)
+  const [certSaving, setCertSaving] = useState(false)
+
   // Form state
   const [form, setForm] = useState({
     title: "Get Your Free Roof Estimate",
     subtitle: "Licensed & insured roofing professionals serving your area.",
     cta_text: "Get My Free Quote",
     hero_image_url: "",
-    template: "standard",
+    city: "",
     services: [...DEFAULT_SERVICES],
     trust_badges: [...DEFAULT_BADGES],
-    testimonials: [] as { quote: string; name: string }[],
+    testimonials: [] as { quote: string; name: string; city?: string }[],
+    stats: [] as { value: string; label: string }[],
+    color_scheme: "brand" as string,
   })
 
   // Temp inputs for adding items
   const [newService, setNewService] = useState("")
-  const [newBadge, setNewBadge] = useState("")
   const [newTestimonialQuote, setNewTestimonialQuote] = useState("")
   const [newTestimonialName, setNewTestimonialName] = useState("")
+  const [newTestimonialCity, setNewTestimonialCity] = useState("")
+  const [newStatValue, setNewStatValue] = useState("")
+  const [newStatLabel, setNewStatLabel] = useState("")
+  const [customColor, setCustomColor] = useState("#14b8a6")
 
   const fetchPages = async () => {
     const res = await authFetch("/api/landing-pages")
@@ -70,8 +81,28 @@ export default function LandingPagesPage() {
     setLoading(false)
   }
 
+  // Load profile certification status
+  const loadCertification = async () => {
+    try {
+      const res = await authFetch("/api/settings")
+      if (res.ok) {
+        const data = await res.json()
+        if (data.licensed_insured_certified) {
+          setLicensedInsuredCertified(true)
+          setShowLicensedBadge(true)
+          setCertChecked(true)
+        }
+      }
+    } catch {
+      // Silently fail — non-critical
+    }
+  }
+
   useEffect(() => {
-    if (accountId) fetchPages()
+    if (accountId) {
+      fetchPages()
+      loadCertification()
+    }
   }, [accountId])
 
   const resetForm = () => {
@@ -80,25 +111,34 @@ export default function LandingPagesPage() {
       subtitle: "Licensed & insured roofing professionals serving your area.",
       cta_text: "Get My Free Quote",
       hero_image_url: "",
-      template: "standard",
+      city: "",
       services: [...DEFAULT_SERVICES],
       trust_badges: [...DEFAULT_BADGES],
       testimonials: [],
+      stats: [],
+      color_scheme: "brand",
     })
+    setCustomColor("#14b8a6")
   }
 
   const handleCreate = async () => {
     setSaving(true)
     setFormError("")
+    const payload = {
+      ...form,
+      template: "modern",
+      color_scheme: form.color_scheme === "custom" ? customColor : "brand",
+    }
     const res = await authFetch("/api/landing-pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
     if (res.ok) {
       await fetchPages()
       setShowCreate(false)
       resetForm()
+      toast.success("Landing page created!")
     } else {
       const data = await res.json().catch(() => ({}))
       setFormError(data.error || "Failed to create landing page")
@@ -108,14 +148,24 @@ export default function LandingPagesPage() {
 
   const handleUpdate = async (id: string) => {
     setSaving(true)
+    const payload = {
+      id,
+      ...form,
+      template: "modern",
+      color_scheme: form.color_scheme === "custom" ? customColor : "brand",
+    }
     const res = await authFetch("/api/landing-pages", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...form }),
+      body: JSON.stringify(payload),
     })
     if (res.ok) {
       await fetchPages()
       setEditingId(null)
+      toast.success("Landing page updated!")
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setFormError(data.error || "Failed to update landing page")
     }
     setSaving(false)
   }
@@ -144,21 +194,59 @@ export default function LandingPagesPage() {
 
   const startEdit = (page: LandingPage) => {
     setEditingId(page.id)
+    const isCustomColor = page.color_scheme && page.color_scheme !== "brand"
     setForm({
       title: page.title,
       subtitle: page.subtitle,
       cta_text: page.cta_text,
       hero_image_url: page.hero_image_url || "",
-      template: page.template || "standard",
+      city: (page as LandingPage).city || "",
       services: page.services?.length ? [...page.services] : [...DEFAULT_SERVICES],
       trust_badges: page.trust_badges?.length ? [...page.trust_badges] : [...DEFAULT_BADGES],
       testimonials: page.testimonials?.length ? [...page.testimonials] : [],
+      stats: page.stats?.length ? [...page.stats] : [],
+      color_scheme: isCustomColor ? "custom" : "brand",
     })
+    if (isCustomColor && page.color_scheme) {
+      setCustomColor(page.color_scheme)
+    } else {
+      setCustomColor("#14b8a6")
+    }
+  }
+
+  const handleCertification = async () => {
+    setCertSaving(true)
+    try {
+      const res = await authFetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ licensed_insured_certified: true }),
+      })
+      if (res.ok) {
+        setLicensedInsuredCertified(true)
+        toast.success("Licensed & Insured certification saved!")
+      } else {
+        toast.error("Failed to save certification")
+        setCertChecked(false)
+      }
+    } catch {
+      toast.error("Failed to save certification")
+      setCertChecked(false)
+    }
+    setCertSaving(false)
+  }
+
+  const toggleTrustBadge = (badge: string) => {
+    const current = form.trust_badges
+    if (current.includes(badge)) {
+      setForm({ ...form, trust_badges: current.filter((b) => b !== badge) })
+    } else if (current.length < 5) {
+      setForm({ ...form, trust_badges: [...current, badge] })
+    }
   }
 
   const showQrCode = async (slug: string) => {
     setQrSlug(slug)
-    // Dynamically import qrcode to generate on client
     try {
       const QRCode = (await import("qrcode")).default
       const url = `${window.location.origin}/lp/${slug}`
@@ -235,6 +323,15 @@ export default function LandingPagesPage() {
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">City (appears in page heading)</label>
+              <input
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                placeholder="e.g. Dallas, TX"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">CTA Button Text</label>
               <input
@@ -244,18 +341,6 @@ export default function LandingPagesPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Template</label>
-              <select
-                value={form.template}
-                onChange={(e) => setForm({ ...form, template: e.target.value })}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                {TEMPLATES.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name} — {t.description}</option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Hero Image URL (optional)</label>
               <input
                 value={form.hero_image_url}
@@ -268,7 +353,7 @@ export default function LandingPagesPage() {
 
           {/* Services */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Services (shown on Modern template, max 6)</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Services (max 6)</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {form.services.map((s, i) => (
                 <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
@@ -298,30 +383,143 @@ export default function LandingPagesPage() {
             )}
           </div>
 
-          {/* Trust Badges */}
+          {/* Trust Badges — Checkbox Grid */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Trust Badges (max 5)</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {form.trust_badges.map((b, i) => (
-                <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
-                  {b}
-                  <button onClick={() => setForm({ ...form, trust_badges: form.trust_badges.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
+            <label className="mb-2 block text-xs font-medium text-muted-foreground">Trust Badges (max 5)</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {APPROVED_TRUST_BADGES.map((badge) => {
+                const isSelected = form.trust_badges.includes(badge)
+                const isDisabled = !isSelected && form.trust_badges.length >= 5
+                return (
+                  <label
+                    key={badge}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : isDisabled
+                          ? "border-border bg-muted/30 text-muted-foreground cursor-not-allowed opacity-50"
+                          : "border-border bg-background text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={isDisabled}
+                      onChange={() => toggleTrustBadge(badge)}
+                      className="rounded border-border text-primary focus:ring-primary/30 h-3.5 w-3.5"
+                    />
+                    {badge}
+                  </label>
+                )
+              })}
             </div>
-            {form.trust_badges.length < 5 && (
+          </div>
+
+          {/* Licensed & Insured Certification */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-bold text-foreground">Show Licensed &amp; Insured badge</span>
+              </div>
+              <button
+                onClick={() => {
+                  if (showLicensedBadge) {
+                    setShowLicensedBadge(false)
+                  } else {
+                    setShowLicensedBadge(true)
+                  }
+                }}
+                className="text-foreground"
+              >
+                {showLicensedBadge
+                  ? <ToggleRight className="h-6 w-6 text-emerald-500" />
+                  : <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                }
+              </button>
+            </div>
+
+            {showLicensedBadge && !licensedInsuredCertified && (
+              <div className="space-y-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={certChecked}
+                    onChange={(e) => setCertChecked(e.target.checked)}
+                    className="mt-0.5 rounded border-border text-primary focus:ring-primary/30 h-3.5 w-3.5"
+                  />
+                  <span className="text-[11px] leading-relaxed text-muted-foreground">
+                    I certify that my business is currently licensed and carries active general liability insurance in my state of operation. I understand that misrepresenting my licensing or insurance status is a violation of XRoof&apos;s Terms of Service.
+                  </span>
+                </label>
+                <button
+                  onClick={handleCertification}
+                  disabled={!certChecked || certSaving}
+                  className="rounded-lg bg-amber-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                >
+                  {certSaving ? "Saving..." : "Confirm Certification"}
+                </button>
+              </div>
+            )}
+
+            {showLicensedBadge && licensedInsuredCertified && (
+              <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+                <Check className="h-3.5 w-3.5" />
+                Certified — badge will appear on your landing pages
+              </p>
+            )}
+          </div>
+
+          {/* Company Stats */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="text-xs font-medium text-muted-foreground">Company Stats (max 4)</label>
+            </div>
+            {form.stats.length > 0 && (
+              <div className="space-y-2 mb-2">
+                {form.stats.map((stat, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary p-2.5">
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground">{stat.value}</span>
+                      <span className="text-xs text-muted-foreground">{stat.label}</span>
+                    </div>
+                    <button onClick={() => setForm({ ...form, stats: form.stats.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {form.stats.length < 4 && (
               <div className="flex gap-2">
                 <input
-                  value={newBadge}
-                  onChange={(e) => setNewBadge(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && newBadge.trim()) { setForm({ ...form, trust_badges: [...form.trust_badges, newBadge.trim()] }); setNewBadge("") } }}
-                  placeholder="Add badge..."
+                  value={newStatValue}
+                  onChange={(e) => setNewStatValue(e.target.value)}
+                  placeholder="Value (e.g. 500+)"
+                  className="w-28 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <input
+                  value={newStatLabel}
+                  onChange={(e) => setNewStatLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newStatValue.trim() && newStatLabel.trim()) {
+                      setForm({ ...form, stats: [...form.stats, { value: newStatValue.trim(), label: newStatLabel.trim() }] })
+                      setNewStatValue("")
+                      setNewStatLabel("")
+                    }
+                  }}
+                  placeholder="Label (e.g. Roofs Completed)"
                   className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
                 <button
-                  onClick={() => { if (newBadge.trim()) { setForm({ ...form, trust_badges: [...form.trust_badges, newBadge.trim()] }); setNewBadge("") } }}
+                  onClick={() => {
+                    if (newStatValue.trim() && newStatLabel.trim()) {
+                      setForm({ ...form, stats: [...form.stats, { value: newStatValue.trim(), label: newStatLabel.trim() }] })
+                      setNewStatValue("")
+                      setNewStatLabel("")
+                    }
+                  }}
                   className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
                 >
                   Add
@@ -332,14 +530,16 @@ export default function LandingPagesPage() {
 
           {/* Testimonials */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Testimonials (shown on Minimal template, max 5)</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Testimonials (max 5)</label>
             {form.testimonials.length > 0 && (
               <div className="space-y-2 mb-2">
                 {form.testimonials.map((t, i) => (
                   <div key={i} className="flex items-start gap-2 rounded-lg bg-secondary p-2.5">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-foreground">&ldquo;{t.quote}&rdquo;</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">— {t.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        &mdash; {t.name}{t.city ? `, ${t.city}` : ""}
+                      </p>
                     </div>
                     <button onClick={() => setForm({ ...form, testimonials: form.testimonials.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-600">
                       <X className="h-3 w-3" />
@@ -360,20 +560,90 @@ export default function LandingPagesPage() {
                   value={newTestimonialName}
                   onChange={(e) => setNewTestimonialName(e.target.value)}
                   placeholder="Name"
-                  className="w-28 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <input
+                  value={newTestimonialCity}
+                  onChange={(e) => setNewTestimonialCity(e.target.value)}
+                  placeholder="City"
+                  className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
                 <button
                   onClick={() => {
                     if (newTestimonialQuote.trim()) {
-                      setForm({ ...form, testimonials: [...form.testimonials, { quote: newTestimonialQuote.trim(), name: newTestimonialName.trim() || "Homeowner" }] })
+                      const testimonial: { quote: string; name: string; city?: string } = {
+                        quote: newTestimonialQuote.trim(),
+                        name: newTestimonialName.trim() || "Homeowner",
+                      }
+                      if (newTestimonialCity.trim()) {
+                        testimonial.city = newTestimonialCity.trim()
+                      }
+                      setForm({ ...form, testimonials: [...form.testimonials, testimonial] })
                       setNewTestimonialQuote("")
                       setNewTestimonialName("")
+                      setNewTestimonialCity("")
                     }
                   }}
                   className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/80"
                 >
                   Add
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Color Scheme */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="text-xs font-medium text-muted-foreground">Color Scheme</label>
+            </div>
+            <div className="flex gap-3">
+              <label
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                  form.color_scheme === "brand"
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-foreground hover:bg-secondary"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="color_scheme"
+                  checked={form.color_scheme === "brand"}
+                  onChange={() => setForm({ ...form, color_scheme: "brand" })}
+                  className="h-3.5 w-3.5 text-primary focus:ring-primary/30"
+                />
+                Use brand color
+              </label>
+              <label
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                  form.color_scheme === "custom"
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-foreground hover:bg-secondary"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="color_scheme"
+                  checked={form.color_scheme === "custom"}
+                  onChange={() => setForm({ ...form, color_scheme: "custom" })}
+                  className="h-3.5 w-3.5 text-primary focus:ring-primary/30"
+                />
+                Custom color
+              </label>
+            </div>
+            {form.color_scheme === "custom" && (
+              <div className="mt-2 flex items-center gap-2">
+                <div
+                  className="h-8 w-8 rounded-lg border border-border"
+                  style={{ backgroundColor: customColor }}
+                />
+                <input
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  placeholder="#14b8a6"
+                  className="w-32 rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
               </div>
             )}
           </div>
@@ -454,9 +724,6 @@ export default function LandingPagesPage() {
                       <h3 className="text-sm font-bold text-foreground truncate">{page.title}</h3>
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${page.active ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
                         {page.active ? "Active" : "Inactive"}
-                      </span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {TEMPLATES.find(t => t.id === page.template)?.name || "Standard"}
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground truncate">/lp/{page.slug}</p>

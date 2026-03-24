@@ -63,6 +63,10 @@ export const LeadCaptureSchema = z.object({
   phone: z.string().min(7).max(20),
   email: z.string().email().max(254).optional(),
   address: z.string().min(1, "Address required").max(300),
+  city: z.string().max(100).optional(),
+  zip: z.string().max(10).optional(),
+  project_type: z.string().max(100).optional(),
+  consent_given: z.literal(true, { errorMap: () => ({ message: "Consent is required" }) }),
   utm_source: z.string().max(100).optional(),
   utm_medium: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
@@ -86,6 +90,12 @@ export const BookingCreateSchema = z.object({
   notes: z.string().max(1000).optional(),
 })
 
+// Approved trust badge options (legal compliance — no free-text claims)
+export const APPROVED_TRUST_BADGES = [
+  "Free Estimates", "No Obligation", "24hr Response", "Family Owned",
+  "Locally Owned", "Satisfaction Guaranteed", "5-Star Rated",
+] as const
+
 // Landing pages
 export const LandingPageCreateSchema = z.object({
   title: z.string().max(200).optional(),
@@ -93,9 +103,12 @@ export const LandingPageCreateSchema = z.object({
   cta_text: z.string().max(100).optional(),
   hero_image_url: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().max(2000).optional()),
   template: z.string().max(50).optional(),
+  city: z.string().max(100).optional(),
+  color_scheme: z.string().max(20).optional(),
   services: z.array(z.string().max(50)).max(6).optional(),
-  trust_badges: z.array(z.string().max(50)).max(5).optional(),
-  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50) })).max(5).optional(),
+  trust_badges: z.array(z.enum(APPROVED_TRUST_BADGES)).max(5).optional(),
+  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50), city: z.string().max(50).optional() })).max(5).optional(),
+  stats: z.array(z.object({ value: z.string().max(20), label: z.string().max(50) })).max(4).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
 })
@@ -107,11 +120,14 @@ export const LandingPageUpdateSchema = z.object({
   cta_text: z.string().max(100).optional(),
   hero_image_url: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().max(2000).optional().nullable()),
   slug: z.string().max(100).optional(),
-  published: z.boolean().optional(),
+  active: z.boolean().optional(),
   template: z.string().max(50).optional(),
+  city: z.string().max(100).optional(),
+  color_scheme: z.string().max(20).optional(),
   services: z.array(z.string().max(50)).max(6).optional(),
-  trust_badges: z.array(z.string().max(50)).max(5).optional(),
-  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50) })).max(5).optional(),
+  trust_badges: z.array(z.enum(APPROVED_TRUST_BADGES)).max(5).optional(),
+  testimonials: z.array(z.object({ quote: z.string().max(200), name: z.string().max(50), city: z.string().max(50).optional() })).max(5).optional(),
+  stats: z.array(z.object({ value: z.string().max(20), label: z.string().max(50) })).max(4).optional(),
   utm_source: z.string().max(100).optional(),
   utm_campaign: z.string().max(100).optional(),
 })
