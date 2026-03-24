@@ -89,6 +89,7 @@ export default function LandingPagesPage() {
   const [newStatLabel, setNewStatLabel] = useState("")
   const [customColor, setCustomColor] = useState("#14b8a6")
   const [showTracking, setShowTracking] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const fetchPages = async () => {
     const res = await authFetch("/api/landing-pages")
@@ -785,32 +786,43 @@ export default function LandingPagesPage() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Redirect URL (optional)</label>
-                <input
-                  value={form.redirect_url}
-                  onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
-                  placeholder="https://yourwebsite.com/thank-you"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-                <p className="text-[10px] text-muted-foreground mt-0.5">If set, visitors redirect here after submission. Useful for Google Ads conversion tracking.</p>
-              </div>
             </div>
           </div>
 
-          {/* A/B Testing */}
+          {/* Advanced Settings (collapsed by default) */}
           <div>
-            <label className="mb-2 block text-xs font-medium text-muted-foreground">A/B Testing</label>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">A/B Test Headline (optional)</label>
-              <input
-                value={form.alt_headline}
-                onChange={(e) => setForm({ ...form, alt_headline: e.target.value })}
-                placeholder="Enter an alternative headline to test"
-                className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-              />
-              <p className="text-[10px] text-muted-foreground mt-0.5">If set, 50% of visitors will see this headline instead. Check analytics to see which converts better.</p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center gap-2 mb-2"
+            >
+              <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showAdvanced ? "rotate-90" : ""}`} />
+              <span className="text-xs font-medium text-muted-foreground">Advanced Settings</span>
+            </button>
+            {showAdvanced && (
+              <div className="grid gap-3 pl-5">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Custom Redirect URL (optional)</label>
+                  <input
+                    value={form.redirect_url}
+                    onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
+                    placeholder="https://yourwebsite.com/thank-you"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Overrides the default thank-you page. Most users don&apos;t need this.</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">A/B Test Headline (optional)</label>
+                  <input
+                    value={form.alt_headline}
+                    onChange={(e) => setForm({ ...form, alt_headline: e.target.value })}
+                    placeholder="Enter an alternative headline to test"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">If set, 50% of visitors will see this headline instead. Check analytics to see which converts better.</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

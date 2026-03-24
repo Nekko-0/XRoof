@@ -93,7 +93,6 @@ export default function LandingPageClient({
   const formRef = useRef<HTMLDivElement>(null)
 
   // Form state
-  const [step, setStep] = useState<"form" | "submitted">("form")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -171,7 +170,7 @@ export default function LandingPageClient({
         }),
       })
       if (res.ok) {
-        // Fire conversion tracking events
+        // Fire conversion tracking events before redirect
         if (window.gtag && page.google_ads_id) {
           window.gtag("event", "conversion", {
             send_to: `${page.google_ads_id}/${page.google_ads_label}`,
@@ -181,21 +180,17 @@ export default function LandingPageClient({
           window.fbq("track", "Lead")
         }
 
-        if (page.redirect_url) {
-          // Show submitting state briefly, then redirect
-          setTimeout(() => {
-            window.location.href = page.redirect_url!
-          }, 1000)
-        } else {
-          setStep("submitted")
-        }
+        // Redirect to custom URL or built-in thank-you page
+        const redirectTo = page.redirect_url || `/lp/${slug}/thank-you`
+        setTimeout(() => {
+          window.location.href = redirectTo
+        }, 1000)
       } else {
         setFormError("Something went wrong. Please try again.")
+        setSubmitting(false)
       }
     } catch {
       setFormError("Something went wrong. Please try again.")
-    }
-    if (!page.redirect_url) {
       setSubmitting(false)
     }
   }
@@ -251,11 +246,6 @@ export default function LandingPageClient({
       </h1>
     )
   }
-
-  // Thank you content
-  const thankYouHeading = page.thank_you_heading || "Estimate Request Received!"
-  const thankYouMessage = page.thank_you_message ||
-    `We've received your request. ${companyName} will contact you shortly with your free estimate.`
 
   /* ─── Render ─── */
 
@@ -338,7 +328,6 @@ export default function LandingPageClient({
 
             {/* SECTION 2 — LEAD FORM */}
             <div id="lead-form" ref={formRef}>
-              {step === "form" ? (
                 <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 sm:p-8 ring-1 ring-amber-500/30 shadow-lg shadow-amber-500/10">
                   <h2 className="text-xl font-bold text-center text-white">
                     Get Your Free Estimate
@@ -500,25 +489,6 @@ export default function LandingPageClient({
                     </span>
                   </div>
                 </div>
-              ) : (
-                /* ── Thank-you state ── */
-                <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 text-center ring-1 ring-amber-500/30 shadow-lg shadow-amber-500/10">
-                  <CheckCircle className="mx-auto mb-4 h-14 w-14" style={{ color: accent }} />
-                  <h2 className="text-2xl font-bold text-white mb-2">{thankYouHeading}</h2>
-                  <p className="text-sm text-gray-400 mb-6">
-                    {thankYouMessage}
-                  </p>
-                  {branding.phone && (
-                    <a
-                      href={`tel:${branding.phone}`}
-                      className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white hover:brightness-110 transition-all"
-                      style={{ backgroundColor: accent }}
-                    >
-                      <Phone className="h-4 w-4" /> Call Us Now: {branding.phone}
-                    </a>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
