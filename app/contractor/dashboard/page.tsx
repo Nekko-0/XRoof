@@ -607,6 +607,22 @@ export default function ContractorDashboard() {
         </Link>
       </div>
 
+      {/* Mobile-only key stats (visible below md) */}
+      <div className="grid grid-cols-3 gap-2 md:hidden">
+        <div className="rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
+          <p className="text-lg font-bold text-primary">{closeRate}%</p>
+          <p className="text-[10px] font-medium text-muted-foreground">Close Rate</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
+          <p className="text-lg font-bold text-foreground">${pipelineValue >= 1000 ? `${(pipelineValue / 1000).toFixed(pipelineValue >= 10000 ? 0 : 1)}k` : pipelineValue}</p>
+          <p className="text-[10px] font-medium text-muted-foreground">Pipeline</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-3 text-center shadow-sm">
+          <p className="text-lg font-bold text-foreground">{totalJobs}</p>
+          <p className="text-[10px] font-medium text-muted-foreground">Total Jobs</p>
+        </div>
+      </div>
+
       {/* Pipeline Summary + Close Rate (tablet+) */}
       <div className="hidden md:grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Conversion Funnel */}

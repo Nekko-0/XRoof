@@ -583,7 +583,7 @@ export default function FieldModePage() {
 
         {isExpanded && (
           <div className="border-t border-border p-4 space-y-3">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {job.customer_phone && (
                 <button
                   onClick={() => handleCall(job.customer_phone)}

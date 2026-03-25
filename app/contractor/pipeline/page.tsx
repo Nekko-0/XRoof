@@ -490,8 +490,8 @@ export default function PipelinePage() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <Skeleton className="h-8 w-48" />
-        {/* Pipeline columns */}
-        <div className="grid grid-cols-5 gap-3">
+        {/* Pipeline columns — desktop */}
+        <div className="hidden lg:grid grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="h-6 w-full rounded-lg" />
@@ -499,6 +499,17 @@ export default function PipelinePage() {
               <Skeleton className="h-24 w-full rounded-xl" />
               <Skeleton className="h-24 w-full rounded-xl" />
             </div>
+          ))}
+        </div>
+        {/* Pipeline — mobile skeleton */}
+        <div className="lg:hidden space-y-3">
+          <div className="flex gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-20 rounded-lg" />
+            ))}
+          </div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
           ))}
         </div>
       </div>

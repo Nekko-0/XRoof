@@ -187,7 +187,7 @@ export default function TeamPage() {
       </div>
 
       {/* Role legend */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {ROLES.map((r) => (
           <div key={r.value} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${r.bg}`}>

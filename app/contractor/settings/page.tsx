@@ -1515,7 +1515,7 @@ function ReferralTab() {
             <p className="mt-2 text-[10px] text-muted-foreground">Code: <span className="font-mono font-medium text-foreground">{code}</span></p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
               <p className="text-2xl font-bold text-foreground">{stats.totalReferred}</p>
               <p className="text-xs text-muted-foreground">Referred</p>

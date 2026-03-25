@@ -414,3 +414,203 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS project_description text;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_term text;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS utm_content text;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headline_variant text;
+
+-- ============================================
+-- Row Level Security (RLS) — Defense in Depth
+-- ============================================
+-- API routes use service_role key (bypasses RLS).
+-- These policies protect against direct anon-key access.
+-- Run this AFTER all tables exist.
+
+-- ── 1. Core tables with contractor_id ownership ──
+
+ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_jobs" ON jobs FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+-- Anon insert for landing page lead capture (API uses service_role, but just in case)
+CREATE POLICY "anon_insert_leads" ON jobs FOR INSERT TO anon
+  WITH CHECK (source = 'landing_page');
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_customers" ON customers FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE scheduled_automations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_automations" ON scheduled_automations FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_appointments" ON appointments FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE sms_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_sms" ON sms_messages FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_email_templates" ON email_templates FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE work_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_work_orders" ON work_orders FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE time_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_time_entries" ON time_entries FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE landing_pages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_landing_pages" ON landing_pages FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+-- Public read for rendered landing pages
+CREATE POLICY "anon_read_active_landing_pages" ON landing_pages FOR SELECT TO anon
+  USING (active = true);
+
+ALTER TABLE satisfaction_surveys ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_surveys" ON satisfaction_surveys FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE customer_documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_documents" ON customer_documents FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE reminder_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_reminder_templates" ON reminder_templates FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE subcontractors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_subcontractors" ON subcontractors FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_expenses" ON expenses FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+-- ── 2. Tables with id or user_id ownership ──
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_own_profile" ON profiles FOR ALL TO authenticated
+  USING ((select auth.uid()) = id)
+  WITH CHECK ((select auth.uid()) = id);
+-- Public read for landing page branding (company name, logo, phone)
+CREATE POLICY "anon_read_profiles" ON profiles FOR SELECT TO anon
+  USING (true);
+
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_own_subscription" ON subscriptions FOR ALL TO authenticated
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK ((select auth.uid()) = user_id);
+
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_own_push_subs" ON push_subscriptions FOR ALL TO authenticated
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK ((select auth.uid()) = user_id);
+
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner_manage_team" ON team_members FOR ALL TO authenticated
+  USING ((select auth.uid()) = account_id)
+  WITH CHECK ((select auth.uid()) = account_id);
+
+-- ── 3. Tables with job_id ownership (join through jobs) ──
+
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_reports" ON reports FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE job_costs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_job_costs" ON job_costs FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE job_photos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_job_photos" ON job_photos FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE portal_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_portal_messages" ON portal_messages FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE contracts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_contracts" ON contracts FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_invoices" ON invoices FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE material_selections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_material_selections" ON material_selections FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE job_subcontractors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_job_subs" ON job_subcontractors FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+ALTER TABLE document_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_doc_events" ON document_events FOR ALL TO authenticated
+  USING (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())))
+  WITH CHECK (job_id IN (SELECT id FROM jobs WHERE contractor_id = (select auth.uid())));
+
+-- ── 4. Tables with contractor_id (from other migration files) ──
+
+ALTER TABLE report_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_report_templates" ON report_templates FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+ALTER TABLE job_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "contractor_own_job_templates" ON job_templates FOR ALL TO authenticated
+  USING ((select auth.uid()) = contractor_id)
+  WITH CHECK ((select auth.uid()) = contractor_id);
+
+-- ── 5. Admin/platform tables (service_role only, no user policies) ──
+
+ALTER TABLE churn_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trial_nudge_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trial_nudge_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE material_catalog ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dunning_sequences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dunning_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cancellation_reasons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE winback_campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE winback_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE revenue_goals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nps_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nps_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alert_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alert_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE milestone_definitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE milestone_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE referral_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE referral_conversions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE changelog_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE changelog_reads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usage_report_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE competitors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_costs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_announcements ENABLE ROW LEVEL SECURITY;

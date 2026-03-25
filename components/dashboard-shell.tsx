@@ -419,7 +419,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         <header className={cn(
-          "flex h-14 items-center gap-4 border-b border-border bg-card px-4 md:h-16 md:px-8",
+          "flex h-14 items-center gap-4 border-b border-border bg-card px-3 sm:px-6 md:h-16 md:px-8",
           isContractor && "md:flex"
         )}>
           {/* Hamburger — admin mobile only */}
@@ -447,7 +447,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
         </header>
         {isContractor && <AnnouncementBanner />}
         <main className={cn(
-          "flex-1 p-4 md:p-8",
+          "flex-1 px-3 py-4 sm:p-6 md:p-8",
           isContractor && "pb-24 md:pb-8"
         )}>
           {children}
@@ -456,7 +456,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
       {/* Bottom tab bar — contractor mobile only */}
       {isContractor && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2 safe-bottom md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card py-2.5 safe-bottom md:hidden">
           {contractorTabs.map((tab) => {
             const isActive = pathname === tab.href || (tab.href === "/contractor/dashboard" && pathname.startsWith("/contractor/leads"))
             const showBadge = tab.label === "Messages" && unreadPortalCount > 0
@@ -465,7 +465,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                 key={tab.href}
                 href={tab.href}
                 className={cn(
-                  "relative flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
+                  "relative flex min-w-[56px] flex-col items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground"
@@ -473,7 +473,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
               >
                 <tab.icon className={cn("h-6 w-6", isActive && "text-primary")} />
                 {showBadge && (
-                  <span className="absolute top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  <span className="absolute top-0.5 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                     {unreadPortalCount > 9 ? "9+" : unreadPortalCount}
                   </span>
                 )}
