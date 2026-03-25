@@ -22,11 +22,11 @@ export function middleware(request: NextRequest) {
   // Content Security Policy
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net`,
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net https://maps.googleapis.com`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `img-src 'self' data: blob: https: http:`,
     `font-src 'self' https://fonts.gstatic.com`,
-    `connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com`,
+    `connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com`,
     `frame-src https://js.stripe.com https://hooks.stripe.com`,
     `object-src 'none'`,
     `base-uri 'self'`,

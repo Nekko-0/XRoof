@@ -86,6 +86,9 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
+  // Don't cache auth pages — stale cache breaks mobile login
+  if (url.pathname.startsWith("/auth")) return
+
   // Page navigations: network-first with cache fallback
   if (event.request.mode === "navigate") {
     event.respondWith(

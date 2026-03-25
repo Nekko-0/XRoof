@@ -2,6 +2,13 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js"
 
 let client: SupabaseClient | null = null
 
+// Safe localStorage wrapper — iOS Safari Private Browsing throws on setItem
+const safeStorage = {
+  getItem: (key: string) => { try { return localStorage.getItem(key) } catch { return null } },
+  setItem: (key: string, value: string) => { try { localStorage.setItem(key, value) } catch {} },
+  removeItem: (key: string) => { try { localStorage.removeItem(key) } catch {} },
+}
+
 function getClient(): SupabaseClient {
   if (typeof window === "undefined") {
     // Server-side: no persistence needed
@@ -18,7 +25,7 @@ function getClient(): SupabaseClient {
       {
         auth: {
           persistSession: true,
-          storage: window.localStorage,
+          storage: safeStorage,
           autoRefreshToken: true,
         },
       }
