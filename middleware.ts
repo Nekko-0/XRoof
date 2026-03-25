@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
 
   // Security headers
   response.headers.set("X-Frame-Options", "DENY")
@@ -19,14 +18,16 @@ export function middleware(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()"
   )
 
-  // Content Security Policy
+  // Content Security Policy — use explicit Supabase URL for Safari compatibility
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://*.supabase.co"
+  const supabaseWss = supabaseUrl.replace("https://", "wss://")
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net https://maps.googleapis.com`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `img-src 'self' data: blob: https: http:`,
     `font-src 'self' https://fonts.gstatic.com`,
-    `connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com`,
+    `connect-src 'self' ${supabaseUrl} ${supabaseWss} https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.sentry.io https://www.google-analytics.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com`,
     `frame-src https://js.stripe.com https://hooks.stripe.com`,
     `object-src 'none'`,
     `base-uri 'self'`,

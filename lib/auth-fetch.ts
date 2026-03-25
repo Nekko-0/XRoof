@@ -5,8 +5,13 @@ import { supabase } from "./supabaseClient"
  * Use this instead of plain fetch() for authenticated API routes.
  */
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.access_token
+  let token: string | undefined
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    token = session?.access_token
+  } catch (err) {
+    console.error("authFetch getSession failed:", err)
+  }
 
   const headers = new Headers(options.headers)
   if (token) {

@@ -42,7 +42,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      let session: any = null
+      try {
+        const { data } = await supabase.auth.getSession()
+        session = data.session
+      } catch (err) {
+        console.error("RoleProvider getSession failed:", err)
+        return
+      }
       if (!session) return
 
       const uid = session.user.id
