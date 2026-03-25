@@ -349,15 +349,15 @@ export default function PublicEstimatePage() {
               <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
                 <List className="h-3.5 w-3.5" /> Cost Breakdown
               </h3>
-              <div className="rounded-xl border border-gray-200 overflow-hidden">
-                <div className="grid grid-cols-[1fr_50px_70px_70px] gap-2 bg-gray-50 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase">
+              <div className="rounded-xl border border-gray-200 overflow-x-auto">
+                <div className="grid grid-cols-[1fr_50px_70px_70px] gap-2 bg-gray-50 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase min-w-[360px] sm:min-w-0">
                   <span>Item</span>
                   <span className="text-center">Qty</span>
                   <span className="text-right">Rate</span>
                   <span className="text-right">Amount</span>
                 </div>
                 {report.estimate_line_items.map((item, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_50px_70px_70px] gap-2 border-t border-gray-100 px-3 py-2 text-sm">
+                  <div key={i} className="grid grid-cols-[1fr_50px_70px_70px] gap-2 border-t border-gray-100 px-3 py-2 text-sm min-w-[360px] sm:min-w-0">
                     <span className="text-gray-800">{item.description}</span>
                     <span className="text-center text-gray-500">{item.quantity}</span>
                     <span className="text-right text-gray-500">${item.unit_price.toLocaleString()}</span>

@@ -1376,9 +1376,9 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                   </p>
                 </>)}
 
-                <div className="rounded-xl border border-border overflow-hidden">
+                <div className="rounded-xl border border-border overflow-x-auto">
                   {/* Header */}
-                  <div className="grid grid-cols-[1fr_60px_90px_80px_30px] gap-2 bg-secondary/50 px-3 py-2 text-[10px] font-semibold text-muted-foreground uppercase">
+                  <div className="grid grid-cols-[1fr_60px_90px_80px_30px] gap-2 bg-secondary/50 px-3 py-2 text-[10px] font-semibold text-muted-foreground uppercase min-w-[480px] sm:min-w-0">
                     <span>Description</span>
                     <span className="text-center">Qty</span>
                     <span className="text-right">Unit Price</span>
@@ -1387,7 +1387,7 @@ export function ReportBuilder({ reportId, onSaved, onPreview }: ReportBuilderPro
                   </div>
                   {/* Rows */}
                   {report.estimate_line_items.map((item, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_60px_90px_80px_30px] gap-2 border-t border-border px-3 py-2 items-center">
+                    <div key={i} className="grid grid-cols-[1fr_60px_90px_80px_30px] gap-2 border-t border-border px-3 py-2 items-center min-w-[480px] sm:min-w-0">
                       <input
                         value={item.description}
                         onChange={(e) => {

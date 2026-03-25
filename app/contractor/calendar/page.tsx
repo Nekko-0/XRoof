@@ -433,7 +433,7 @@ export default function CalendarPage() {
                     <button
                       key={ds}
                       onClick={() => setSelectedDate(ds === selectedDate ? null : ds)}
-                      className={`min-h-[80px] flex flex-col items-center gap-1 p-2 border-r last:border-r-0 border-border/50 transition-colors ${
+                      className={`min-h-[60px] sm:min-h-[80px] flex flex-col items-center gap-0.5 sm:gap-1 p-1 sm:p-2 border-r last:border-r-0 border-border/50 transition-colors ${
                         isToday ? "bg-primary/10" : ""
                       } ${isSelected ? "ring-2 ring-primary ring-inset" : ""} ${hasBadWeatherJobsMobile ? "bg-red-500/5" : ""}`}
                     >
@@ -498,7 +498,7 @@ export default function CalendarPage() {
 
               <div className="grid grid-cols-7">
                 {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-border/50 bg-secondary/10" />
+                  <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-b border-r border-border/50 bg-secondary/10" />
                 ))}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1
@@ -513,7 +513,7 @@ export default function CalendarPage() {
                     <button
                       key={day}
                       onClick={() => setSelectedDate(ds === selectedDate ? null : ds)}
-                      className={`min-h-[80px] border-b border-r border-border/50 p-1 text-left transition-colors hover:bg-primary/5 ${
+                      className={`min-h-[60px] sm:min-h-[80px] border-b border-r border-border/50 p-0.5 sm:p-1 text-left transition-colors hover:bg-primary/5 ${
                         isToday ? "bg-primary/10" : ""
                       } ${isSelected ? "ring-2 ring-primary ring-inset" : ""} ${hasBadWeatherJobs ? "bg-red-500/5" : ""}`}
                     >

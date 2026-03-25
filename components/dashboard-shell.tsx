@@ -214,7 +214,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     pathname === href || (href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-x-hidden max-w-full">
       <CommandPalette />
       {isContractor && <ProductTour />}
       {/* Mobile overlay — admin only */}
@@ -417,7 +417,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col overflow-x-hidden min-w-0">
         <header className={cn(
           "flex h-14 items-center gap-4 border-b border-border bg-card px-3 sm:px-6 md:h-16 md:px-8",
           isContractor && "md:flex"
