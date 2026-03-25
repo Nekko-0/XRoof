@@ -37,17 +37,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           return true
         }
 
-        // Check for active subscription
-        const { data: sub } = await supabase
-          .from("subscriptions")
-          .select("status")
-          .eq("user_id", session.user.id)
-          .in("status", ["active", "trialing"])
-          .maybeSingle()
+        // Check for active subscription (fail-open on error to avoid crashing)
+        try {
+          const { data: sub } = await supabase
+            .from("subscriptions")
+            .select("status")
+            .eq("user_id", session.user.id)
+            .in("status", ["active", "trialing"])
+            .maybeSingle()
 
-        if (!sub) {
-          router.push("/contractor/billing")
-          return false
+          if (!sub) {
+            router.push("/contractor/billing")
+            return false
+          }
+        } catch (err) {
+          console.error("Subscription check failed:", err)
+          // Allow access rather than crashing
         }
       }
 
@@ -58,19 +63,32 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       if (await checkRole(session)) {
         setChecked(true)
       }
+    }).catch((err) => {
+      console.error("getSession failed:", err)
+      router.push("/auth")
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
-        router.push("/auth")
-      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        if (!(await checkRole(session))) {
-          setChecked(false)
+    let subscription: { unsubscribe: () => void } | null = null
+    try {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        try {
+          if (event === "SIGNED_OUT") {
+            router.push("/auth")
+          } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+            if (!(await checkRole(session))) {
+              setChecked(false)
+            }
+          }
+        } catch (err) {
+          console.error("Auth state change error:", err)
         }
-      }
-    })
+      })
+      subscription = data.subscription
+    } catch (err) {
+      console.error("onAuthStateChange failed:", err)
+    }
 
-    return () => subscription.unsubscribe()
+    return () => subscription?.unsubscribe()
   }, [router, pathname])
 
   if (!checked) {
