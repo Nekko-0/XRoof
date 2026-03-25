@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { AlertTriangle, RefreshCw, Home } from "lucide-react"
 import Link from "next/link"
 
@@ -10,6 +11,10 @@ export default function ContractorError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error("Contractor error:", error)
+  }, [error])
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <div className="max-w-sm text-center">

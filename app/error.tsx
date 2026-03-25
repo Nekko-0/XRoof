@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 
 export default function GlobalError({
@@ -9,6 +10,10 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error("Global error:", error)
+  }, [error])
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="max-w-sm text-center">

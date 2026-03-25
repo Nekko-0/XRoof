@@ -41,50 +41,58 @@ function AuthForm() {
     setLoading(true)
     setMessage("")
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: username || email.split("@")[0],
-          role: "Contractor",
-          service_zips: parsedZips,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username || email.split("@")[0],
+            role: "Contractor",
+            service_zips: parsedZips,
+          },
         },
-      },
-    })
+      })
 
-    if (error) {
-      setMessage(error.message)
-      setLoading(false)
-      return
-    }
-
-    // Fire ad conversion events
-    const fireConversion = () => {
-      if (typeof window === "undefined") return
-      if ((window as any).gtag && process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL) {
-        (window as any).gtag("event", "conversion", {
-          send_to: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
-        })
+      if (error) {
+        setMessage(error.message)
+        setLoading(false)
+        return
       }
-      if ((window as any).fbq) {
-        (window as any).fbq("track", "CompleteRegistration")
-      }
-    }
 
-    if (data.session) {
-      const profileUpdate: Record<string, any> = { service_zips: parsedZips }
-      if (refCode) profileUpdate.referred_by = refCode
-      await supabase.from("profiles").update(profileUpdate).eq("id", data.user!.id)
-      fireConversion()
-      router.push("/contractor/dashboard")
-    } else if (data.user) {
-      fireConversion()
-      setMessage("Check your email for a confirmation link, then log in!")
-      setLoading(false)
-      setIsSignUp(false)
-    } else {
-      setMessage("Something went wrong. Please try again.")
+      // Fire ad conversion events
+      const fireConversion = () => {
+        try {
+          if (typeof window === "undefined") return
+          if ((window as any).gtag && process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL) {
+            (window as any).gtag("event", "conversion", {
+              send_to: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
+            })
+          }
+          if ((window as any).fbq) {
+            (window as any).fbq("track", "CompleteRegistration")
+          }
+        } catch {}
+      }
+
+      if (data.session) {
+        const profileUpdate: Record<string, any> = { service_zips: parsedZips }
+        if (refCode) profileUpdate.referred_by = refCode
+        await supabase.from("profiles").update(profileUpdate).eq("id", data.user!.id)
+        fireConversion()
+        router.push("/contractor/dashboard")
+      } else if (data.user) {
+        fireConversion()
+        setMessage("Check your email for a confirmation link, then log in!")
+        setLoading(false)
+        setIsSignUp(false)
+      } else {
+        setMessage("Something went wrong. Please try again.")
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error("Signup error:", err)
+      setMessage("Signup failed. Please try again.")
       setLoading(false)
     }
   }
@@ -116,20 +124,26 @@ function AuthForm() {
     setLoading(true)
     setMessage("")
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setMessage(error.message)
-      setLoading(false)
-      return
-    }
-
-    if (data.user) {
-      if (data.user.email?.toLowerCase() === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()) {
-        router.push("/admin/dashboard")
+      if (error) {
+        setMessage(error.message)
+        setLoading(false)
         return
       }
-      router.push("/contractor/dashboard")
+
+      if (data.user) {
+        if (data.user.email?.toLowerCase() === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()) {
+          router.push("/admin/dashboard")
+          return
+        }
+        router.push("/contractor/dashboard")
+      }
+    } catch (err) {
+      console.error("Login error:", err)
+      setMessage("Login failed. Please try again.")
+      setLoading(false)
     }
   }
 
