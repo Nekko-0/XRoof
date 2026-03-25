@@ -214,7 +214,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
     pathname === href || (href === "/contractor/settings" && pathname.startsWith("/contractor/settings"))
 
   return (
-    <div className="flex min-h-screen bg-background overflow-x-hidden max-w-full">
+    <div className="flex min-h-screen bg-background">
       <CommandPalette />
       {isContractor && <ProductTour />}
       {/* Mobile overlay — admin only */}
@@ -230,7 +230,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           isContractor
             ? "-translate-x-full lg:translate-x-0"
             : mobileOpen ? "translate-x-0" : "-translate-x-full",
-          "relative"
+          "lg:relative"
         )}
       >
         {/* Collapse toggle — floating arrow on sidebar edge */}
