@@ -61,7 +61,7 @@ export const LeadCaptureSchema = z.object({
   contractor_id: z.string().uuid(),
   name: shortText,
   phone: z.string().min(7).max(20),
-  email: z.string().email().max(254).optional(),
+  email: z.string().email("Valid email required").max(254),
   address: z.string().min(1, "Address required").max(300),
   city: z.string().max(100).optional(),
   zip: z.string().max(10).optional(),

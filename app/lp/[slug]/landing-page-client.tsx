@@ -365,7 +365,8 @@ export default function LandingPageClient({
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email (optional)"
+                      placeholder="Email *"
+                      required
                       inputMode="email"
                       autoComplete="email"
                       className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
