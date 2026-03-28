@@ -13,7 +13,7 @@ const SUBSCRIPTION_EXEMPT_PATHS = ["/contractor/billing", "/contractor/settings"
 const LAUNCH_DATE = "2026-03-18"
 
 // Emails that bypass subscription check (owner / free access)
-const FREE_ACCESS_EMAILS = ["rodriguezapz26@gmail.com"]
+const FREE_ACCESS_EMAILS: string[] = []
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
