@@ -12,6 +12,9 @@ const SUBSCRIPTION_EXEMPT_PATHS = ["/contractor/billing", "/contractor/settings"
 // Accounts created before launch get free access (grandfathered)
 const LAUNCH_DATE = "2026-03-18"
 
+// Emails that bypass subscription check (owner / free access)
+const FREE_ACCESS_EMAILS = ["rodriguezapz26@gmail.com"]
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -31,6 +34,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       // Skip subscription check for exempt pages
       const isExempt = SUBSCRIPTION_EXEMPT_PATHS.some((p) => pathname.startsWith(p))
       if (!isExempt) {
+        // Free-access emails bypass subscription
+        if (FREE_ACCESS_EMAILS.includes(session.user.email?.toLowerCase() || "")) {
+          return true
+        }
+
         // Check if account was created before launch (grandfathered)
         const createdAt = session.user.created_at
         if (createdAt && createdAt < LAUNCH_DATE) {

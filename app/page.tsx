@@ -147,7 +147,7 @@ const comparisonFeatures = [
 const faqs = [
   {
     q: "Is there a free trial?",
-    a: "Yes — 7-day free trial, no credit card required. You get full access to every feature so you can test XRoof with real jobs before committing.",
+    a: "Yes — 7-day free trial with full access to every feature so you can test XRoof with real jobs before committing. Cancel anytime.",
   },
   {
     q: "Can my whole crew use it?",
@@ -229,7 +229,7 @@ export default function Home() {
               Try the Demo
             </Link>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">7-day free trial. No credit card required.</p>
+          <p className="mt-4 text-xs text-muted-foreground">7-day free trial. Cancel anytime.</p>
         </section>
 
         {/* Stats Bar */}
@@ -558,7 +558,7 @@ export default function Home() {
                 </Link>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                7-day free trial. No credit card required. Set up in under 5 minutes.
+                7-day free trial. Cancel anytime. Set up in under 5 minutes.
               </p>
             </div>
           </div>

@@ -469,7 +469,7 @@ export default function DemoPage() {
       <div className="sticky bottom-0 border-t border-border bg-card/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           <p className="text-xs text-muted-foreground">
-            Like what you see? Start your free 7-day trial — no credit card required.
+            Like what you see? Start your free 7-day trial — cancel anytime.
           </p>
           <Link
             href="/auth"
