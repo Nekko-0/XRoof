@@ -20,6 +20,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'XRoof - Roofing Contractor CRM & Business Platform',
   description: 'All-in-one SaaS platform for roofing contractors. Manage leads, create estimates, send contracts, collect payments, and grow your business — all in one place.',
+  verification: {
+    google: 'B14FOBIwcS2a2DNaOx18_PCJdBrN_ftu2pgOvBcqntI',
+  },
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',
