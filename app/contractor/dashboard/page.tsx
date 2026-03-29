@@ -176,7 +176,7 @@ export default function ContractorDashboard() {
       // Stale jobs -- accepted/estimate sent but no activity in 7+ days
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const stale = jobs.filter(
-        (j) => ["Accepted", "Estimate Sent"].includes(j.status) && j.created_at < sevenDaysAgo
+        (j: any) => ["Accepted", "Estimate Sent"].includes(j.status) && j.created_at < sevenDaysAgo
       ).slice(0, 5)
       setStaleJobs(stale)
 
