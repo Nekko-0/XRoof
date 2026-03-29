@@ -31,7 +31,7 @@ const ALLOWED_TABLES = new Set([
   "email_templates", "reminder_templates", "satisfaction_surveys",
   "customer_documents", "team_members", "landing_pages",
   "report_templates", "job_templates", "push_subscriptions",
-  "sms_messages",
+  "sms_messages", "notifications",
 ])
 
 // Tables where ownership is by "id" or "user_id" instead of "contractor_id"

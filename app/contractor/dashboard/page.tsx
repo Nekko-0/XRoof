@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
 import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 import { EmptyState } from "@/components/empty-state"
@@ -117,9 +116,7 @@ export default function ContractorDashboard() {
   useEffect(() => {
     if (!accountId) return
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { window.location.href = "/auth"; return }
-      const uid = accountId || session.user.id
+      const uid = accountId
       setDashUserId(uid)
       const today = new Date().toISOString().slice(0, 10)
 
@@ -183,15 +180,14 @@ export default function ContractorDashboard() {
       setOverdueFollowups((followupsRes.data as any) || [])
 
       // Visit requests (unread notifications)
-      const { data: visitReqs } = await supabase
-        .from("notifications")
-        .select("id, body, created_at")
-        .eq("user_id", uid)
-        .eq("type", "visit_request")
-        .eq("read", false)
-        .order("created_at", { ascending: false })
-        .limit(5)
-      setVisitRequests(visitReqs || [])
+      const visitReqsRes = await contractorQuery("notifications" as any, {
+        select: "id, body, created_at",
+        eq: "type.visit_request",
+        order: "created_at.desc",
+        limit: "5",
+        owner_col: "user_id",
+      })
+      setVisitRequests(visitReqsRes.data || [])
 
       // Today's appointments
       const todayAppts = (Array.isArray(appointmentsRes) ? appointmentsRes : [])
@@ -206,11 +202,11 @@ export default function ContractorDashboard() {
       const jobIds = jobs.map((j: Job) => j.id)
       let allCosts: { job_id: string; amount: number }[] = []
       if (jobIds.length > 0) {
-        const { data: costRows } = await supabase
-          .from("job_costs")
-          .select("job_id, amount")
-          .in("job_id", jobIds)
-        allCosts = costRows || []
+        const costRes = await contractorQuery("job_costs", {
+          select: "job_id, amount",
+          in: `job_id.${jobIds.join(",")}`,
+        })
+        allCosts = costRes.data || []
       }
 
       // Build paid invoice revenue map

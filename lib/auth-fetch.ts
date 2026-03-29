@@ -31,7 +31,19 @@ export async function contractorQuery(
 ): Promise<{ data: any; count?: number }> {
   const qs = new URLSearchParams({ table, ...params })
   const res = await authFetch(`/api/contractor-query?${qs}`)
+
+  if (!res.ok) {
+    console.error("contractorQuery failed:", res.status, table)
+    return { data: [] }
+  }
+
   const json = await res.json()
+
+  // Handle error responses from API
+  if (json && json.error && !Array.isArray(json)) {
+    console.error("contractorQuery error:", json.error, table)
+    return { data: params.single === "true" ? null : [] }
+  }
 
   // Handle count-only responses
   if (json && typeof json.count === "number" && !Array.isArray(json)) {
