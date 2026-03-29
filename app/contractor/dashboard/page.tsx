@@ -157,7 +157,7 @@ export default function ContractorDashboard() {
         }),
       ])
 
-      const jobs = jobsRes.data || []
+      const jobs: any[] = jobsRes.data || []
       setRecentJobs(jobs.slice(0, 8))
 
       // Count by status

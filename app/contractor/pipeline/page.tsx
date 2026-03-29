@@ -204,13 +204,13 @@ export default function PipelinePage() {
 
       // Build contract map
       const contracts: RelatedData["contracts"] = {}
-      for (const c of contractsRes.data || []) {
+      for (const c of (contractsRes.data || []) as any[]) {
         contracts[c.job_id] = { status: c.status, signed: !!c.customer_signed_at }
       }
 
       // Build invoice map (aggregate per job)
       const invoices: RelatedData["invoices"] = {}
-      for (const inv of invoicesRes.data || []) {
+      for (const inv of (invoicesRes.data || []) as any[]) {
         if (!invoices[inv.job_id]) invoices[inv.job_id] = { total: 0, paid: 0, count: 0, paidCount: 0 }
         const amt = (inv.amount || 0) / 100 // cents to dollars
         invoices[inv.job_id].total += amt
@@ -231,14 +231,14 @@ export default function PipelinePage() {
 
       // Build report map
       const reports: RelatedData["reports"] = {}
-      for (const r of reportsRes.data || []) {
+      for (const r of (reportsRes.data || []) as any[]) {
         reports[r.job_id] = { completed: !!r.report_completed, sent: !!r.viewing_token }
       }
 
       // Build followup map
       const followupsMap: RelatedData["followups"] = {}
       const now = Date.now()
-      for (const f of followupsRes.data || []) {
+      for (const f of (followupsRes.data || []) as any[]) {
         if (!followupsMap[f.job_id]) followupsMap[f.job_id] = { overdue: 0, dueToday: 0, upcoming: 0 }
         const diff = new Date(f.due_date).getTime() - now
         const days = Math.floor(diff / (1000 * 60 * 60 * 24))

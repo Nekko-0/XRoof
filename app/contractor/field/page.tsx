@@ -161,7 +161,7 @@ export default function FieldModePage() {
       ])
 
       const scheduled = scheduledRes.data || []
-      const active = (activeRes.data || []).filter((j) => !scheduled.find((s) => s.id === j.id))
+      const active = (activeRes.data || []).filter((j: any) => !scheduled.find((s: any) => s.id === j.id))
       setWeekJobs(scheduled)
       setActiveJobs(active)
 
