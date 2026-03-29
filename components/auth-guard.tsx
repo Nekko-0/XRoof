@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
+import { authFetch } from "@/lib/auth-fetch"
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase()
 
@@ -45,16 +46,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           return true
         }
 
-        // Check for active subscription (fail-open on error to avoid crashing)
+        // Check for active subscription via API route (bypasses RLS)
         try {
-          const { data: sub } = await supabase
-            .from("subscriptions")
-            .select("status")
-            .eq("user_id", session.user.id)
-            .in("status", ["active", "trialing"])
-            .maybeSingle()
+          const res = await authFetch("/api/contractor-query?table=subscriptions&select=status&ini=status.active,trialing&single=true")
+          const sub = await res.json()
 
-          if (!sub) {
+          if (!sub || sub.error) {
             router.push("/contractor/billing")
             return false
           }
