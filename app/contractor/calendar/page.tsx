@@ -192,7 +192,7 @@ export default function CalendarPage() {
       ])
 
       setJobs(jobsRes.data || [])
-      setUnscheduledJobs((jobsRes.data || []).filter((j) => !j.scheduled_date && j.status === "Accepted"))
+      setUnscheduledJobs((jobsRes.data || []).filter((j: any) => !j.scheduled_date && j.status === "Accepted"))
       setFollowups((followupsRes.data as any) || [])
       setAutomations((automationsRes.data as any) || [])
       setAppointments(Array.isArray(appointmentsRes) ? appointmentsRes : [])
