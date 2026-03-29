@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { EmptyState } from "@/components/empty-state"
 import { exportCSV } from "@/lib/csv-export"
 import {
@@ -124,12 +124,11 @@ export default function CustomersPage() {
     setLoadingJobs(true)
 
     // Find jobs matching this customer's name
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, address, status, job_type, budget, created_at")
-      .eq("contractor_id", accountId)
-      .eq("customer_name", c.name)
-      .order("created_at", { ascending: false })
+    const { data } = await contractorQuery("jobs", {
+      select: "id, address, status, job_type, budget, created_at",
+      eq: `customer_name.${c.name}`,
+      order: "created_at.desc",
+    })
 
     setCustomerJobs(data || [])
     setLoadingJobs(false)
