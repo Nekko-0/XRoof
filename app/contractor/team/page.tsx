@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import {
   Users, UserPlus, Shield, Eye, Briefcase, Trash2, Mail,
   CheckCircle, Clock, Crown, RefreshCw, Check, X, ChevronDown,
@@ -60,20 +60,18 @@ export default function TeamPage() {
     }
     fetchMembers()
     // Fetch owner profile
-    supabase.from("profiles").select("username, email").eq("id", accountId).single().then(({ data }) => {
+    contractorQuery("profiles", { select: "username, email", single: "true" }).then(({ data }) => {
       if (data) {
         setOwnerName(data.username || "Owner")
         setOwnerEmail(data.email || "")
       }
     })
     // Check subscription status
-    supabase.from("subscriptions")
-      .select("status")
-      .eq("user_id", accountId)
-      .in("status", ["active", "trialing", "past_due"])
-      .in("plan", ["monthly", "annual"])
-      .maybeSingle()
-      .then(({ data }) => setHasSubscription(!!data))
+    contractorQuery("subscriptions", {
+      select: "status",
+      ini: "status.active,trialing,past_due",
+      single: "true",
+    }).then(({ data }) => setHasSubscription(!!data))
   }, [accountId])
 
   const handleInvite = async () => {

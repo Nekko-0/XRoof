@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { useRole } from "@/lib/role-context"
 import { EmptyState } from "@/components/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -124,11 +124,10 @@ export default function ContractorDashboard() {
       const today = new Date().toISOString().slice(0, 10)
 
       // Check onboarding + google reviews
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("onboarding_completed, google_review_url, google_reviews_cache")
-        .eq("id", uid)
-        .single()
+      const { data: profileData } = await contractorQuery("profiles", {
+        select: "onboarding_completed, google_review_url, google_reviews_cache",
+        single: "true",
+      }).then(r => ({ data: r.data }))
       if (profileData && !profileData.onboarding_completed) {
         setShowOnboarding(true)
       }
@@ -136,26 +135,26 @@ export default function ContractorDashboard() {
       if (profileData?.google_reviews_cache) setGoogleReviewsCache(profileData.google_reviews_cache as any)
 
       const [jobsRes, followupsRes, appointmentsRes, invoicesRes, costsRes] = await Promise.all([
-        supabase.from("jobs")
-          .select("id, address, zip_code, customer_name, status, budget, created_at, scheduled_date, accepted_at, estimate_sent_at, signed_at, completed_at")
-          .eq("contractor_id", uid)
-          .order("created_at", { ascending: false }),
-        supabase.from("followups")
-          .select("id, note, due_date, job_id, jobs(customer_name, address)")
-          .eq("user_id", uid)
-          .eq("completed", false)
-          .lte("due_date", today)
-          .order("due_date", { ascending: true })
-          .limit(5),
+        contractorQuery("jobs", {
+          select: "id, address, zip_code, customer_name, status, budget, created_at, scheduled_date, accepted_at, estimate_sent_at, signed_at, completed_at",
+          order: "created_at.desc",
+        }),
+        contractorQuery("followups", {
+          select: "id, note, due_date, job_id",
+          eq: "completed.false",
+          lte: `due_date.${today}`,
+          order: "due_date.asc",
+          limit: "5",
+        }),
         authFetch(`/api/appointments?contractor_id=${uid}`).then((r) => r.json()),
-        supabase.from("invoices")
-          .select("id, total, status")
-          .eq("contractor_id", uid)
-          .in("status", ["sent"]),
-        supabase.from("invoices")
-          .select("job_id, total, status")
-          .eq("contractor_id", uid)
-          .eq("status", "paid"),
+        contractorQuery("invoices", {
+          select: "id, total, status",
+          ini: "status.sent",
+        }),
+        contractorQuery("invoices", {
+          select: "job_id, total, status",
+          eq: "status.paid",
+        }),
       ])
 
       const jobs = jobsRes.data || []
@@ -246,9 +245,9 @@ export default function ContractorDashboard() {
 
       // Getting Started checks
       const [profileRes, reportsCountRes, automationsCountRes] = await Promise.all([
-        supabase.from("profiles").select("company_name, stripe_account_id").eq("id", uid).single(),
-        supabase.from("reports").select("id", { count: "exact", head: true }).eq("contractor_id", uid),
-        supabase.from("automations").select("id", { count: "exact", head: true }).eq("contractor_id", uid),
+        contractorQuery("profiles", { select: "company_name, stripe_account_id", single: "true" }),
+        contractorQuery("reports", { select: "id", count: "exact", head: "true" }),
+        contractorQuery("automations", { select: "id", count: "exact", head: "true" }),
       ])
       setGettingStarted({
         profile: !!(profileRes.data?.company_name),

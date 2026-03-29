@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, X,
   Bell, Zap, Briefcase, CheckCircle, Plus, Clock, Trash2,
@@ -172,23 +172,23 @@ export default function CalendarPage() {
 
       // Parallel data loading
       const [jobsRes, followupsRes, automationsRes, appointmentsRes, profileRes] = await Promise.all([
-        supabase.from("jobs")
-          .select("id, address, customer_name, job_type, status, scheduled_date, scheduled_end_date")
-          .eq("contractor_id", uid)
-          .not("status", "eq", "New")
-          .order("scheduled_date", { ascending: true }),
-        supabase.from("followups")
-          .select("id, job_id, due_date, note, completed, jobs(customer_name, address)")
-          .eq("user_id", uid)
-          .eq("completed", false)
-          .order("due_date", { ascending: true }),
-        supabase.from("scheduled_automations")
-          .select("id, job_id, action_type, subject, message, scheduled_for, status")
-          .eq("contractor_id", uid)
-          .eq("status", "pending")
-          .order("scheduled_for", { ascending: true }),
+        contractorQuery("jobs", {
+          select: "id, address, customer_name, job_type, status, scheduled_date, scheduled_end_date",
+          neq: "status.New",
+          order: "scheduled_date.asc",
+        }),
+        contractorQuery("followups", {
+          select: "id, job_id, due_date, note, completed",
+          eq: "completed.false",
+          order: "due_date.asc",
+        }),
+        contractorQuery("scheduled_automations", {
+          select: "id, job_id, action_type, subject, message, scheduled_for, status",
+          eq: "status.pending",
+          order: "scheduled_for.asc",
+        }),
         authFetch(`/api/appointments?contractor_id=${uid}`).then((r) => r.json()),
-        supabase.from("profiles").select("service_zips").eq("id", uid).single(),
+        contractorQuery("profiles", { select: "service_zips", single: "true" }),
       ])
 
       setJobs(jobsRes.data || [])

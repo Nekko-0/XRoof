@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
 import { authFetch } from "@/lib/auth-fetch"
@@ -65,11 +64,12 @@ export default function CustomersPage() {
     const load = async () => {
       const [custRes, jobsRes] = await Promise.all([
         authFetch(`/api/customers?contractor_id=${accountId}`),
-        supabase.from("jobs").select("id, address, status, job_type, budget, created_at, customer_name").eq("contractor_id", accountId),
+        authFetch(`/api/jobs/by-contractor`),
       ])
       const data = await custRes.json()
+      const jobsData = await jobsRes.json()
       setCustomers(Array.isArray(data) ? data : [])
-      setAllJobs(jobsRes.data || [])
+      setAllJobs(Array.isArray(jobsData) ? jobsData : [])
       setLoading(false)
     }
     load()

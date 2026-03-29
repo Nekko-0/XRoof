@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { EmptyState } from "@/components/empty-state"
 import {
   MapPin, Phone, Camera, Clock, CheckCircle,
@@ -144,18 +144,18 @@ export default function FieldModePage() {
       setLoading(true)
 
       const [scheduledRes, activeRes, apptsRes, woRes] = await Promise.all([
-        supabase.from("jobs")
-          .select("id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget")
-          .eq("contractor_id", accountId)
-          .gte("scheduled_date", weekStart)
-          .lte("scheduled_date", weekEnd)
-          .order("scheduled_date", { ascending: true }),
-        supabase.from("jobs")
-          .select("id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget")
-          .eq("contractor_id", accountId)
-          .in("status", ["In Progress"])
-          .order("created_at", { ascending: false })
-          .limit(10),
+        contractorQuery("jobs", {
+          select: "id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget",
+          gte: `scheduled_date.${weekStart}`,
+          lte: `scheduled_date.${weekEnd}`,
+          order: "scheduled_date.asc",
+        }),
+        contractorQuery("jobs", {
+          select: "id, address, customer_name, customer_phone, customer_email, status, scheduled_date, job_type, budget",
+          ini: "status.In Progress",
+          order: "created_at.desc",
+          limit: "10",
+        }),
         authFetch(`/api/appointments?contractor_id=${accountId}`).then((r) => r.json()),
         authFetch(`/api/work-orders?contractor_id=${accountId}`).then((r) => r.json()),
       ])

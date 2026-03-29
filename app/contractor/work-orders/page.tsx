@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { EmptyState } from "@/components/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -89,12 +89,12 @@ export default function WorkOrdersPage() {
       const [ordersRes, teamRes, jobsRes] = await Promise.all([
         authFetch(`/api/work-orders?contractor_id=${accountId}`).then((r) => r.json()),
         authFetch(`/api/team?account_id=${accountId}`).then((r) => r.json()),
-        supabase.from("jobs")
-          .select("id, customer_name, address, status")
-          .eq("contractor_id", accountId)
-          .not("status", "in", '("Completed","Lost")')
-          .order("created_at", { ascending: false })
-          .limit(100),
+        contractorQuery("jobs", {
+          select: "id, customer_name, address, status",
+          not_in: "status.Completed,Lost",
+          order: "created_at.desc",
+          limit: "100",
+        }).then(r => r),
       ])
 
       setOrders(Array.isArray(ordersRes) ? ordersRes : [])

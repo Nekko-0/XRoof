@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { authFetch } from "@/lib/auth-fetch"
+import { authFetch, contractorQuery } from "@/lib/auth-fetch"
 import { supabase } from "@/lib/supabaseClient"
 import { useRole } from "@/lib/role-context"
 import { useToast } from "@/lib/toast-context"
@@ -196,10 +196,10 @@ export default function PipelinePage() {
 
     const loadRelated = async () => {
       const [contractsRes, invoicesRes, reportsRes, followupsRes] = await Promise.all([
-        supabase.from("contracts").select("job_id, status, customer_signed_at").in("job_id", jobIds),
-        supabase.from("invoices").select("job_id, status, amount, milestones").in("job_id", jobIds),
-        supabase.from("reports").select("job_id, report_completed, viewing_token").in("job_id", jobIds),
-        supabase.from("followups").select("job_id, due_date, completed").in("job_id", jobIds).eq("completed", false),
+        contractorQuery("contracts", { select: "job_id, status, customer_signed_at", in: `job_id.${jobIds.join(",")}` }),
+        contractorQuery("invoices", { select: "job_id, status, amount, milestones", in: `job_id.${jobIds.join(",")}` }),
+        contractorQuery("reports", { select: "job_id, report_completed, viewing_token", in: `job_id.${jobIds.join(",")}` }),
+        contractorQuery("followups", { select: "job_id, due_date, completed", in: `job_id.${jobIds.join(",")}`, eq: "completed.false" }),
       ])
 
       // Build contract map
