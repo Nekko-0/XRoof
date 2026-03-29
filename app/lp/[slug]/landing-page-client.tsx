@@ -170,21 +170,31 @@ export default function LandingPageClient({
         }),
       })
       if (res.ok) {
-        // Fire conversion tracking events before redirect
-        if (window.gtag && page.google_ads_id) {
-          window.gtag("event", "conversion", {
-            send_to: `${page.google_ads_id}/${page.google_ads_label}`,
-          })
-        }
+        // Fire Facebook pixel immediately (no callback needed)
         if (window.fbq) {
           window.fbq("track", "Lead")
         }
 
-        // Redirect to custom URL or built-in thank-you page
         const redirectTo = page.redirect_url || `/lp/${slug}/thank-you`
-        setTimeout(() => {
+
+        // Fire Google Ads conversion with event_callback, then redirect
+        if (window.gtag && page.google_ads_id) {
+          window.gtag("event", "conversion", {
+            send_to: `${page.google_ads_id}/${page.google_ads_label}`,
+            value: 100,
+            currency: "USD",
+            event_callback: () => {
+              window.location.href = redirectTo
+            },
+          })
+          // Safety timeout if callback never fires (ad blocker, slow network)
+          setTimeout(() => {
+            window.location.href = redirectTo
+          }, 1500)
+        } else {
+          // No Google Ads configured — redirect immediately
           window.location.href = redirectTo
-        }, 1000)
+        }
       } else {
         setFormError("Something went wrong. Please try again.")
         setSubmitting(false)
