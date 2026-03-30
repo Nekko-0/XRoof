@@ -352,13 +352,18 @@ export default function LandingPageClient({
                   {/* Tiers */}
                   <div className="divide-y divide-gray-800">
                     {page.pricing_tiers.map((tier, i) => (
-                      <div key={i} className="flex items-center justify-between px-5 py-3.5">
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+                        className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors hover:bg-gray-800/50 cursor-pointer"
+                      >
                         <div>
                           <p className="font-semibold text-white text-sm">{tier.label}</p>
                           <p className="text-xs text-gray-400">{tier.size}</p>
                         </div>
                         <p className="font-bold text-sm" style={{ color: accent }}>{tier.price}</p>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
