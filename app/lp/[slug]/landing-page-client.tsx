@@ -81,8 +81,6 @@ const PROJECT_TYPES = [
   "Roof Replacement",
   "Storm Damage Repair",
   "Roof Repair",
-  "Roof Inspection",
-  "Gutter Installation",
   "Other",
 ]
 
