@@ -418,6 +418,7 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headline_variant text;
 -- Landing page pricing section
 ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS pricing_tiers jsonb;
 ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS includes_list text[];
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS price_factors jsonb;
 
 -- ============================================
 -- Row Level Security (RLS) — Defense in Depth

@@ -20,7 +20,7 @@ async function getPageData(slug: string): Promise<{ page: LandingPage; branding:
   const { data: page, error } = await supabase
     .from("landing_pages")
     .select(
-      "id, contractor_id, title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign, google_ads_id, google_ads_label, facebook_pixel_id, google_analytics_id, thank_you_heading, thank_you_message, redirect_url, alt_headline, pricing_tiers, includes_list"
+      "id, contractor_id, title, subtitle, cta_text, hero_image_url, template, services, trust_badges, testimonials, city, stats, color_scheme, utm_source, utm_campaign, google_ads_id, google_ads_label, facebook_pixel_id, google_analytics_id, thank_you_heading, thank_you_message, redirect_url, alt_headline, pricing_tiers, includes_list, price_factors"
     )
     .eq("slug", slug)
     .eq("active", true)

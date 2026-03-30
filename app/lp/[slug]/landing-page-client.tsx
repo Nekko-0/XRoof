@@ -14,6 +14,10 @@ import {
   ChevronDown,
   Loader2,
   ArrowRight,
+  Layers,
+  Ruler,
+  Home,
+  HardHat,
 } from "lucide-react"
 
 declare global {
@@ -55,6 +59,7 @@ export type LandingPage = {
   // Pricing
   pricing_tiers: { label: string; size: string; price: string }[] | null
   includes_list: string[] | null
+  price_factors: { icon: string; title: string; description: string }[] | null
 }
 
 export type Branding = {
@@ -545,6 +550,41 @@ export default function LandingPageClient({
           </div>
         </div>
       </section>
+
+      {/* SECTION — WHAT AFFECTS YOUR FINAL PRICE */}
+      {page.price_factors && page.price_factors.length > 0 && (
+        <section className="border-t border-gray-800/50 bg-gray-950 py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-2xl font-extrabold text-white sm:text-3xl lg:text-4xl">
+              What Affects Your Final Price?
+            </h2>
+            <p className="mt-3 text-gray-400 text-sm sm:text-base">
+              Every roof is unique. Here&apos;s what influences your investment.
+            </p>
+            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {page.price_factors.map((factor, i) => {
+                const icons = [Layers, Ruler, Home, HardHat]
+                const Icon = icons[i % icons.length]
+                return (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-gray-800 bg-gray-900 p-6 text-left"
+                  >
+                    <div
+                      className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: accent }}
+                    >
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white mb-2">{factor.title}</h3>
+                    <p className="text-xs leading-relaxed text-gray-400">{factor.description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* SECTION 3 — STATS */}
       {stats && (
