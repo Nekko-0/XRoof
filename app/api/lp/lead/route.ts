@@ -1,0 +1,112 @@
+import { createClient } from "@supabase/supabase-js"
+import { NextResponse } from "next/server"
+import { sendSMS } from "@/lib/twilio"
+import { LeadCaptureSchema, validateBody } from "@/lib/validations"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { checkOrigin } from "@/lib/csrf"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false } }
+)
+
+export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
+  // Rate limit: 20 leads per minute per IP
+  const ip = getClientIP(req)
+  const rl = rateLimit(`lead:${ip}`, 20, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 })
+  }
+
+  const body = await req.json()
+  const v = validateBody(LeadCaptureSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { page_id, contractor_id, name, phone, email, address, city, zip, project_type, utm_source, utm_medium, utm_campaign, project_description, utm_term, utm_content, headline_variant } = v.data!
+
+  // Create lead as a new job
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .insert({
+      contractor_id,
+      customer_name: name,
+      customer_phone: phone,
+      customer_email: email || null,
+      address: zip ? `${address}, ${city || ""} ${zip}`.trim() : address,
+      status: "New",
+      source: "landing_page",
+      source_detail: utm_campaign || utm_source || "landing_page",
+      utm_source: utm_source || null,
+      utm_medium: utm_medium || null,
+      utm_campaign: utm_campaign || null,
+      landing_page_id: page_id || null,
+      job_type: project_type || "Roofing",
+      project_description: project_description || null,
+      utm_term: utm_term || null,
+      utm_content: utm_content || null,
+      headline_variant: headline_variant || null,
+    })
+    .select("id")
+    .single()
+
+  if (error) {
+    console.error("[XRoof] lp-lead POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
+
+  // Auto-create customer record (skip if one with same phone already exists)
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("contractor_id", contractor_id)
+    .eq("phone", phone)
+    .limit(1)
+    .maybeSingle()
+
+  if (!existingCustomer) {
+    const { error: custError } = await supabase.from("customers").insert({
+      contractor_id,
+      name,
+      phone,
+      email: email || null,
+      address,
+    })
+    if (custError) console.error("[XRoof] customer auto-create error:", custError.message)
+  }
+
+  // Increment conversions on landing page
+  if (page_id) {
+    const { data: pg } = await supabase.from("landing_pages").select("conversions").eq("id", page_id).single()
+    if (pg) {
+      await supabase.from("landing_pages").update({ conversions: (pg.conversions || 0) + 1 }).eq("id", page_id)
+    }
+  }
+
+  // Notify contractor via SMS
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("phone, company_name")
+    .eq("id", contractor_id)
+    .single()
+
+  if (profile?.phone) {
+    const source = utm_campaign ? ` (${utm_campaign})` : utm_source ? ` (${utm_source})` : ""
+    sendSMS(
+      profile.phone,
+      `New lead from landing page${source}: ${name}, ${phone}, ${address}`
+    ).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
+  }
+
+  // Fire new_lead automation
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  fetch(`${appUrl}/api/automations/trigger`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trigger: "new_lead", job_id: job.id, contractor_id, internal_secret: process.env.CRON_SECRET }),
+  }).catch((err: unknown) => console.error("[XRoof] fire-and-forget error:", err))
+
+  return NextResponse.json({ success: true })
+}

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /contractor/
+Disallow: /api/
+Disallow: /auth
+
+Sitemap: https://xroof.io/sitemap.xml

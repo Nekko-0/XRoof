@@ -1,0 +1,116 @@
+import { createClient } from "@supabase/supabase-js"
+import { NextResponse } from "next/server"
+import { rateLimit, getClientIP } from "@/lib/rate-limit"
+import { emitToUser } from "@/lib/event-emitter"
+import { checkOrigin } from "@/lib/csrf"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false } }
+)
+
+export async function GET(req: Request) {
+  const ip = getClientIP(req)
+  const rl = rateLimit(`portal-messages:${ip}`, 30, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+  const { searchParams } = new URL(req.url)
+  const job_id = searchParams.get("job_id")
+
+  if (!job_id) {
+    return NextResponse.json({ error: "Missing job_id" }, { status: 400 })
+  }
+
+  const { data: messages, error } = await supabase
+    .from("portal_messages")
+    .select("id, job_id, sender, message, created_at")
+    .eq("job_id", job_id)
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    console.error("[XRoof] portal-messages GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
+
+  return NextResponse.json({ messages: messages || [] })
+}
+
+export async function POST(req: Request) {
+  const csrf = checkOrigin(req)
+  if (csrf) return csrf
+
+  const postIp = getClientIP(req)
+  const postRl = rateLimit(`portal-messages-post:${postIp}`, 5, 60_000)
+  if (!postRl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
+
+  try {
+    const body = await req.json()
+    const { job_id, sender, message } = body
+
+    if (!job_id || !sender || !message) {
+      return NextResponse.json(
+        { error: "Missing required fields: job_id, sender, message" },
+        { status: 400 }
+      )
+    }
+
+    // Public portal endpoint — only homeowners can send from here.
+    // Contractors send via authenticated endpoints.
+    if (sender !== "homeowner") {
+      return NextResponse.json(
+        { error: "Unauthorized sender type" },
+        { status: 403 }
+      )
+    }
+
+    // Verify the job exists and get contractor info for notifications
+    const { data: job } = await supabase
+      .from("jobs")
+      .select("id, contractor_id, customer_name")
+      .eq("id", job_id)
+      .single()
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+    }
+
+    const { data: row, error } = await supabase
+      .from("portal_messages")
+      .insert({ job_id, sender, message })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("[XRoof] portal-messages POST error:", error)
+      return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+    }
+
+    // Notify owner + admin + office manager for every homeowner portal message
+    if (job.contractor_id) {
+      const isVisitRequest = message.includes("Visit Request")
+      const { notifyRecipients } = await import("@/lib/notify")
+      await notifyRecipients(
+        job.contractor_id,
+        "owner_admin_office",
+        isVisitRequest ? "visit_request" : "portal_message",
+        isVisitRequest ? "Visit Request" : "New Portal Message",
+        isVisitRequest
+          ? `${job.customer_name || "A customer"} is requesting a site visit`
+          : `${job.customer_name || "A customer"}: ${message.slice(0, 80)}`
+      ).catch((err) => console.error("[XRoof] portal notification error:", err))
+
+      // SSE push for real-time message updates
+      emitToUser(job.contractor_id, {
+        type: "portal_message",
+        payload: { job_id, customer_name: job.customer_name, message: message.slice(0, 80) },
+      })
+    }
+
+    return NextResponse.json({ message: row })
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+  }
+}

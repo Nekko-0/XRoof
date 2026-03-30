@@ -1,0 +1,90 @@
+import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+
+export async function GET(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const supabase = getServiceSupabase()
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, contractor_id, job_id, title, date, time, type, notes, created_at")
+    .eq("contractor_id", userId)
+    .order("date", { ascending: true })
+    .limit(500)
+
+  if (error) {
+    console.error("[XRoof] appointments GET error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
+  return NextResponse.json(data || [])
+}
+
+export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const body = await req.json()
+  const { job_id, title, date, time, type, notes } = body
+  if (!title || !date) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+
+  const supabase = getServiceSupabase()
+  const { data, error } = await supabase
+    .from("appointments")
+    .insert({ contractor_id: userId, job_id: job_id || null, title, date, time: time || null, type: type || "site_visit", notes: notes || null })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("[XRoof] appointments POST error:", error)
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  }
+
+  // Auto-notify customer via portal message when appointment is linked to a job
+  if (data && job_id) {
+    try {
+      const { data: job } = await supabase.from("jobs").select("customer_name").eq("id", job_id).single()
+      if (job) {
+        const typeLabel: Record<string, string> = {
+          site_visit: "site visit", work_start: "work start",
+          inspection: "inspection", meeting: "meeting",
+        }
+        const label = typeLabel[type || "site_visit"] || "appointment"
+        const timeStr = time ? ` at ${time}` : ""
+        await supabase.from("portal_messages").insert({
+          job_id,
+          sender: "contractor",
+          message: `📅 Your ${label} has been scheduled for ${date}${timeStr}. We'll notify you of any changes.`,
+        })
+      }
+    } catch (err) {
+      console.error("[XRoof] appointment notification error:", err)
+    }
+  }
+
+  return NextResponse.json(data)
+}
+
+export async function DELETE(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get("id")
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+  const supabase = getServiceSupabase()
+  // Verify ownership
+  const { data: appt } = await supabase.from("appointments").select("contractor_id").eq("id", id).single()
+  if (!appt || appt.contractor_id !== userId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  await supabase.from("appointments").delete().eq("id", id)
+  return NextResponse.json({ success: true })
+}

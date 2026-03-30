@@ -1,0 +1,169 @@
+import { NextResponse } from "next/server"
+import { requireAuth, getServiceSupabase } from "@/lib/api-auth"
+import { WorkOrderCreateSchema, WorkOrderUpdateSchema, validateBody } from "@/lib/validations"
+
+export async function GET(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const { searchParams } = new URL(req.url)
+  const contractorId = searchParams.get("contractor_id")
+  const jobId = searchParams.get("job_id")
+
+  if (!contractorId && !jobId) {
+    return NextResponse.json({ error: "Missing contractor_id or job_id" }, { status: 400 })
+  }
+
+  const supabase = getServiceSupabase()
+
+  // Ownership check
+  if (contractorId && contractorId !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  if (jobId) {
+    const { data: job } = await supabase.from("jobs").select("contractor_id").eq("id", jobId).single()
+    if (!job || job.contractor_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
+  let query = supabase
+    .from("work_orders")
+    .select("*, jobs(customer_name, address)")
+    .order("created_at", { ascending: false })
+
+  if (jobId) {
+    query = query.eq("job_id", jobId)
+  } else if (contractorId) {
+    query = query.eq("contractor_id", contractorId)
+  }
+
+  const { data, error } = await query.limit(200)
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  return NextResponse.json(data || [])
+}
+
+export async function POST(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const body = await req.json()
+  const v = validateBody(WorkOrderCreateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { job_id, contractor_id, assigned_to, assigned_name, title, description, priority, due_date } = v.data!
+
+  // Verify contractor_id matches auth user
+  if (contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const supabase = getServiceSupabase()
+  const { data, error } = await supabase
+    .from("work_orders")
+    .insert({
+      job_id: job_id || null,
+      contractor_id,
+      assigned_to: assigned_to || null,
+      assigned_name: assigned_name || null,
+      title,
+      description: description || null,
+      priority: priority || "normal",
+      due_date: due_date || null,
+    })
+    .select("*, jobs(customer_name, address)")
+    .single()
+
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+
+  // Notify assigned crew member
+  if (data && assigned_to) {
+    const { notifyRecipients } = await import("@/lib/notify")
+    const jobInfo = data.jobs ? ` — ${data.jobs.address}` : ""
+    notifyRecipients(
+      contractor_id,
+      "assigned",
+      "work_order_assigned",
+      `New Work Order — ${title}`,
+      `You've been assigned: ${title}${jobInfo}`,
+      assigned_to
+    ).catch((err) => console.error("[XRoof] work order notification error:", err))
+  }
+
+  return NextResponse.json(data)
+}
+
+export async function PATCH(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const body = await req.json()
+  const v = validateBody(WorkOrderUpdateSchema, body)
+  if (v.error) return NextResponse.json({ error: v.error }, { status: 400 })
+  const { id, ...updates } = v.data!
+
+  const supabase = getServiceSupabase()
+
+  // Verify ownership
+  const { data: wo } = await supabase.from("work_orders").select("contractor_id").eq("id", id).single()
+  if (!wo || wo.contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  // Auto-set completed_at when status changes to completed
+  if (updates.status === "completed" && !updates.completed_at) {
+    updates.completed_at = new Date().toISOString()
+  }
+  if (updates.status && updates.status !== "completed") {
+    updates.completed_at = null
+  }
+
+  const { data, error } = await supabase
+    .from("work_orders")
+    .update(updates)
+    .eq("id", id)
+    .select("*, jobs(customer_name, address)")
+    .single()
+
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+
+  // Notify new assignee when work order is reassigned
+  if (data && updates.assigned_to) {
+    const { notifyRecipients } = await import("@/lib/notify")
+    const jobInfo = data.jobs ? ` — ${data.jobs.address}` : ""
+    notifyRecipients(
+      data.contractor_id,
+      "assigned",
+      "work_order_assigned",
+      `Work Order Assigned — ${data.title}`,
+      `You've been assigned: ${data.title}${jobInfo}`,
+      updates.assigned_to
+    ).catch((err) => console.error("[XRoof] work order reassign notification error:", err))
+  }
+
+  return NextResponse.json(data)
+}
+
+export async function DELETE(req: Request) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+  const { userId } = auth
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get("id")
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+  const supabase = getServiceSupabase()
+
+  // Verify ownership
+  const { data: wo } = await supabase.from("work_orders").select("contractor_id").eq("id", id).single()
+  if (!wo || wo.contractor_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const { error } = await supabase.from("work_orders").delete().eq("id", id)
+  if (error) return NextResponse.json({ error: "Something went wrong" }, { status: 500 })
+  return NextResponse.json({ success: true })
+}

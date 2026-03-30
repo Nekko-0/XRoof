@@ -4,74 +4,74 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #fefaee;
-  --foreground: #1a1a1a;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #80011f;
+  --background: #09090b;
+  --foreground: #e4e4e7;
+  --card: #18181b;
+  --card-foreground: #e4e4e7;
+  --popover: #18181b;
+  --popover-foreground: #e4e4e7;
+  --primary: #0891b2;
   --primary-foreground: #ffffff;
-  --secondary: #f5f0e1;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f5f0e1;
-  --muted-foreground: #6b6b6b;
-  --accent: #f5f0e1;
-  --accent-foreground: #1a1a1a;
+  --secondary: #27272a;
+  --secondary-foreground: #e4e4e7;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #e4e4e7;
   --destructive: #dc2626;
-  --destructive-foreground: #dc2626;
-  --border: #e5e0d1;
-  --input: #e5e0d1;
-  --ring: #80011f;
-  --chart-1: #80011f;
-  --chart-2: #b8860b;
-  --chart-3: #2d5016;
-  --chart-4: #1a4a6b;
-  --chart-5: #6b3a8a;
+  --destructive-foreground: #ef4444;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #0891b2;
+  --chart-1: #164e63;
+  --chart-2: #155e75;
+  --chart-3: #0e7490;
+  --chart-4: #0891b2;
+  --chart-5: #22d3ee;
   --radius: 0.75rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #80011f;
+  --sidebar: #0f0f12;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #0891b2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f5f0e1;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e5e0d1;
-  --sidebar-ring: #80011f;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #e4e4e7;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #0891b2;
 }
 
-.dark {
-  --background: #1a1a1a;
-  --foreground: #fefaee;
-  --card: #262626;
-  --card-foreground: #fefaee;
-  --popover: #262626;
-  --popover-foreground: #fefaee;
-  --primary: #d4506a;
+.light {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #0891b2;
   --primary-foreground: #ffffff;
-  --secondary: #2d2d2d;
-  --secondary-foreground: #fefaee;
-  --muted: #2d2d2d;
-  --muted-foreground: #a3a3a3;
-  --accent: #2d2d2d;
-  --accent-foreground: #fefaee;
-  --destructive: #991b1b;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
   --destructive-foreground: #ef4444;
-  --border: #3d3d3d;
-  --input: #3d3d3d;
-  --ring: #d4506a;
-  --chart-1: #d4506a;
-  --chart-2: #daa520;
-  --chart-3: #4a8c2a;
-  --chart-4: #2d7ab8;
-  --chart-5: #9b59b6;
-  --sidebar: #262626;
-  --sidebar-foreground: #fefaee;
-  --sidebar-primary: #d4506a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #0891b2;
+  --chart-1: #ecfeff;
+  --chart-2: #cffafe;
+  --chart-3: #67e8f9;
+  --chart-4: #0891b2;
+  --chart-5: #164e63;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #0891b2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2d2d2d;
-  --sidebar-accent-foreground: #fefaee;
-  --sidebar-border: #3d3d3d;
-  --sidebar-ring: #d4506a;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #0891b2;
 }
 
 @theme inline {
@@ -121,6 +121,41 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+}
+
+/* Mobile safe area support for notched devices (iPhone X+) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Print styles for report view */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove sidebar, header, nav for clean print */
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
   }
 }
