@@ -52,6 +52,9 @@ export type LandingPage = {
   redirect_url: string | null
   // A/B testing
   alt_headline: string | null
+  // Pricing
+  pricing_tiers: { label: string; size: string; price: string }[] | null
+  includes_list: string[] | null
 }
 
 export type Branding = {
@@ -334,6 +337,44 @@ export default function LandingPageClient({
                   </span>
                 ))}
               </div>
+
+              {/* Quick Estimate pricing (only if configured) */}
+              {page.pricing_tiers && page.pricing_tiers.length > 0 && (
+                <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+                  {/* Header */}
+                  <div className="px-5 py-4 text-center" style={{ backgroundColor: accent }}>
+                    <p className="text-lg font-bold text-white">Quick Estimate</p>
+                    <p className="text-sm text-white/80">Based on home size</p>
+                  </div>
+                  {/* Tiers */}
+                  <div className="divide-y divide-gray-800">
+                    {page.pricing_tiers.map((tier, i) => (
+                      <div key={i} className="flex items-center justify-between px-5 py-3.5">
+                        <div>
+                          <p className="font-semibold text-white text-sm">{tier.label}</p>
+                          <p className="text-xs text-gray-400">{tier.size}</p>
+                        </div>
+                        <p className="font-bold text-sm" style={{ color: accent }}>{tier.price}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Includes list (only if configured) */}
+              {page.includes_list && page.includes_list.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Includes:</p>
+                  <ul className="space-y-2">
+                    {page.includes_list.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                        <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: accent }} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* SECTION 2 — LEAD FORM */}
